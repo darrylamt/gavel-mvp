@@ -93,6 +93,30 @@ export default function AuctionDetailPage() {
   bids.length > 0 &&
   bids[0]?.user_id === userId
 
+const payNow = async () => {
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth.user) return
+
+  const res = await fetch('/api/paystack/init', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      auction_id: auction.id,
+      user_id: auth.user.id,
+      email: auth.user.email,
+    }),
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    alert(data.error)
+    return
+  }
+
+  window.location.href = data.authorization_url
+}
+
   return (
     <main className="p-6 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold">{auction.title}</h1>
@@ -108,24 +132,29 @@ export default function AuctionDetailPage() {
       <hr className="my-4" />
 
 {/* BID INPUT */}
-{!hasEnded && (
-  <div className="mt-4">
-    <input
-      type="number"
-      placeholder="Your bid (GHS)"
-      value={bidAmount}
-      onChange={(e) => setBidAmount(e.target.value)}
-      className="border p-2 mr-2"
-    />
+{hasEnded && isWinner && !auction.paid && (
+  <div className="mt-4 p-4 border rounded bg-green-50">
+    <p className="font-bold text-green-700">
+      🎉 You won this auction
+    </p>
 
     <button
-      onClick={placeBid}
-      className="bg-black text-white p-2"
+      onClick={payNow}
+      className="mt-3 bg-black text-white px-4 py-2"
     >
-      Place Bid
+      Pay Now
     </button>
   </div>
 )}
+
+{hasEnded && isWinner && auction.paid && (
+  <div className="mt-4 p-4 border rounded bg-green-50">
+    <p className="font-bold text-green-700">
+      ✅ Payment received
+    </p>
+  </div>
+)}
+
 
       {/* AUCTION STATUS */}
       {hasEnded ? (

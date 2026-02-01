@@ -9,7 +9,7 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   const body = await req.text()
-  const signature = req.headers.get('x-paystack-signature')!
+  const signature = req.headers.get('x-paystack-signature') || ''
 
   const hash = crypto
     .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
@@ -23,12 +23,14 @@ export async function POST(req: Request) {
   const event = JSON.parse(body)
 
   if (event.event === 'charge.success') {
-    const { auction_id } = event.data.metadata
+    const auction_id = event.data?.metadata?.auction_id
 
-    await supabase
-      .from('auctions')
-      .update({ paid: true })
-      .eq('id', auction_id)
+    if (auction_id) {
+      await supabase
+        .from('auctions')
+        .update({ paid: true })
+        .eq('id', auction_id)
+    }
   }
 
   return NextResponse.json({ received: true })

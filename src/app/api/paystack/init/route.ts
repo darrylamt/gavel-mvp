@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function POST(req: Request) {
   const { auction_id, user_id, email } = await req.json()
 
-  // 1. Get auction
+  // 1) Fetch auction
   const { data: auction } = await supabase
     .from('auctions')
     .select('id, status, winning_bid_id, paid')
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Already paid' }, { status: 400 })
   }
 
-  // 2. Get winning bid
+  // 2) Fetch winning bid
   const { data: bid } = await supabase
     .from('bids')
     .select('id, amount, user_id')
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Not auction winner' }, { status: 403 })
   }
 
-  // 3. Init Paystack
+  // 3) Init Paystack
   const res = await fetch('https://api.paystack.co/transaction/initialize', {
     method: 'POST',
     headers: {
@@ -44,14 +44,20 @@ export async function POST(req: Request) {
     },
     body: JSON.stringify({
       email,
-      amount: bid.amount * 100,
+      amount: Math.round(Number(bid.amount) * 100),
       metadata: {
         auction_id,
         bid_id: bid.id,
       },
+      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}`,
     }),
   })
 
-  const data = await res.json()
-  return NextResponse.json(data)
+  const json = await res.json()
+
+  if (!json.status) {
+    return NextResponse.json({ error: 'Paystack init failed' }, { status: 500 })
+  }
+
+  return NextResponse.json(json.data)
 }
