@@ -22,33 +22,42 @@ export default function AuctionDetailPage() {
 
   // Load auction + bids
   useEffect(() => {
-    if (!id) return
+  if (!id) return
 
-    const loadData = async () => {
-      const { data: auctionData } = await supabase
-        .from('auctions')
-        .select('*')
-        .eq('id', id)
-        .single()
+  const loadData = async () => {
+    const { data: auctionData } = await supabase
+      .from('auctions')
+      .select('*')
+      .eq('id', id)
+      .single()
 
-      const { data: bidsData } = await supabase
-        .from('bids')
-        .select('*')
-        .eq('auction_id', id)
-        .order('amount', { ascending: false })
+    const { data: bidsData } = await supabase
+      .from('bids')
+      .select('*')
+      .eq('auction_id', id)
+      .order('amount', { ascending: false })
 
-      setAuction(auctionData)
-      setBids(bidsData || [])
-      setLoading(false)
+    setAuction(auctionData)
+    setBids(bidsData || [])
+    setLoading(false)
+
+    // 🔐 AUTO-CLOSE AUCTION (SAFE)
+    if (
+      auctionData &&
+      auctionData.status === 'active' &&
+      auctionData.ends_at &&
+      new Date(auctionData.ends_at).getTime() <= Date.now()
+    ) {
+      await fetch('/api/auctions/close', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auction_id: auctionData.id }),
+      })
     }
+  }
 
-    setTimeout(() => {
-  closeAuctionIfNeeded()
-}, 0)
-
-
-    loadData()
-  }, [id])
+  loadData()
+}, [id])
 
   if (loading) {
     return <p className="p-6">Loading auction...</p>
@@ -120,23 +129,6 @@ const payNow = async () => {
   }
 
   window.location.href = data.authorization_url
-}
-
-const closeAuctionIfNeeded = async () => {
-  if (!auction) return
-
-  const alreadyEnded = auction.status === 'ended'
-  const timeEnded =
-    auction.ends_at &&
-    new Date(auction.ends_at).getTime() <= Date.now()
-
-  if (alreadyEnded || !timeEnded) return
-
-  await fetch('/api/auctions/close', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ auction_id: auction.id }),
-  })
 }
 
 
