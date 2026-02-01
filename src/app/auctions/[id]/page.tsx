@@ -10,6 +10,8 @@ export default function AuctionDetailPage() {
   const [bids, setBids] = useState<any[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [bidAmount, setBidAmount] = useState('')
+
 
   // Load user
   useEffect(() => {
@@ -59,11 +61,38 @@ export default function AuctionDetailPage() {
     )
   })()
 
+  const placeBid = async () => {
+  if (!auction || !userId) {
+    alert('You must be logged in to bid')
+    return
+  }
+
+  const res = await fetch('/api/bids', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      auction_id: auction.id,
+      amount: Number(bidAmount),
+      user_id: userId,
+    }),
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    alert(data.error)
+    return
+  }
+
+  setBidAmount('')
+}
+
 
   const isWinner =
-    hasEnded &&
-    bids.length > 0 &&
-    bids[0].user_id === userId
+  hasEnded &&
+  Array.isArray(bids) &&
+  bids.length > 0 &&
+  bids[0]?.user_id === userId
 
   return (
     <main className="p-6 max-w-xl mx-auto">
