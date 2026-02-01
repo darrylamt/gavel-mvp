@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(req: Request) {
-  const body = await req.json()
+  const { auction_id, amount } = await req.json()
 
-  const res = await fetch(
+  const initRes = await fetch(
     'https://api.paystack.co/transaction/initialize',
     {
       method: 'POST',
@@ -12,13 +18,21 @@ export async function POST(req: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: body.amount * 100,
+        amount: amount * 100,
         email: 'customer@gavel.com',
         callback_url: 'http://localhost:3000',
       }),
     }
   )
 
-  const data = await res.json()
-  return NextResponse.json(data.data)
+  const initData = await initRes.json()
+
+  await supabase.from('payments').insert({
+    auction_id,
+    amount,
+    paystack_reference: initData.data.reference,
+    status: 'pending',
+  })
+
+  return NextResponse.json(initData.data)
 }
