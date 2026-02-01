@@ -7,23 +7,39 @@ export function useIsAdmin() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
 
   useEffect(() => {
+    let isMounted = true
+
     const checkAdmin = async () => {
-      const { data: auth } = await supabase.auth.getUser()
-      if (!auth.user) {
-        setIsAdmin(false)
+      const { data: auth, error: authError } =
+        await supabase.auth.getUser()
+
+      if (authError || !auth?.user) {
+        if (isMounted) setIsAdmin(false)
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', auth.user.id)
-        .single()
+      const { data: profile, error: profileError } =
+        await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', auth.user.id)
+          .single()
 
-      setIsAdmin(profile?.role === 'admin')
+      if (profileError) {
+        if (isMounted) setIsAdmin(false)
+        return
+      }
+
+      if (isMounted) {
+        setIsAdmin(profile?.role === 'admin')
+      }
     }
 
     checkAdmin()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   return isAdmin
