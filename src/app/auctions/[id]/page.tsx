@@ -87,7 +87,6 @@ export default function AuctionDetailPage() {
   setBidAmount('')
 }
 
-
   const isWinner =
   hasEnded &&
   Array.isArray(bids) &&
@@ -107,6 +106,26 @@ export default function AuctionDetailPage() {
       </p>
 
       <hr className="my-4" />
+
+{/* BID INPUT */}
+{!hasEnded && (
+  <div className="mt-4">
+    <input
+      type="number"
+      placeholder="Your bid (GHS)"
+      value={bidAmount}
+      onChange={(e) => setBidAmount(e.target.value)}
+      className="border p-2 mr-2"
+    />
+
+    <button
+      onClick={placeBid}
+      className="bg-black text-white p-2"
+    >
+      Place Bid
+    </button>
+  </div>
+)}
 
       {/* AUCTION STATUS */}
       {hasEnded ? (

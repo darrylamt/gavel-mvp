@@ -8,21 +8,49 @@ export default function NewAuction() {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState('')
+  const [endsAt, setEndsAt] = useState('')
   const [endTime, setEndTime] = useState('')
 
   const createAuction = async () => {
-    const { data: user } = await supabase.auth.getUser()
+  const { data: authData, error: authError } =
+    await supabase.auth.getUser()
 
-    await supabase.from('auctions').insert({
-      title,
-      starting_price: price,
-      current_price: price,
-      end_time: endTime,
-      seller_id: user.user?.id,
-    })
+  console.log('AUTH DATA:', authData)
+  console.log('AUTH ERROR:', authError)
 
-    router.push('/auctions')
+  if (!authData?.user) {
+    alert('Not logged in')
+    return
   }
+
+  const payload = {
+    title,
+    starting_price: Number(price),
+    current_price: Number(price),
+    ends_at: new Date(endsAt).toISOString(),
+    seller_id: authData.user.id,
+  }
+
+  console.log('INSERT PAYLOAD:', payload)
+
+  const { data, error } = await supabase
+    .from('auctions')
+    .insert(payload)
+    .select()
+
+  console.log('INSERT RESULT DATA:', data)
+  console.log('INSERT RESULT ERROR:', error)
+
+  if (error) {
+    alert(
+      `Supabase error:\n${error.message}\n\nDetails:\n${error.details}`
+    )
+    return
+  }
+
+  alert('Auction created successfully')
+}
+
 
   return (
     <main className="p-10 max-w-md">
@@ -44,7 +72,8 @@ export default function NewAuction() {
       <input
         type="datetime-local"
         className="border p-2 w-full mb-4"
-        onChange={(e) => setEndTime(e.target.value)}
+        value={endsAt}
+        onChange={(e) => setEndsAt(e.target.value)}
       />
 
       <button
