@@ -42,6 +42,11 @@ export default function AuctionDetailPage() {
       setLoading(false)
     }
 
+    setTimeout(() => {
+  closeAuctionIfNeeded()
+}, 0)
+
+
     loadData()
   }, [id])
 
@@ -117,6 +122,24 @@ const payNow = async () => {
   window.location.href = data.authorization_url
 }
 
+const closeAuctionIfNeeded = async () => {
+  if (!auction) return
+
+  const alreadyEnded = auction.status === 'ended'
+  const timeEnded =
+    auction.ends_at &&
+    new Date(auction.ends_at).getTime() <= Date.now()
+
+  if (alreadyEnded || !timeEnded) return
+
+  await fetch('/api/auctions/close', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ auction_id: auction.id }),
+  })
+}
+
+
   return (
     <main className="p-6 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold">{auction.title}</h1>
@@ -163,7 +186,7 @@ const payNow = async () => {
         <p className="text-green-600 font-bold">Auction Active</p>
       )}
 
-      {/* WINNER MESSAGE */}
+      {/* WINNER MESSAGE
       {hasEnded && isWinner && (
         <div className="mt-4 p-4 border rounded bg-green-50">
           <p className="font-bold text-green-700">
@@ -173,7 +196,7 @@ const payNow = async () => {
             Payment will be enabled next.
           </p>
         </div>
-      )}
+      )} */}
 
       {/* BID LIST */}
       <h2 className="mt-6 font-bold">Bids</h2>
