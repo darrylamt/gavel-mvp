@@ -11,6 +11,8 @@ export default function AuctionDetailPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [bidAmount, setBidAmount] = useState('')
+  const [timeLeft, setTimeLeft] = useState<string>('Calculating…')
+
 
 
   // Load user
@@ -74,6 +76,40 @@ export default function AuctionDetailPage() {
     new Date(auction.ends_at).getTime() <= Date.now()
     )
   })()
+
+  useEffect(() => {
+  if (!auction || !auction.ends_at) return
+
+  const updateCountdown = () => {
+    const now = Date.now()
+    const end = new Date(auction.ends_at).getTime()
+    const diff = end - now
+
+    if (diff <= 0) {
+      setTimeLeft('Auction Ended')
+      return
+    }
+
+    const seconds = Math.floor((diff / 1000) % 60)
+    const minutes = Math.floor((diff / (1000 * 60)) % 60)
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+    const parts = []
+    if (days > 0) parts.push(`${days}d`)
+    if (hours > 0) parts.push(`${hours}h`)
+    if (minutes > 0) parts.push(`${minutes}m`)
+    parts.push(`${seconds}s`)
+
+    setTimeLeft(parts.join(' '))
+  }
+
+  updateCountdown()
+  const interval = setInterval(updateCountdown, 1000)
+
+  return () => clearInterval(interval)
+}, [auction?.ends_at])
+
 
   const placeBid = async () => {
   if (!auction || !userId) {
@@ -141,8 +177,13 @@ const payNow = async () => {
       </p>
 
       <p className="text-sm text-gray-500">
-        Ends at: {new Date(auction.ends_at).toLocaleString()}
-      </p>
+  Ends at: {new Date(auction.ends_at).toLocaleString()}
+</p>
+
+<p className="mt-1 font-semibold text-blue-600">
+  ⏳ {timeLeft}
+</p>
+
 
       <hr className="my-4" />
 
@@ -173,10 +214,15 @@ const payNow = async () => {
 
       {/* AUCTION STATUS */}
       {hasEnded ? (
-        <p className="text-red-600 font-bold">Auction Ended</p>
-      ) : (
-        <p className="text-green-600 font-bold">Auction Active</p>
-      )}
+  <p className="text-red-600 font-bold mt-2">
+    🔒 Auction Ended
+  </p>
+) : (
+  <p className="text-green-600 font-bold mt-2">
+    🟢 Auction Active
+  </p>
+)}
+
 
       {/* WINNER MESSAGE
       {hasEnded && isWinner && (
