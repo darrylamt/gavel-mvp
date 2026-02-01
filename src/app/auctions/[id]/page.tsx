@@ -18,6 +18,14 @@ export default function AuctionDetail() {
     fetchAuction()
     fetchBids()
 
+    if (new Date(auction.ends_at) <= new Date() && auction.status === 'active') {
+    fetch('/api/auctions/close', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ auction_id: auction.id }),
+      })
+    }
+
     const channel = supabase
       .channel('bids-realtime')
       .on(
