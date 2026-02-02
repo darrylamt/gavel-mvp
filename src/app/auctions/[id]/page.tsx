@@ -160,6 +160,45 @@ const payNow = async () => {
   window.location.href = data.authorization_url
 }
 
+useEffect(() => {
+  if (!id) return
+
+  const channel = supabase
+    .channel(`bids-${id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'bids',
+        filter: `auction_id=eq.${id}`,
+      },
+      (payload) => {
+        const newBid = payload.new as any
+
+        setBids((prev) => {
+          if (prev.find((b) => b.id === newBid.id)) return prev
+          return [newBid, ...prev].sort(
+            (a, b) => b.amount - a.amount
+          )
+        })
+
+        setAuction((prev: any) => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            current_price: newBid.amount,
+          }
+        })
+      }
+    )
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}, [id])
+
 
   return (
     <main className="p-6 max-w-xl mx-auto">
