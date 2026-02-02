@@ -43,9 +43,17 @@ export default function AuctionDetailPage() {
 
       const { data: bidsData } = await supabase
         .from('bids')
-        .select('*')
+        .select(`
+          id,
+          amount,
+          user_id,
+          profiles (
+            username
+            )
+          `)
         .eq('auction_id', id)
         .order('amount', { ascending: false })
+
 
       setAuction(auctionData)
       setBids(bidsData || [])
@@ -182,8 +190,8 @@ export default function AuctionDetailPage() {
           hasEnded
             ? 'bg-red-100 text-red-700'
             : 'bg-green-100 text-green-700'
-        }`}
-      >
+          }`}
+        >
         {hasEnded ? 'Auction Ended' : 'Auction Active'}
       </div>
 

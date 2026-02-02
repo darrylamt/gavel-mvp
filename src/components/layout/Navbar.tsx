@@ -9,6 +9,7 @@ export default function Navbar() {
   return (
     <nav className="w-full border-b p-4 flex gap-4">
       <Link href="/">Home</Link>
+      <Link href="/profile">Profile</Link>
       <Link href="/auctions">Auctions</Link>
 
       {/* Admin links */}

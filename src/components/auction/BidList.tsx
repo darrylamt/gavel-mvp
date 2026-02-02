@@ -1,7 +1,10 @@
 type Bid = {
   id: string
   amount: number
-  user_id?: string
+  user_id: string
+  profiles?: {
+    username: string | null
+  }
 }
 
 type Props = {
@@ -19,18 +22,26 @@ export default function BidList({ bids }: Props) {
         <ul className="mt-2 space-y-2">
           {bids.map((bid, index) => {
             const isTop = index === 0
+            const username =
+              bid.profiles?.username ?? 'Anonymous'
 
             return (
               <li
                 key={bid.id}
-                className={`border p-2 rounded flex justify-between ${
+                className={`border p-2 rounded flex justify-between items-center ${
                   isTop
                     ? 'bg-yellow-50 border-yellow-400 font-semibold'
                     : ''
                 }`}
               >
-                <span>GHS {bid.amount}</span>
-                {isTop && <span>🏆 Leading</span>}
+                <div>
+                  <div className="text-sm text-gray-600">
+                    @{username}
+                  </div>
+                  <div>GHS {bid.amount}</div>
+                </div>
+
+                {isTop && <span>🏆</span>}
               </li>
             )
           })}
