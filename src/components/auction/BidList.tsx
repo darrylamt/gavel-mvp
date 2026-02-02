@@ -9,9 +9,13 @@ type Bid = {
 
 type Props = {
   bids: Bid[]
+  currentUserId: string | null
 }
 
-export default function BidList({ bids }: Props) {
+export default function BidList({
+  bids,
+  currentUserId,
+}: Props) {
   return (
     <>
       <h2 className="mt-6 font-bold">Bids</h2>
@@ -22,8 +26,13 @@ export default function BidList({ bids }: Props) {
         <ul className="mt-2 space-y-2">
           {bids.map((bid, index) => {
             const isTop = index === 0
-            const username =
-              bid.profiles?.username ?? 'Anonymous'
+            const isYou =
+              currentUserId &&
+              bid.user_id === currentUserId
+
+            const label = isYou
+              ? 'You'
+              : bid.profiles?.username ?? 'Anonymous'
 
             return (
               <li
@@ -36,7 +45,7 @@ export default function BidList({ bids }: Props) {
               >
                 <div>
                   <div className="text-sm text-gray-600">
-                    @{username}
+                    {isYou ? '🧍 You' : `@${label}`}
                   </div>
                   <div>GHS {bid.amount}</div>
                 </div>

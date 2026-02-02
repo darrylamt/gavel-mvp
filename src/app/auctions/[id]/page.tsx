@@ -214,7 +214,7 @@ export default function AuctionDetailPage() {
         onPay={payNow}
       />
 
-      <BidList bids={bids} />
+      <BidList bids={bids} currentUserId={userId} />
     </main>
   )
 }
