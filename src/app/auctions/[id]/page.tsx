@@ -42,21 +42,17 @@ export default function AuctionDetailPage() {
         .single()
 
       const { data: bidsData, error } = await supabase
-  .from('bids')
-  .select(`
-    id,
-    amount,
-    user_id,
-    profiles:profiles!bids_user_id_fkey (
-      username
-    )
-  `)
-  .eq('auction_id', id)
-  .order('amount', { ascending: false })
-
-if (error) {
-  console.error('Failed to load bids:', error)
-}
+        .from('bids')
+        .select(`
+          id,
+          amount,
+          user_id,
+          profiles (
+            username
+          )
+        `)
+        .eq('auction_id', id)
+        .order('amount', { ascending: false })
 
       setAuction(auctionData)
       setBids(bidsData || [])
