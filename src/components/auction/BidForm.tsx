@@ -3,19 +3,30 @@ type Props = {
   bidAmount: string
   isPlacingBid: boolean
   error: string | null
+  isLoggedIn: boolean
   onBidAmountChange: (v: string) => void
   onSubmit: () => void
 }
+
 
 export default function BidForm({
   hasEnded,
   bidAmount,
   isPlacingBid,
   error,
+  isLoggedIn,
   onBidAmountChange,
   onSubmit,
 }: Props) {
   if (hasEnded) return null
+
+  if (!isLoggedIn) {
+    return (
+      <p className="mt-4 text-sm text-gray-600">
+        Please sign in to place a bid.
+      </p>
+    )
+  }
 
   return (
     <div className="mt-4">
