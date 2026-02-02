@@ -102,13 +102,7 @@ export default function AuctionDetailPage() {
     return <p className="p-6 text-red-500">Auction not found</p>
   }
 
-  const hasEnded = (() => {
-  if (!auction || !auction.ends_at) return false
-  return (
-    auction.status === 'ended' ||
-    new Date(auction.ends_at).getTime() <= Date.now()
-    )
-  })()
+  const hasEnded = auction?.status === 'ended'
 
   const placeBid = async () => {
   if (!auction || !userId) {
