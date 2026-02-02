@@ -8,6 +8,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin'
 export default function Navbar() {
   const isAdmin = useIsAdmin()
   const [username, setUsername] = useState<string | null>(null)
+  const [tokens, setTokens] = useState<number | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -16,11 +17,12 @@ export default function Navbar() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username')
+        .select('username, token_balance')
         .eq('id', data.user.id)
         .single()
 
       setUsername(profile?.username ?? null)
+      setTokens(profile?.token_balance ?? 0)
     }
 
     load()
@@ -49,6 +51,16 @@ export default function Navbar() {
         {!username && (
           <Link href="/profile">Account</Link>
         )}
+
+        {tokens !== null && (
+          <span className="text-sm text-gray-600">
+            🪙 {tokens}
+          </span>
+        )}
+
+        <Link href="/tokens" className="text-sm underline">
+          Buy Tokens
+        </Link>
 
         {isAdmin === true && (
           <>
