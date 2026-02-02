@@ -7,40 +7,34 @@ export function useIsAdmin() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
 
   useEffect(() => {
-    let isMounted = true
+    let mounted = true
 
     const checkAdmin = async () => {
-      const { data: auth, error: authError } =
-        await supabase.auth.getUser()
+      const { data: auth } = await supabase.auth.getUser()
 
-      if (authError || !auth?.user) {
-        if (isMounted) setIsAdmin(false)
+      if (!auth.user) {
+        if (mounted) setIsAdmin(false)
         return
       }
 
-      const { data: profile, error: profileError } =
-        await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', auth.user.id)
-          .single()
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', auth.user.id)
+        .single()
 
-      if (profileError) {
-        if (isMounted) setIsAdmin(false)
-        return
-      }
-
-      if (isMounted) {
-        setIsAdmin(profile?.role === 'admin')
+      if (mounted) {
+        setIsAdmin(data?.role === 'admin')
       }
     }
 
     checkAdmin()
 
     return () => {
-      isMounted = false
+      mounted = false
     }
   }, [])
 
+  // IMPORTANT: never return before hooks
   return isAdmin
 }
