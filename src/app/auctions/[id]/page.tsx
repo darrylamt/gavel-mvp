@@ -179,6 +179,26 @@ const payNow = async () => {
 
 
       <hr className="my-4" />
+      {/* BID INPUT (ONLY WHEN AUCTION ACTIVE) */}
+{!hasEnded && (
+  <div className="mt-4">
+    <input
+      type="number"
+      placeholder="Your bid amount"
+      className="border p-2 w-full mb-2"
+      value={bidAmount}
+      onChange={(e) => setBidAmount(e.target.value)}
+    />
+
+    <button
+      onClick={placeBid}
+      className="bg-black text-white px-4 py-2 w-full"
+    >
+      Place Bid
+    </button>
+  </div>
+)}
+
 
 {/* BID INPUT */}
 {hasEnded && isWinner && !auction.paid && (
