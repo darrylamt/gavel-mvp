@@ -30,24 +30,34 @@ export default function BidList({
               currentUserId &&
               bid.user_id === currentUserId
 
-            const label = isYou
-              ? 'You'
-              : bid.profiles?.username ?? 'Anonymous'
+            const username =
+              bid.profiles?.username ?? 'Anonymous'
 
             return (
               <li
                 key={bid.id}
-                className={`border p-2 rounded flex justify-between items-center ${
+                className={`border p-3 rounded flex justify-between items-center ${
                   isTop
-                    ? 'bg-yellow-50 border-yellow-400 font-semibold'
+                    ? 'bg-yellow-50 border-yellow-400'
                     : ''
                 }`}
               >
-                <div>
-                  <div className="text-sm text-gray-600">
-                    {isYou ? '🧍 You' : `@${label}`}
+                <div className="flex items-center gap-3">
+                  {/* Avatar */}
+                  <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold">
+                    {isYou
+                      ? 'Y'
+                      : username[0].toUpperCase()}
                   </div>
-                  <div>GHS {bid.amount}</div>
+
+                  <div>
+                    <div className="text-sm text-gray-600">
+                      {isYou ? 'You' : `@${username}`}
+                    </div>
+                    <div className="font-semibold">
+                      GHS {bid.amount}
+                    </div>
+                  </div>
                 </div>
 
                 {isTop && <span>🏆</span>}
