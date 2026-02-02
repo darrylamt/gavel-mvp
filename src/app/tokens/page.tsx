@@ -1,8 +1,38 @@
 'use client'
 
-import Link from 'next/link'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function TokensPage() {
+  // 🔹 THIS FUNCTION GOES AT THE TOP OF THE COMPONENT
+  const buy = async (pack: 'small' | 'medium' | 'large') => {
+    const { data } = await supabase.auth.getUser()
+    if (!data.user) {
+      alert('Please log in')
+      return
+    }
+
+    const res = await fetch('/api/tokens/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pack,
+        user_id: data.user.id,
+        email: data.user.email,
+      }),
+    })
+
+    const json = await res.json()
+
+    if (!res.ok) {
+      alert(json.error)
+      return
+    }
+
+    // 🔹 Redirect to Paystack
+    window.location.href = json.authorization_url
+  }
+
+  // 🔹 JSX STARTS HERE
   return (
     <main className="p-6 max-w-md mx-auto">
       <h1 className="text-2xl font-bold mb-4">
@@ -15,58 +45,42 @@ export default function TokensPage() {
       </p>
 
       <div className="space-y-4">
+        {/* SMALL PACK */}
         <div className="border p-4 rounded">
-          <h2 className="font-semibold">
-            10 Tokens
-          </h2>
-          <p className="text-sm text-gray-600">
-            GHS 10
-          </p>
+          <h2 className="font-semibold">10 Tokens</h2>
+          <p className="text-sm text-gray-600">GHS 10</p>
           <button
-            disabled
-            className="mt-2 bg-gray-300 text-white px-4 py-2 w-full"
+            onClick={() => buy('small')}
+            className="mt-2 bg-black text-white px-4 py-2 w-full"
           >
-            Coming Soon
+            Buy
           </button>
         </div>
 
+        {/* MEDIUM PACK */}
         <div className="border p-4 rounded">
-          <h2 className="font-semibold">
-            50 Tokens
-          </h2>
-          <p className="text-sm text-gray-600">
-            GHS 45
-          </p>
+          <h2 className="font-semibold">50 Tokens</h2>
+          <p className="text-sm text-gray-600">GHS 45</p>
           <button
-            disabled
-            className="mt-2 bg-gray-300 text-white px-4 py-2 w-full"
+            onClick={() => buy('medium')}
+            className="mt-2 bg-black text-white px-4 py-2 w-full"
           >
-            Coming Soon
+            Buy
           </button>
         </div>
 
+        {/* LARGE PACK */}
         <div className="border p-4 rounded">
-          <h2 className="font-semibold">
-            100 Tokens
-          </h2>
-          <p className="text-sm text-gray-600">
-            GHS 80
-          </p>
+          <h2 className="font-semibold">100 Tokens</h2>
+          <p className="text-sm text-gray-600">GHS 80</p>
           <button
-            disabled
-            className="mt-2 bg-gray-300 text-white px-4 py-2 w-full"
+            onClick={() => buy('large')}
+            className="mt-2 bg-black text-white px-4 py-2 w-full"
           >
-            Coming Soon
+            Buy
           </button>
         </div>
       </div>
-
-      <Link
-        href="/auctions"
-        className="block text-center text-sm text-gray-600 mt-6"
-      >
-        ← Back to auctions
-      </Link>
     </main>
   )
 }
