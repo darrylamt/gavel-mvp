@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         auction_id,
         bid_id: bid.id,
       },
-      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}`,
+      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success`,
     }),
   })
 
