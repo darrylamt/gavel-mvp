@@ -54,9 +54,7 @@ export default function BidList({
                   <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold">
                     {isYou
                       ? 'Y'
-                      : bid.profiles?.username
-                      ? bid.profiles.username[0].toUpperCase()
-                      : '?'}
+                      : username[0].toUpperCase()}
                   </div>
                     <div className="font-semibold">
                       GHS {bid.amount}
