@@ -4,18 +4,27 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
+import AuctionHeader from '@/components/auction/AuctionHeader'
+import AuctionCountdown from '@/components/auction/AuctionCountdown'
+import BidForm from '@/components/auction/BidForm'
+import BidList from '@/components/auction/BidList'
+import WinnerPanel from '@/components/auction/WinnerPanel'
+
 export default function AuctionDetailPage() {
   const { id } = useParams()
+
   const [auction, setAuction] = useState<any>(null)
   const [bids, setBids] = useState<any[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
   const [bidAmount, setBidAmount] = useState('')
-  const [timeLeft, setTimeLeft] = useState<string>('Calculating…')
+  const [isPlacingBid, setIsPlacingBid] = useState(false)
+  const [bidError, setBidError] = useState<string | null>(null)
+  const [timeLeft, setTimeLeft] = useState('Calculating…')
 
+  /* ---------------- hooks FIRST ---------------- */
 
-
-  // Load user
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
@@ -23,284 +32,168 @@ export default function AuctionDetailPage() {
   }, [])
 
   useEffect(() => {
-  if (!id) return
+    if (!id) return
 
-  const channel = supabase
-    .channel(`bids-${id}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'bids',
-        filter: `auction_id=eq.${id}`,
-      },
-      (payload) => {
-        const newBid = payload.new as any
+    const load = async () => {
+      const { data: auctionData } = await supabase
+        .from('auctions')
+        .select('*')
+        .eq('id', id)
+        .single()
 
-        setBids((prev) => {
-          if (prev.find((b) => b.id === newBid.id)) return prev
-          return [newBid, ...prev].sort(
-            (a, b) => b.amount - a.amount
-          )
-        })
+      const { data: bidsData } = await supabase
+        .from('bids')
+        .select('*')
+        .eq('auction_id', id)
+        .order('amount', { ascending: false })
 
-        setAuction((prev: any) => {
-          if (!prev) return prev
-          return {
-            ...prev,
-            current_price: newBid.amount,
-          }
-        })
-      }
-    )
-    .subscribe()
-
-  return () => {
-    supabase.removeChannel(channel)
-  }
-}, [id])
-
-  // Load auction + bids
-  useEffect(() => {
-  if (!id) return
-
-  const loadData = async () => {
-    const { data: auctionData } = await supabase
-      .from('auctions')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    const { data: bidsData } = await supabase
-      .from('bids')
-      .select('*')
-      .eq('auction_id', id)
-      .order('amount', { ascending: false })
-
-    setAuction(auctionData)
-    setBids(bidsData || [])
-    setLoading(false)
-
-    // 🔐 AUTO-CLOSE AUCTION (SAFE)
-    if (
-      auctionData &&
-      auctionData.status === 'active' &&
-      auctionData.ends_at &&
-      new Date(auctionData.ends_at).getTime() <= Date.now()
-    ) {
-      await fetch('/api/auctions/close', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ auction_id: auctionData.id }),
-      })
+      setAuction(auctionData)
+      setBids(bidsData || [])
+      setLoading(false)
     }
-  }
 
-  loadData()
-}, [id])
+    load()
+  }, [id])
 
   useEffect(() => {
-  if (!auction || !auction.ends_at) return
+    if (!auction?.ends_at) return
 
-  const updateCountdown = () => {
-    const now = Date.now()
-    const end = new Date(auction.ends_at).getTime()
-    const diff = end - now
+    const tick = () => {
+      const diff =
+        new Date(auction.ends_at).getTime() - Date.now()
 
-    if (diff <= 0) {
-      setTimeLeft('Auction Ended')
+      if (diff <= 0) {
+        setTimeLeft('Auction Ended')
+        return
+      }
+
+      const s = Math.floor((diff / 1000) % 60)
+      const m = Math.floor((diff / (1000 * 60)) % 60)
+      const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+      const parts = []
+      if (d) parts.push(`${d}d`)
+      if (h) parts.push(`${h}h`)
+      if (m) parts.push(`${m}m`)
+      parts.push(`${s}s`)
+
+      setTimeLeft(parts.join(' '))
+    }
+
+    tick()
+    const i = setInterval(tick, 1000)
+    return () => clearInterval(i)
+  }, [auction?.ends_at])
+
+  /* ---------------- logic ---------------- */
+
+  if (loading) return <p className="p-6">Loading auction…</p>
+  if (!auction)
+    return (
+      <p className="p-6 text-red-500">
+        Auction not found
+      </p>
+    )
+
+  const hasEnded = auction.status === 'ended'
+
+  const isWinner =
+    hasEnded &&
+    bids.length > 0 &&
+    bids[0]?.user_id === userId
+
+  const placeBid = async () => {
+    if (!auction || !userId) {
+      setBidError('You must be logged in')
       return
     }
 
-    const seconds = Math.floor((diff / 1000) % 60)
-    const minutes = Math.floor((diff / (1000 * 60)) % 60)
-    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const amount = Number(bidAmount)
+    if (!amount || amount <= auction.current_price) {
+      setBidError('Bid must be higher than current price')
+      return
+    }
 
-    const parts = []
-    if (days > 0) parts.push(`${days}d`)
-    if (hours > 0) parts.push(`${hours}h`)
-    if (minutes > 0) parts.push(`${minutes}m`)
-    parts.push(`${seconds}s`)
+    try {
+      setIsPlacingBid(true)
+      setBidError(null)
 
-    setTimeLeft(parts.join(' '))
+      const res = await fetch('/api/bids', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auction_id: auction.id,
+          amount,
+          user_id: userId,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setBidError(data.error)
+        return
+      }
+
+      setBidAmount('')
+    } finally {
+      setIsPlacingBid(false)
+    }
   }
 
-  updateCountdown()
-  const interval = setInterval(updateCountdown, 1000)
+  const payNow = async () => {
+    const { data } = await supabase.auth.getUser()
+    if (!data.user) return
 
-  return () => clearInterval(interval)
-}, [auction?.ends_at])
+    const res = await fetch('/api/paystack/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        auction_id: auction.id,
+        user_id: data.user.id,
+        email: data.user.email,
+      }),
+    })
 
-  if (loading) {
-    return <p className="p-6">Loading auction...</p>
+    const json = await res.json()
+    if (res.ok) {
+      window.location.href = json.authorization_url
+    }
   }
 
-  if (!auction) {
-    return <p className="p-6 text-red-500">Auction not found</p>
-  }
-
-  const hasEnded = auction?.status === 'ended'
-
-  const placeBid = async () => {
-  if (!auction || !userId) {
-    alert('You must be logged in to bid')
-    return
-  }
-
-  const res = await fetch('/api/bids', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      auction_id: auction.id,
-      amount: Number(bidAmount),
-      user_id: userId,
-    }),
-  })
-
-  const data = await res.json()
-
-  if (!res.ok) {
-    alert(data.error)
-    return
-  }
-
-  setBidAmount('')
-}
-
-  const isWinner =
-  hasEnded &&
-  Array.isArray(bids) &&
-  bids.length > 0 &&
-  bids[0]?.user_id === userId
-
-const payNow = async () => {
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) return
-
-  const res = await fetch('/api/paystack/init', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      auction_id: auction.id,
-      user_id: auth.user.id,
-      email: auth.user.email,
-    }),
-  })
-
-  const data = await res.json()
-
-  if (!res.ok) {
-    alert(data.error)
-    return
-  }
-
-  window.location.href = data.authorization_url
-}
+  /* ---------------- UI ---------------- */
 
   return (
     <main className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold">{auction.title}</h1>
+      <AuctionHeader
+        title={auction.title}
+        currentPrice={auction.current_price}
+      />
 
-      <p className="mt-2">
-        Current price: <strong>GHS {auction.current_price}</strong>
-      </p>
-
-      <p className="text-sm text-gray-500">
-  Ends at: {new Date(auction.ends_at).toLocaleString()}
-</p>
-
-<p className="mt-1 font-semibold text-blue-600">
-  ⏳ {timeLeft}
-</p>
-
+      <AuctionCountdown
+        endsAt={auction.ends_at}
+        timeLeft={timeLeft}
+      />
 
       <hr className="my-4" />
-      {/* BID INPUT (ONLY WHEN AUCTION ACTIVE) */}
-{!hasEnded && (
-  <div className="mt-4">
-    <input
-      type="number"
-      placeholder="Your bid amount"
-      className="border p-2 w-full mb-2"
-      value={bidAmount}
-      onChange={(e) => setBidAmount(e.target.value)}
-    />
 
-    <button
-      onClick={placeBid}
-      className="bg-black text-white px-4 py-2 w-full"
-    >
-      Place Bid
-    </button>
-  </div>
-)}
+      <BidForm
+        hasEnded={hasEnded}
+        bidAmount={bidAmount}
+        isPlacingBid={isPlacingBid}
+        error={bidError}
+        onBidAmountChange={setBidAmount}
+        onSubmit={placeBid}
+      />
 
+      <WinnerPanel
+        hasEnded={hasEnded}
+        isWinner={isWinner}
+        paid={auction.paid}
+        onPay={payNow}
+      />
 
-{/* BID INPUT */}
-{hasEnded && isWinner && !auction.paid && (
-  <div className="mt-4 p-4 border rounded bg-green-50">
-    <p className="font-bold text-green-700">
-      🎉 You won this auction
-    </p>
-
-    <button
-      onClick={payNow}
-      className="mt-3 bg-black text-white px-4 py-2"
-    >
-      Pay Now
-    </button>
-  </div>
-)}
-
-{hasEnded && isWinner && auction.paid && (
-  <div className="mt-4 p-4 border rounded bg-green-50">
-    <p className="font-bold text-green-700">
-      ✅ Payment received
-    </p>
-  </div>
-)}
-
-
-      {/* AUCTION STATUS */}
-      {hasEnded ? (
-  <p className="text-red-600 font-bold mt-2">
-    🔒 Auction Ended
-  </p>
-) : (
-  <p className="text-green-600 font-bold mt-2">
-    🟢 Auction Active
-  </p>
-)}
-
-
-      {/* WINNER MESSAGE
-      {hasEnded && isWinner && (
-        <div className="mt-4 p-4 border rounded bg-green-50">
-          <p className="font-bold text-green-700">
-            🎉 You won this auction
-          </p>
-          <p className="text-sm text-gray-600">
-            Payment will be enabled next.
-          </p>
-        </div>
-      )} */}
-
-      {/* BID LIST */}
-      <h2 className="mt-6 font-bold">Bids</h2>
-
-      {bids.length === 0 ? (
-        <p className="text-sm text-gray-500">No bids yet</p>
-      ) : (
-        <ul className="mt-2 space-y-2">
-          {bids.map((bid) => (
-            <li key={bid.id} className="border p-2 rounded">
-              GHS {bid.amount}
-            </li>
-          ))}
-        </ul>
-      )}
+      <BidList bids={bids} />
     </main>
   )
 }
