@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
 export function useIsAdmin() {
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -17,7 +17,7 @@ export function useIsAdmin() {
         return
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', auth.user.id)
@@ -35,6 +35,5 @@ export function useIsAdmin() {
     }
   }, [])
 
-  // IMPORTANT: never return before hooks
   return isAdmin
 }
