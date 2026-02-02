@@ -10,6 +10,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [isLocked, setIsLocked] = useState(false)
+
 
   // Load user + profile
   useEffect(() => {
@@ -31,6 +33,7 @@ export default function ProfilePage() {
 
       if (data?.username) {
         setUsername(data.username)
+        setIsLocked(true)
       }
 
       setLoading(false)
@@ -92,6 +95,11 @@ export default function ProfilePage() {
 
   return (
     <main className="p-6 max-w-md mx-auto">
+      {username && (
+        <div className="w-20 h-20 rounded-full bg-black text-white flex items-center justify-center text-3xl font-bold mb-4">
+          {username[0].toUpperCase()}
+        </div>
+      )}
       <h1 className="text-2xl font-bold mb-4">Your Profile</h1>
 
       <label className="block mb-1 font-medium">
@@ -103,9 +111,14 @@ export default function ProfilePage() {
         className="border p-2 w-full mb-2"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        disabled={saving}
+        disabled={saving || isLocked}
         placeholder="e.g. darryl_01"
       />
+      {isLocked && (
+        <p className="text-sm text-gray-600 mb-2">
+          Your username is permanent and cannot be changed once set.
+        </p>
+      )}
 
       {error && (
         <p className="text-sm text-red-600 mb-2">
@@ -121,12 +134,12 @@ export default function ProfilePage() {
 
       <button
         onClick={saveUsername}
-        disabled={saving}
+        disabled={saving || isLocked}
         className={`mt-2 px-4 py-2 text-white ${
           saving ? 'bg-gray-400' : 'bg-black'
         }`}
       >
-        {saving ? 'Saving…' : 'Save Username'}
+        {isLocked ? 'Username Locked' : saving ? 'Saving…' : 'Save Username'}
       </button>
     </main>
   )
