@@ -28,11 +28,14 @@ export async function POST(req: Request) {
     )
   }
 
-  const {
-    customer,
-    metadata,
-    reference: ref,
-  } = json.data
+const {
+  metadata,
+  reference: ref,
+} = json.data
+
+const userId = metadata.user_id
+const tokens = metadata.tokens
+
 
   if (metadata?.type !== 'token_purchase') {
     return NextResponse.json(
@@ -41,8 +44,8 @@ export async function POST(req: Request) {
     )
   }
 
-  const userId = customer.metadata?.user_id
-  const tokens = metadata.tokens
+  // const userId = customer.metadata?.user_id
+  // const tokens = metadata.tokens
 
   if (!userId || !tokens) {
     return NextResponse.json(
@@ -61,6 +64,9 @@ export async function POST(req: Request) {
   if (existing) {
     return NextResponse.json({ success: true })
   }
+
+console.log('VERIFY PAYLOAD:', json.data)
+
 
   // Credit tokens
   await supabase.rpc('increment_tokens', {

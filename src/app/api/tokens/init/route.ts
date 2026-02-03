@@ -38,6 +38,7 @@ export async function POST(req: Request) {
         metadata: {
           type: 'token_purchase',
           tokens: selected.tokens,
+          user_id,
         },
         callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/tokens/success`,
       }),
