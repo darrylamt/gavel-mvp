@@ -2,69 +2,72 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabase = createClient(supabaseUrl, serviceRoleKey)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(req: Request) {
-  const { auction_id, amount, user_id } = await req.json()
+  const { auction_id, user_id, amount } = await req.json()
 
-  if (!auction_id || !amount || !user_id) {
+  if (!auction_id || !user_id || !amount) {
     return NextResponse.json(
       { error: 'Missing required fields' },
       { status: 400 }
     )
   }
 
-  /* ---------------- 1️⃣ Fetch auction ---------------- */
-
-const { data: auction } = await supabase
-  .from('auctions')
-  .select('status, ends_at')
-  .eq('id', auction_id)
-  .single()
-
-if (!auction) {
-  return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
-}
-
-if (
-  auction.status === 'ended' ||
-  new Date(auction.ends_at).getTime() <= Date.now()
-) {
-  return NextResponse.json(
-    { error: 'Auction has ended' },
-    { status: 400 }
-  )
-}
-
-  /* ---------------- 2️⃣ Fetch token balance ---------------- */
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('token_balance')
-    .eq('id', user_id)
+  // 1️⃣ FETCH AUCTION (AUTHORITATIVE CHECK)
+  const { data: auction, error } = await supabase
+    .from('auctions')
+    .select('id, status, ends_at, current_price')
+    .eq('id', auction_id)
     .single()
 
-  if (!profile || profile.token_balance < 1) {
+  if (error || !auction) {
     return NextResponse.json(
-      { error: 'Not enough tokens to place bid' },
+      { error: 'Auction not found' },
+      { status: 404 }
+    )
+  }
+
+  const now = Date.now()
+  const endedByTime =
+    auction.ends_at &&
+    new Date(auction.ends_at).getTime() <= now
+
+  // 2️⃣ HARD STOP: AUCTION ENDED
+  if (auction.status === 'ended' || endedByTime) {
+    // Optional: auto-close if status is stale
+    if (auction.status !== 'ended') {
+      await supabase
+        .from('auctions')
+        .update({ status: 'ended' })
+        .eq('id', auction_id)
+    }
+
+    return NextResponse.json(
+      { error: 'Auction has ended' },
       { status: 403 }
     )
   }
 
-  /* ---------------- 3️⃣ Create bid ---------------- */
+  // 3️⃣ BID MUST BE HIGHER
+  if (Number(amount) <= auction.current_price) {
+    return NextResponse.json(
+      { error: 'Bid must be higher than current price' },
+      { status: 400 }
+    )
+  }
 
-  const { data: bid, error: bidError } = await supabase
+  // 4️⃣ INSERT BID
+  const { error: bidError } = await supabase
     .from('bids')
     .insert({
       auction_id,
-      amount,
       user_id,
+      amount,
     })
-    .select()
-    .single()
 
   if (bidError) {
     return NextResponse.json(
@@ -73,27 +76,7 @@ if (
     )
   }
 
-  /* ---------------- 4️⃣ Deduct token ---------------- */
-
-  const { error: tokenError } = await supabase
-    .from('profiles')
-    .update({
-      token_balance: profile.token_balance - 1,
-    })
-    .eq('id', user_id)
-
-  if (tokenError) {
-    // rollback bid (VERY IMPORTANT)
-    await supabase.from('bids').delete().eq('id', bid.id)
-
-    return NextResponse.json(
-      { error: 'Failed to deduct token' },
-      { status: 500 }
-    )
-  }
-
-  /* ---------------- 5️⃣ Update auction price ---------------- */
-
+  // 5️⃣ UPDATE CURRENT PRICE
   await supabase
     .from('auctions')
     .update({ current_price: amount })
