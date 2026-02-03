@@ -47,24 +47,24 @@ export async function POST(req: Request) {
   }
 
   // 🔴 5️⃣ EXTRACT METADATA (CORRECTLY)
-  const { metadata, reference: ref } = json.data
+const { metadata, reference: ref } = json.data
 
-  if (metadata?.type !== 'token_purchase') {
-    return NextResponse.json(
-      { error: 'Invalid transaction type' },
-      { status: 400 }
-    )
-  }
+if (metadata?.type !== 'token_purchase') {
+  return NextResponse.json(
+    { error: 'Invalid transaction type' },
+    { status: 400 }
+  )
+}
 
-  const userId = metadata.user_id
-  const tokens = metadata.tokens
+const userId = metadata.user_id
+const tokens = metadata.tokens
 
-  if (!userId || !tokens) {
-    return NextResponse.json(
-      { error: 'Invalid metadata' },
-      { status: 400 }
-    )
-  }
+if (!userId || !tokens) {
+  return NextResponse.json(
+    { error: 'Invalid metadata' },
+    { status: 400 }
+  )
+}
 
   // 🔴 6️⃣ PREVENT DOUBLE CREDIT
   const { data: existing } = await supabase

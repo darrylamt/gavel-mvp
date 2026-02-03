@@ -11,6 +11,23 @@ export default function Navbar() {
   const [tokens, setTokens] = useState<number | null>(null)
 
   useEffect(() => {
+  const loadTokens = async () => {
+    const { data: auth } = await supabase.auth.getUser()
+    if (!auth.user) return
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('tokens')
+      .eq('id', auth.user.id)
+      .single()
+
+    setTokens(data?.tokens ?? 0)
+  }
+
+  loadTokens()
+}, [])
+
+  useEffect(() => {
     const load = async () => {
       const { data } = await supabase.auth.getUser()
       if (!data.user) return

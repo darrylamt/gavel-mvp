@@ -19,25 +19,25 @@ export async function POST(req: Request) {
 
   /* ---------------- 1️⃣ Fetch auction ---------------- */
 
-  const { data: auction } = await supabase
-    .from('auctions')
-    .select('id, status, current_price')
-    .eq('id', auction_id)
-    .single()
+const { data: auction } = await supabase
+  .from('auctions')
+  .select('status, ends_at')
+  .eq('id', auction_id)
+  .single()
 
-  if (!auction || auction.status !== 'active') {
-    return NextResponse.json(
-      { error: 'Auction is not active' },
-      { status: 400 }
-    )
-  }
+if (!auction) {
+  return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
+}
 
-  if (amount <= auction.current_price) {
-    return NextResponse.json(
-      { error: 'Bid must be higher than current price' },
-      { status: 400 }
-    )
-  }
+if (
+  auction.status === 'ended' ||
+  new Date(auction.ends_at).getTime() <= Date.now()
+) {
+  return NextResponse.json(
+    { error: 'Auction has ended' },
+    { status: 400 }
+  )
+}
 
   /* ---------------- 2️⃣ Fetch token balance ---------------- */
 

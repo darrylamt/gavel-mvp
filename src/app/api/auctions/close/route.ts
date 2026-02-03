@@ -25,6 +25,15 @@ export async function POST(req: Request) {
     .limit(1)
     .single()
 
+    await supabase
+    .from('auctions')
+    .update({
+      status: 'ended',
+      winning_bid_id: topBid?.id ?? null,
+    })
+    .eq('id', auction_id)
+
+
   // 2. End auction
   const { error } = await supabase
     .from('auctions')
