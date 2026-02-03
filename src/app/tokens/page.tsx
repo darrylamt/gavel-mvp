@@ -3,11 +3,11 @@
 import { supabase } from '@/lib/supabaseClient'
 
 export default function TokensPage() {
-  // 🔹 THIS FUNCTION GOES AT THE TOP OF THE COMPONENT
   const buy = async (pack: 'small' | 'medium' | 'large') => {
     const { data } = await supabase.auth.getUser()
+
     if (!data.user) {
-      alert('Please log in')
+      alert('Please log in to buy tokens')
       return
     }
 
@@ -24,15 +24,14 @@ export default function TokensPage() {
     const json = await res.json()
 
     if (!res.ok) {
-      alert(json.error)
+      alert(json.error || 'Failed to initialize payment')
       return
     }
 
-    // 🔹 Redirect to Paystack
+    // Redirect to Paystack
     window.location.href = json.authorization_url
   }
 
-  // 🔹 JSX STARTS HERE
   return (
     <main className="p-6 max-w-md mx-auto">
       <h1 className="text-2xl font-bold mb-4">
@@ -40,8 +39,9 @@ export default function TokensPage() {
       </h1>
 
       <p className="text-sm text-gray-600 mb-6">
-        Tokens are required to place bids. Each bid consumes
-        one token. Tokens are non-refundable.
+        Tokens are required to place bids. Each bid
+        consumes <strong>1 token</strong>. Tokens are
+        non-refundable.
       </p>
 
       <div className="space-y-4">
