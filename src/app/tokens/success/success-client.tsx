@@ -6,10 +6,16 @@ import { useSearchParams } from 'next/navigation'
 export default function TokenSuccessClient() {
   const searchParams = useSearchParams()
   const reference = searchParams.get('reference')
-  const [status, setStatus] = useState('Verifying payment…')
+
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    'loading'
+  )
 
   useEffect(() => {
-    if (!reference) return
+    if (!reference) {
+      setStatus('error')
+      return
+    }
 
     const verify = async () => {
       const res = await fetch('/api/tokens/verify', {
@@ -19,19 +25,30 @@ export default function TokenSuccessClient() {
       })
 
       if (res.ok) {
-        setStatus('✅ Tokens added to your account')
+        setStatus('success')
       } else {
-        setStatus('❌ Verification failed')
+        setStatus('error')
       }
     }
 
     verify()
   }, [reference])
 
+  if (status === 'loading') {
+    return <p className="p-6">Verifying payment…</p>
+  }
+
+  if (status === 'error') {
+    return (
+      <p className="p-6 text-red-600">
+        Token verification failed. Contact support.
+      </p>
+    )
+  }
+
   return (
-    <main className="p-6 max-w-md mx-auto">
-      <h1 className="text-xl font-bold">Token Purchase</h1>
-      <p className="mt-2">{status}</p>
-    </main>
+    <p className="p-6 text-green-600 font-bold">
+      ✅ Tokens added successfully
+    </p>
   )
 }
