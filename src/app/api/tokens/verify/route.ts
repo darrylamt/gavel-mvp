@@ -1,5 +1,3 @@
-console.log('VERIFY ROUTE HIT')
-
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
@@ -10,8 +8,23 @@ const supabase = createClient(
 )
 
 export async function POST(req: Request) {
-  const { reference } = await req.json()
+  // 🔴 1️⃣ FIRST LINE INSIDE POST
+  console.log('VERIFY ROUTE HIT')
 
+  // 🔴 2️⃣ READ BODY + LOG IT
+  const body = await req.json()
+  console.log('VERIFY BODY:', body)
+
+  const { reference } = body
+
+  if (!reference) {
+    return NextResponse.json(
+      { error: 'Missing reference' },
+      { status: 400 }
+    )
+  }
+
+  // 🔴 3️⃣ PAYSTACK VERIFY CALL
   const res = await fetch(
     `https://api.paystack.co/transaction/verify/${reference}`,
     {
@@ -23,6 +36,9 @@ export async function POST(req: Request) {
 
   const json = await res.json()
 
+  // 🔴 4️⃣ LOG PAYSTACK RESPONSE
+  console.log('PAYSTACK VERIFY RESPONSE:', json)
+
   if (!json.status) {
     return NextResponse.json(
       { error: 'Verification failed' },
@@ -30,14 +46,8 @@ export async function POST(req: Request) {
     )
   }
 
-const {
-  metadata,
-  reference: ref,
-} = json.data
-
-const userId = metadata.user_id
-const tokens = metadata.tokens
-
+  // 🔴 5️⃣ EXTRACT METADATA (CORRECTLY)
+  const { metadata, reference: ref } = json.data
 
   if (metadata?.type !== 'token_purchase') {
     return NextResponse.json(
@@ -46,8 +56,8 @@ const tokens = metadata.tokens
     )
   }
 
-  // const userId = customer.metadata?.user_id
-  // const tokens = metadata.tokens
+  const userId = metadata.user_id
+  const tokens = metadata.tokens
 
   if (!userId || !tokens) {
     return NextResponse.json(
@@ -56,7 +66,7 @@ const tokens = metadata.tokens
     )
   }
 
-  // Prevent double credit
+  // 🔴 6️⃣ PREVENT DOUBLE CREDIT
   const { data: existing } = await supabase
     .from('token_transactions')
     .select('id')
@@ -67,16 +77,13 @@ const tokens = metadata.tokens
     return NextResponse.json({ success: true })
   }
 
-console.log('VERIFY PAYLOAD:', json.data)
-
-
-  // Credit tokens
+  // 🔴 7️⃣ CREDIT TOKENS
   await supabase.rpc('increment_tokens', {
     uid: userId,
     amount: tokens,
   })
 
-  // Log transaction
+  // 🔴 8️⃣ LOG TRANSACTION
   await supabase.from('token_transactions').insert({
     user_id: userId,
     amount: tokens,

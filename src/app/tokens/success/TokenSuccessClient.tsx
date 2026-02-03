@@ -1,11 +1,13 @@
 'use client'
+export const dynamic = 'force-dynamic'
 
 import { useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 export default function TokenSuccessClient() {
   const params = useSearchParams()
-  const reference = params.get('reference')
+  const reference =
+  params.get('reference') || params.get('trxref')
 
       useEffect(() => {
         if (!reference) return
