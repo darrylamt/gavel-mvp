@@ -1,3 +1,5 @@
+console.log('VERIFY ROUTE HIT')
+
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
