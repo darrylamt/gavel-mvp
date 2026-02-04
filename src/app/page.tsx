@@ -10,7 +10,7 @@ const supabase = createClient(
 export default async function HomePage() {
   const { data: auctions } = await supabase
     .from('auctions')
-    .select('id, title, current_price, end_time')
+    .select('id, title, current_price, ends_at')
     .order('created_at', { ascending: false })
     .limit(6)
 
@@ -72,7 +72,7 @@ export default async function HomePage() {
               id={a.id}
               title={a.title}
               currentPrice={a.current_price}
-              endsAt={a.end_time}
+              endsAt={a.ends_at}
             />
           ))}
         </div>
