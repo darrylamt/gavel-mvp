@@ -9,7 +9,7 @@ const supabase = createClient(
 export default async function AuctionsPage() {
   const { data: auctions } = await supabase
     .from('auctions')
-    .select('id, title, current_price, ends_at')
+    .select('id, title, current_price, end_time')
     .order('created_at', { ascending: false })
 
   return (
@@ -39,8 +39,9 @@ export default async function AuctionsPage() {
             id={auction.id}
             title={auction.title}
             currentPrice={auction.current_price}
-            endsAt={auction.ends_at}
+            endsAt={auction.end_time}
           />
+
         ))}
       </div>
     </main>
