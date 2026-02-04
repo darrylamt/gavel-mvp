@@ -13,42 +13,41 @@ export default function AuctionCard({
   currentPrice,
   endsAt,
 }: AuctionCardProps) {
-  const timeLeft =
-    new Date(endsAt).getTime() - Date.now()
-
-  const isEnded = timeLeft <= 0
+  const timeLeftMs = new Date(endsAt).getTime() - Date.now()
+  const isEnded = timeLeftMs <= 0
 
   return (
     <Link
       href={`/auctions/${id}`}
-      className="block border rounded-xl p-4 hover:shadow-md transition bg-white"
+      className="group block rounded-2xl border bg-white overflow-hidden hover:shadow-lg transition"
     >
-      {/* Image placeholder (for now) */}
-      <div className="h-40 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-gray-400">
-        Image coming soon
+      {/* IMAGE */}
+      <div className="h-48 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+        Product Image
       </div>
 
-      <h3 className="font-semibold text-lg mb-1">
-        {title}
-      </h3>
+      {/* CONTENT */}
+      <div className="p-4">
+        <h3 className="font-semibold text-lg leading-tight mb-2 group-hover:underline">
+          {title}
+        </h3>
 
-      <p className="text-sm text-gray-500 mb-2">
-        Current bid
-      </p>
+        <p className="text-sm text-gray-500 mb-1">Current bid</p>
 
-      <p className="text-xl font-bold">
-        GHS {currentPrice.toLocaleString()}
-      </p>
+        <p className="text-2xl font-bold mb-3">
+          GHS {currentPrice.toLocaleString()}
+        </p>
 
-      <span
-        className={`inline-block mt-3 px-3 py-1 text-xs font-semibold rounded-full ${
-          isEnded
-            ? 'bg-red-100 text-red-700'
-            : 'bg-green-100 text-green-700'
-        }`}
-      >
-        {isEnded ? 'Ended' : 'Live'}
-      </span>
+        <span
+          className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
+            isEnded
+              ? 'bg-red-100 text-red-700'
+              : 'bg-green-100 text-green-700'
+          }`}
+        >
+          {isEnded ? 'Ended' : 'Live'}
+        </span>
+      </div>
     </Link>
   )
 }

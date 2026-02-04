@@ -31,61 +31,32 @@ export default function Navbar() {
 
   return (
     <nav className="w-full border-b bg-white">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* LEFT — BRAND */}
-        <Link
-          href="/"
-          className="text-xl font-extrabold tracking-tight"
-        >
-          Gavel
-        </Link>
+  <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    {/* LEFT */}
+    <div className="flex items-center gap-6">
+      <Link href="/" className="font-extrabold text-xl">
+        gavel
+      </Link>
 
-        {/* CENTER — NAV */}
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-          <Link
-            href="/"
-            className="hover:text-gray-600"
-          >
-            Home
-          </Link>
+      <Link href="/auctions" className="text-sm font-medium text-gray-700">
+        Auctions
+      </Link>
+    </div>
 
-          <Link
-            href="/auctions"
-            className="hover:text-gray-600"
-          >
-            Auctions
-          </Link>
+    {/* RIGHT */}
+    <div className="flex items-center gap-6 text-sm font-medium">
+      <Link href="/tokens">Buy Tokens</Link>
+      <Link href="/profile">Profile</Link>
 
-          {isAdmin && (
-            <Link
-              href="/admin/new"
-              className="hover:text-gray-600"
-            >
-              Create Auction
-            </Link>
-          )}
-        </div>
-
-        {/* RIGHT — USER */}
-        <div className="flex items-center gap-4">
-          {/* TOKEN PILL */}
-          <Link
-            href="/tokens"
-            className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full text-sm font-semibold hover:bg-gray-200 transition"
-          >
-            🪙 {tokens ?? 0}
-          </Link>
-
-          {/* AVATAR */}
-          <Link
-            href="/profile"
-            className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold"
-            title={username ?? ''}
-          >
-            {username?.charAt(0).toUpperCase()}
-          </Link>
-        </div>
-      </div>
-    </nav>
+      {/* Admin links stay conditional */}
+      {isAdmin && (
+        <>
+          <Link href="/admin">Admin</Link>
+          <Link href="/admin/new">Create Auction</Link>
+        </>
+      )}
+    </div>
+  </div>
+</nav>
   )
 }

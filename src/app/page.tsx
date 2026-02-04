@@ -45,38 +45,34 @@ export default async function HomePage() {
       </section>
 
       {/* FEATURED AUCTIONS */}
-      <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">
-            Featured Auctions
-          </h2>
+<section className="mb-20">
+  <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
+    Buy smarter.
+    <br />
+    Bid faster.
+  </h1>
 
-          <Link
-            href="/auctions"
-            className="text-sm font-semibold underline"
-          >
-            View all
-          </Link>
-        </div>
+  <p className="text-lg text-gray-600 max-w-xl mb-8">
+    A premium auction marketplace where every bid is transparent,
+    secure, and powered by tokens.
+  </p>
 
-        {(!auctions || auctions.length === 0) && (
-          <p className="text-gray-500">
-            No auctions live yet.
-          </p>
-        )}
+  <div className="flex gap-4">
+    <Link
+      href="/auctions"
+      className="bg-black text-white px-8 py-4 rounded-xl font-semibold text-lg"
+    >
+      Browse Auctions
+    </Link>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {auctions?.map((a) => (
-            <AuctionCard
-              key={a.id}
-              id={a.id}
-              title={a.title}
-              currentPrice={a.current_price}
-              endsAt={a.ends_at}
-            />
-          ))}
-        </div>
-      </section>
+    <Link
+      href="/tokens"
+      className="border border-black px-8 py-4 rounded-xl font-semibold text-lg"
+    >
+      Buy Tokens
+    </Link>
+  </div>
+</section>
     </main>
   )
 }
