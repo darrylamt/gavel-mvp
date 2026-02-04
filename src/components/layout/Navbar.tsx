@@ -1,3 +1,5 @@
+// src/components/Navbar.tsx
+
 'use client'
 
 import Link from 'next/link'
@@ -7,9 +9,8 @@ import { useIsAdmin } from '@/hooks/useIsAdmin'
 
 export default function Navbar() {
   const isAdmin = useIsAdmin()
-
   const [username, setUsername] = useState<string | null>(null)
-  const [tokens, setTokens] = useState<number | null>(null)
+  const [tokens, setTokens] = useState<number>(0)
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -18,12 +19,14 @@ export default function Navbar() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('username, token_balance')
+        .select('username, tokens')
         .eq('id', auth.user.id)
         .single()
 
-      setUsername(data?.username ?? 'User')
-      setTokens(data?.token_balance ?? 0)
+      if (data) {
+        setUsername(data.username)
+        setTokens(data.tokens ?? 0)
+      }
     }
 
     loadProfile()
@@ -31,32 +34,62 @@ export default function Navbar() {
 
   return (
     <nav className="w-full border-b bg-white">
-  <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-    {/* LEFT */}
-    <div className="flex items-center gap-6">
-      <Link href="/" className="font-extrabold text-xl">
-        gavel
-      </Link>
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        {/* LEFT */}
+        <div className="flex items-center gap-6">
+          <Link
+            href="/"
+            className="text-xl font-extrabold tracking-tight"
+          >
+            gavel
+          </Link>
 
-      <Link href="/auctions" className="text-sm font-medium text-gray-700">
-        Auctions
-      </Link>
-    </div>
+          <Link href="/auctions" className="font-medium">
+            Auctions
+          </Link>
 
-    {/* RIGHT */}
-    <div className="flex items-center gap-6 text-sm font-medium">
-      <Link href="/tokens">Buy Tokens</Link>
-      <Link href="/profile">Profile</Link>
+          <Link href="/tokens" className="font-medium">
+            Buy Tokens
+          </Link>
 
-      {/* Admin links stay conditional */}
-      {isAdmin && (
-        <>
-          <Link href="/admin">Admin</Link>
-          <Link href="/admin/new">Create Auction</Link>
-        </>
-      )}
-    </div>
-  </div>
-</nav>
+          {isAdmin && (
+            <>
+              <Link href="/admin" className="font-medium">
+                Admin
+              </Link>
+              <Link href="/admin/new" className="font-medium">
+                Create Auction
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* RIGHT */}
+        <div className="flex items-center gap-4">
+          {username && (
+            <div className="flex items-center gap-3">
+              {/* Avatar */}
+              <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold">
+                {username[0]?.toUpperCase()}
+              </div>
+
+              <div className="text-sm">
+                <p className="font-semibold">@{username}</p>
+                <p className="text-gray-500 text-xs">
+                  🪙 {tokens} tokens
+                </p>
+              </div>
+            </div>
+          )}
+
+          <Link
+            href="/profile"
+            className="text-sm font-medium underline"
+          >
+            Profile
+          </Link>
+        </div>
+      </div>
+    </nav>
   )
 }
