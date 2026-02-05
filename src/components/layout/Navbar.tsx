@@ -1,5 +1,3 @@
-// src/components/Navbar.tsx
-
 'use client'
 
 import Link from 'next/link'
@@ -9,6 +7,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin'
 
 export default function Navbar() {
   const isAdmin = useIsAdmin()
+
   const [username, setUsername] = useState<string | null>(null)
   const [tokens, setTokens] = useState<number>(0)
 
@@ -34,60 +33,60 @@ export default function Navbar() {
 
   return (
     <nav className="w-full border-b bg-white">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* LEFT */}
+      <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+        {/* Left */}
         <div className="flex items-center gap-6">
-          <Link
-            href="/"
-            className="text-xl font-extrabold tracking-tight"
-          >
+          <Link href="/" className="text-xl font-bold">
             gavel
           </Link>
 
-          <Link href="/auctions" className="font-medium">
+          <Link href="/auctions" className="text-sm text-gray-600 hover:text-black">
             Auctions
-          </Link>
-
-          <Link href="/tokens" className="font-medium">
-            Buy Tokens
           </Link>
 
           {isAdmin && (
             <>
-              <Link href="/admin" className="font-medium">
+              <Link href="/admin" className="text-sm text-gray-600 hover:text-black">
                 Admin
               </Link>
-              <Link href="/admin/new" className="font-medium">
+              <Link href="/admin/new" className="text-sm text-gray-600 hover:text-black">
                 Create Auction
               </Link>
             </>
           )}
         </div>
 
-        {/* RIGHT */}
+        {/* Right */}
         <div className="flex items-center gap-4">
-          {username && (
-            <div className="flex items-center gap-3">
-              {/* Avatar */}
-              <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold">
-                {username[0]?.toUpperCase()}
-              </div>
-
-              <div className="text-sm">
-                <p className="font-semibold">@{username}</p>
-                <p className="text-gray-500 text-xs">
-                  🪙 {tokens} tokens
-                </p>
-              </div>
-            </div>
-          )}
+          {/* Token badge */}
+          <div className="flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 border border-amber-200">
+            <span className="text-amber-500 text-sm">🪙</span>
+            <span className="text-sm font-semibold text-amber-700">
+              {tokens}
+            </span>
+          </div>
 
           <Link
-            href="/profile"
-            className="text-sm font-medium underline"
+            href="/tokens"
+            className="text-sm font-medium text-amber-700 hover:underline"
           >
-            Profile
+            Buy Tokens
           </Link>
+
+          {/* User */}
+          {username && (
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 rounded-full border px-3 py-1 hover:bg-gray-50"
+            >
+              <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">
+                {username.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium">
+                @{username}
+              </span>
+            </Link>
+          )}
         </div>
       </div>
     </nav>
