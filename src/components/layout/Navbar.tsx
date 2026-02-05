@@ -16,11 +16,11 @@ export default function Navbar() {
 
     const { data } = await supabase
       .from('profiles')
-      .select('tokens')
+      .select('token_balance')
       .eq('id', auth.user.id)
       .single()
 
-    setTokens(data?.tokens ?? 0)
+    setTokens(data?.token_balance ?? 0)
   }
 
   useEffect(() => {
