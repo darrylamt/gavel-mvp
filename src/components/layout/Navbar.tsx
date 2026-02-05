@@ -56,14 +56,15 @@ export default function Navbar() {
             </>
           )}
 
-          {!profile && !loading && (
-            <Link
-              href="/login"
-              className="text-sm font-semibold text-white bg-black px-4 py-2 rounded"
-            >
-              Sign in
-            </Link>
-          )}
+          {!loading && !profile && (
+  <Link
+    href="/login"
+    className="text-sm font-semibold text-white bg-black px-4 py-2 rounded"
+  >
+    Sign in
+  </Link>
+)}
+
         </div>
       </div>
     </nav>

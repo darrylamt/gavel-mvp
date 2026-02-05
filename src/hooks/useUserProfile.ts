@@ -15,14 +15,16 @@ export function useUserProfile() {
 
   const loadProfile = async () => {
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
+      data: { session },
+    } = await supabase.auth.getSession()
 
-    if (!user) {
+    if (!session?.user) {
       setProfile(null)
       setLoading(false)
       return
     }
+
+    const user = session.user
 
     const { data, error } = await supabase
       .from('profiles')
@@ -38,21 +40,17 @@ export function useUserProfile() {
   }
 
   useEffect(() => {
-    // Initial load
+    // Initial load (IMPORTANT)
     loadProfile()
 
-    // 🔑 CRITICAL: react to login/logout
+    // React to auth changes (login/logout)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        loadProfile()
-      } else {
-        setProfile(null)
-      }
+    } = supabase.auth.onAuthStateChange(() => {
+      loadProfile()
     })
 
-    // Refresh when tab regains focus
+    // Refresh on tab focus (after redirects like Paystack)
     const onFocus = () => loadProfile()
     window.addEventListener('focus', onFocus)
 
