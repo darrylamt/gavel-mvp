@@ -14,20 +14,23 @@ export function useUserProfile() {
   const [loading, setLoading] = useState(true)
 
   const loadProfile = async () => {
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
       setProfile(null)
       setLoading(false)
       return
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, username, tokens')
-      .eq('id', auth.user.id)
+      .eq('id', user.id)
       .single()
 
-    if (data) {
+    if (!error && data) {
       setProfile(data)
     }
 
@@ -35,20 +38,27 @@ export function useUserProfile() {
   }
 
   useEffect(() => {
+    // Initial load
     loadProfile()
 
-    // 🔁 refresh on tab focus (THIS fixes token updates)
+    // 🔑 CRITICAL: react to login/logout
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadProfile()
+      } else {
+        setProfile(null)
+      }
+    })
+
+    // Refresh when tab regains focus
     const onFocus = () => loadProfile()
     window.addEventListener('focus', onFocus)
 
-    // 🔐 refresh on auth changes
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      loadProfile()
-    })
-
     return () => {
+      subscription.unsubscribe()
       window.removeEventListener('focus', onFocus)
-      sub.subscription.unsubscribe()
     }
   }, [])
 
