@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <h3 className="text-lg font-bold mb-2">gavel</h3>
+            <h3 className="text-lg font-bold mb-2">Gavel</h3>
             <p className="text-sm text-gray-600">
               A modern auction platform where bids are powered by tokens.
             </p>

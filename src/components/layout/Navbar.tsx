@@ -39,7 +39,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white border-b">
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
         <Link href="/" className="text-2xl font-extrabold">
-          gavel
+          Gavel
         </Link>
 
         <div className="flex items-center gap-4">
