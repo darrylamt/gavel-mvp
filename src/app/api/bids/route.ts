@@ -7,6 +7,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+const BID_TOKEN_COST = 1
+
 export async function POST(req: Request) {
   const { auction_id, user_id, amount } = await req.json()
 
@@ -17,14 +19,15 @@ export async function POST(req: Request) {
     )
   }
 
-  // 1️⃣ FETCH AUCTION (AUTHORITATIVE CHECK)
-  const { data: auction, error } = await supabase
+  /* ---------------- AUCTION CHECK ---------------- */
+
+  const { data: auction, error: auctionError } = await supabase
     .from('auctions')
     .select('id, status, ends_at, current_price')
     .eq('id', auction_id)
     .single()
 
-  if (error || !auction) {
+  if (auctionError || !auction) {
     return NextResponse.json(
       { error: 'Auction not found' },
       { status: 404 }
@@ -36,9 +39,7 @@ export async function POST(req: Request) {
     auction.ends_at &&
     new Date(auction.ends_at).getTime() <= now
 
-  // 2️⃣ HARD STOP: AUCTION ENDED
   if (auction.status === 'ended' || endedByTime) {
-    // Optional: auto-close if status is stale
     if (auction.status !== 'ended') {
       await supabase
         .from('auctions')
@@ -52,7 +53,6 @@ export async function POST(req: Request) {
     )
   }
 
-  // 3️⃣ BID MUST BE HIGHER
   if (Number(amount) <= auction.current_price) {
     return NextResponse.json(
       { error: 'Bid must be higher than current price' },
@@ -60,7 +60,30 @@ export async function POST(req: Request) {
     )
   }
 
-  // 4️⃣ INSERT BID
+  /* ---------------- TOKEN CHECK ---------------- */
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('token_balance')
+    .eq('id', user_id)
+    .single()
+
+  if (profileError || !profile) {
+    return NextResponse.json(
+      { error: 'Profile not found' },
+      { status: 404 }
+    )
+  }
+
+  if (profile.token_balance < BID_TOKEN_COST) {
+    return NextResponse.json(
+      { error: 'Insufficient tokens to place a bid' },
+      { status: 402 }
+    )
+  }
+
+  /* ---------------- INSERT BID ---------------- */
+
   const { error: bidError } = await supabase
     .from('bids')
     .insert({
@@ -76,11 +99,30 @@ export async function POST(req: Request) {
     )
   }
 
-  // 5️⃣ UPDATE CURRENT PRICE
+  /* ---------------- UPDATE AUCTION ---------------- */
+
   await supabase
     .from('auctions')
     .update({ current_price: amount })
     .eq('id', auction_id)
+
+  /* ---------------- DEDUCT TOKEN ---------------- */
+
+  await supabase
+    .from('profiles')
+    .update({
+      token_balance: profile.token_balance - BID_TOKEN_COST,
+    })
+    .eq('id', user_id)
+
+  /* ---------------- LOG TRANSACTION ---------------- */
+
+  await supabase.from('token_transactions').insert({
+    user_id,
+    amount: -BID_TOKEN_COST,
+    type: 'bid',
+    reference: `bid:${auction_id}`,
+  })
 
   return NextResponse.json({ success: true })
 }

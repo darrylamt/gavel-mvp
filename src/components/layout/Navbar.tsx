@@ -23,17 +23,20 @@ export default function Navbar() {
     setTokens(data?.token_balance ?? 0)
   }
 
-  useEffect(() => {
-    loadTokens()
+    useEffect(() => {
+      loadTokens()
 
-    // 🔑 refresh when user returns to tab (Paystack redirect fix)
-    const onFocus = () => loadTokens()
-    window.addEventListener('focus', onFocus)
+      const onFocus = () => loadTokens()
+      const onTokenUpdate = () => loadTokens()
 
-    return () => {
-      window.removeEventListener('focus', onFocus)
-    }
-  }, [])
+      window.addEventListener('focus', onFocus)
+      window.addEventListener('token-update', onTokenUpdate)
+
+      return () => {
+        window.removeEventListener('focus', onFocus)
+        window.removeEventListener('token-update', onTokenUpdate)
+      }
+    }, [])
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b">
