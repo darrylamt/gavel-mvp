@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import TokenFAQ from '@/components/tokens/TokenFAQ'
 
 const PACKS = [
   {
@@ -121,6 +122,7 @@ export default function BuyTokensPage() {
           </div>
         ))}
       </div>
+      <TokenFAQ />
 
       {/* FOOTER INFO */}
       <div className="mt-12 text-center text-sm text-gray-500">
