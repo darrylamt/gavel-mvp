@@ -3,21 +3,28 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
+import ProfileHeader from '@/components/profile/ProfileHeader'
+import UsernameSection from '@/components/profile/UsernameSection'
+import TokenBalanceCard from '@/components/profile/TokenBalanceCard'
+import BidHistory from '@/components/profile/BidHistory'
+
 export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null)
-  const [username, setUsername] = useState('')
+  const [username, setUsername] = useState<string | null>(null)
+  const [usernameInput, setUsernameInput] = useState('')
+  const [tokens, setTokens] = useState(0)
+  const [bids, setBids] = useState<any[]>([])
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [isLocked, setIsLocked] = useState(false)
 
+  /* ---------------- load profile ---------------- */
 
-  // Load user + profile
   useEffect(() => {
     const loadProfile = async () => {
       const { data: auth } = await supabase.auth.getUser()
-
       if (!auth.user) {
         setLoading(false)
         return
@@ -25,27 +32,46 @@ export default function ProfilePage() {
 
       setUserId(auth.user.id)
 
-      const { data } = await supabase
+      // profile
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('username')
+        .select('username, token_balance')
         .eq('id', auth.user.id)
         .single()
 
-      if (data?.username) {
-        setUsername(data.username)
-        setIsLocked(true)
-      }
+      setUsername(profile?.username ?? null)
+      setUsernameInput(profile?.username ?? '')
+      setTokens(profile?.token_balance ?? 0)
 
+      // bid history
+      const { data: bidsData } = await supabase
+        .from('bids')
+        .select(
+          `
+          id,
+          amount,
+          created_at,
+          auctions (
+            title
+          )
+        `
+        )
+        .eq('user_id', auth.user.id)
+        .order('created_at', { ascending: false })
+
+      setBids(bidsData ?? [])
       setLoading(false)
     }
 
     loadProfile()
   }, [])
 
+  /* ---------------- save username ---------------- */
+
   const saveUsername = async () => {
     if (!userId) return
 
-    const cleaned = username.trim().toLowerCase()
+    const cleaned = usernameInput.trim().toLowerCase()
 
     if (!/^[a-z0-9_]{3,20}$/.test(cleaned)) {
       setError(
@@ -73,13 +99,14 @@ export default function ProfilePage() {
         return
       }
 
+      setUsername(cleaned)
       setSuccess(true)
     } finally {
       setSaving(false)
     }
   }
 
-  /* ---------- UI ---------- */
+  /* ---------------- UI ---------------- */
 
   if (loading) {
     return <p className="p-6">Loading profile…</p>
@@ -94,53 +121,22 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="p-6 max-w-md mx-auto">
-      {username && (
-        <div className="w-20 h-20 rounded-full bg-black text-white flex items-center justify-center text-3xl font-bold mb-4">
-          {username[0].toUpperCase()}
-        </div>
-      )}
-      <h1 className="text-2xl font-bold mb-4">Your Profile</h1>
+    <main className="p-6 max-w-xl mx-auto">
+      <ProfileHeader username={username} />
 
-      <label className="block mb-1 font-medium">
-        Username
-      </label>
+      <TokenBalanceCard tokens={tokens} />
 
-      <input
-        type="text"
-        className="border p-2 w-full mb-2"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        disabled={saving || isLocked}
-        placeholder="e.g. darryl_01"
+      <UsernameSection
+        username={username}
+        value={usernameInput}
+        setValue={setUsernameInput}
+        onSave={saveUsername}
+        saving={saving}
+        error={error}
+        success={success}
       />
-      {isLocked && (
-        <p className="text-sm text-gray-600 mb-2">
-          Your username is permanent and cannot be changed once set.
-        </p>
-      )}
 
-      {error && (
-        <p className="text-sm text-red-600 mb-2">
-          {error}
-        </p>
-      )}
-
-      {success && (
-        <p className="text-sm text-green-600 mb-2">
-          Username saved successfully
-        </p>
-      )}
-
-      <button
-        onClick={saveUsername}
-        disabled={saving || isLocked}
-        className={`mt-2 px-4 py-2 text-white ${
-          saving ? 'bg-gray-400' : 'bg-black'
-        }`}
-      >
-        {isLocked ? 'Username Locked' : saving ? 'Saving…' : 'Save Username'}
-      </button>
+      <BidHistory bids={bids} />
     </main>
   )
 }
