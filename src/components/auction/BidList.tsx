@@ -12,28 +12,30 @@ type Props = {
   currentUserId: string | null
 }
 
-export default function BidList({
-  bids,
-  currentUserId,
-}: Props) {
+function anonId(userId: string) {
+  return (
+    'Anonymous #' + 
+    userId.replace(/-/g, '').slice(0, 6)
+  )
+}
+
+export default function BidList({ bids, currentUserId }: Props) {
   return (
     <section className="mt-8">
       <h2 className="font-semibold mb-3">Bids</h2>
 
       {bids.length === 0 ? (
-        <p className="text-sm text-gray-500">
-          No bids yet
-        </p>
+        <p className="text-sm text-gray-500">No bids yet</p>
       ) : (
         <ul className="space-y-3">
           {bids.map((bid, index) => {
             const isTop = index === 0
-            const isYou =
-              currentUserId &&
-              bid.user_id === currentUserId
+            const isYou = bid.user_id === currentUserId
 
-            const username =
-              bid.profiles?.username ?? 'Anonymous'
+            const displayName = isYou
+              ? 'You'
+              : bid.profiles?.username ??
+                anonId(bid.user_id)
 
             return (
               <li
@@ -47,14 +49,12 @@ export default function BidList({
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
                   <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold">
-                    {isYou
-                      ? 'Y'
-                      : username[0].toUpperCase()}
+                    {displayName[0]}
                   </div>
 
                   <div>
                     <p className="text-sm font-medium">
-                      {isYou ? 'You' : username}
+                      {displayName}
                     </p>
                     <p className="text-xs text-gray-500">
                       Bid placed
