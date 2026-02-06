@@ -184,15 +184,6 @@ export default function AuctionDetailPage() {
 
       <hr className="my-4" />
 
-      <div
-        className={`inline-block px-3 py-1 rounded text-sm font-semibold ${
-          hasEnded
-            ? 'bg-red-100 text-red-700'
-            : 'bg-green-100 text-green-700'
-          }`}
-        >
-      </div>
-
 
       <BidForm
         hasEnded={hasEnded}
