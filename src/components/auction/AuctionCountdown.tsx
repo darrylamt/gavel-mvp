@@ -3,16 +3,19 @@ type Props = {
   timeLeft: string
 }
 
-export default function AuctionCountdown({ endsAt, timeLeft }: Props) {
+export default function AuctionCountdown({
+  endsAt,
+  timeLeft,
+}: Props) {
   return (
-    <>
+    <div className="mt-3 flex items-center justify-between">
       <p className="text-sm text-gray-500">
-        Ends at: {new Date(endsAt).toLocaleString()}
+        Ends {new Date(endsAt).toLocaleString()}
       </p>
 
-      <p className="mt-1 font-semibold text-blue-600">
+      <div className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-semibold">
         ⏳ {timeLeft}
-      </p>
-    </>
+      </div>
+    </div>
   )
 }

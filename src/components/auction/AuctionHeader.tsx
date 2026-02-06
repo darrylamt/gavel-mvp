@@ -3,15 +3,22 @@ type Props = {
   currentPrice: number
 }
 
-export default function AuctionHeader({ title, currentPrice }: Props) {
+export default function AuctionHeader({
+  title,
+  currentPrice,
+}: Props) {
   return (
-    <>
-      <h1 className="text-2xl font-bold">{title}</h1>
+    <div className="mb-4">
+      <h1 className="text-3xl font-extrabold mb-1">
+        {title}
+      </h1>
 
-      <p className="mt-2">
-        Current price:{' '}
-        <strong>GHS {currentPrice}</strong>
+      <p className="text-lg text-gray-700">
+        Current price{' '}
+        <span className="font-bold text-black">
+          GHS {currentPrice}
+        </span>
       </p>
-    </>
+    </div>
   )
 }

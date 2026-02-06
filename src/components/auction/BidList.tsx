@@ -17,13 +17,15 @@ export default function BidList({
   currentUserId,
 }: Props) {
   return (
-    <>
-      <h2 className="mt-6 font-bold">Bids</h2>
+    <section className="mt-8">
+      <h2 className="font-semibold mb-3">Bids</h2>
 
       {bids.length === 0 ? (
-        <p className="text-sm text-gray-500">No bids yet</p>
+        <p className="text-sm text-gray-500">
+          No bids yet
+        </p>
       ) : (
-        <ul className="mt-2 space-y-2">
+        <ul className="space-y-3">
           {bids.map((bid, index) => {
             const isTop = index === 0
             const isYou =
@@ -36,10 +38,10 @@ export default function BidList({
             return (
               <li
                 key={bid.id}
-                className={`border p-3 rounded flex justify-between items-center ${
+                className={`flex items-center justify-between p-3 rounded-lg border ${
                   isTop
                     ? 'bg-yellow-50 border-yellow-400'
-                    : ''
+                    : 'bg-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -51,23 +53,26 @@ export default function BidList({
                   </div>
 
                   <div>
-                  <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold">
-                    {isYou
-                      ? 'Y'
-                      : username[0].toUpperCase()}
-                  </div>
-                    <div className="font-semibold">
-                      GHS {bid.amount}
-                    </div>
+                    <p className="text-sm font-medium">
+                      {isYou ? 'You' : username}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Bid placed
+                    </p>
                   </div>
                 </div>
 
-                {isTop && <span>🏆</span>}
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">
+                    GHS {bid.amount}
+                  </span>
+                  {isTop && <span>🏆</span>}
+                </div>
               </li>
             )
           })}
         </ul>
       )}
-    </>
+    </section>
   )
 }

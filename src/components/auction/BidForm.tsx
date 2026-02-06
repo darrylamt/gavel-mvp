@@ -8,7 +8,6 @@ type Props = {
   onSubmit: () => void
 }
 
-
 export default function BidForm({
   hasEnded,
   bidAmount,
@@ -22,18 +21,22 @@ export default function BidForm({
 
   if (!isLoggedIn) {
     return (
-      <p className="mt-4 text-sm text-gray-600">
+      <div className="mt-6 p-4 border rounded-lg text-sm text-gray-600 bg-gray-50">
         Please sign in to place a bid.
-      </p>
+      </div>
     )
   }
 
   return (
-    <div className="mt-4">
+    <div className="mt-6 p-4 border rounded-xl bg-white shadow-sm">
+      <label className="block text-sm font-medium mb-1">
+        Your bid amount
+      </label>
+
       <input
         type="number"
-        placeholder="Your bid amount"
-        className="border p-2 w-full mb-2"
+        placeholder="Enter amount in GHS"
+        className="border rounded-lg p-3 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-black"
         value={bidAmount}
         disabled={isPlacingBid}
         onChange={(e) => onBidAmountChange(e.target.value)}
@@ -48,12 +51,18 @@ export default function BidForm({
       <button
         onClick={onSubmit}
         disabled={isPlacingBid}
-        className={`px-4 py-2 w-full text-white ${
-          isPlacingBid ? 'bg-gray-400' : 'bg-black'
+        className={`mt-2 w-full rounded-lg py-3 font-semibold text-white transition ${
+          isPlacingBid
+            ? 'bg-gray-400'
+            : 'bg-black hover:bg-gray-900'
         }`}
       >
         {isPlacingBid ? 'Placing bid…' : 'Place Bid'}
       </button>
+
+      <p className="mt-2 text-xs text-gray-500 text-center">
+        Each bid deducts tokens from your balance
+      </p>
     </div>
   )
 }

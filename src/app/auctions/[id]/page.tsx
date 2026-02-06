@@ -191,7 +191,6 @@ export default function AuctionDetailPage() {
             : 'bg-green-100 text-green-700'
           }`}
         >
-        {hasEnded ? 'Auction Ended' : 'Auction Active'}
       </div>
 
 
