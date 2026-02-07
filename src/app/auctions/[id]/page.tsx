@@ -31,7 +31,7 @@ export default function AuctionDetailPage() {
     })
   }, [])
 
-  /* ---------------- LOAD AUCTION + BIDS ---------------- */
+  /* ---------------- LOAD DATA ---------------- */
 
   useEffect(() => {
     if (!id) return
@@ -49,9 +49,7 @@ export default function AuctionDetailPage() {
           id,
           amount,
           user_id,
-          profiles (
-            username
-          )
+          profiles ( username )
         `)
         .eq('auction_id', id)
         .order('amount', { ascending: false })
@@ -97,15 +95,11 @@ export default function AuctionDetailPage() {
     return () => clearInterval(i)
   }, [auction?.ends_at])
 
-  /* ---------------- GUARDS ---------------- */
+  /* ---------------- LOGIC ---------------- */
 
   if (loading) return <p className="p-6">Loading auction…</p>
   if (!auction)
-    return (
-      <p className="p-6 text-red-500">
-        Auction not found
-      </p>
-    )
+    return <p className="p-6 text-red-500">Auction not found</p>
 
   const hasEnded = auction.status === 'ended'
 
@@ -113,8 +107,6 @@ export default function AuctionDetailPage() {
     hasEnded &&
     bids.length > 0 &&
     bids[0]?.user_id === userId
-
-  /* ---------------- BID ---------------- */
 
   const placeBid = async () => {
     if (!auction || !userId) {
@@ -137,8 +129,8 @@ export default function AuctionDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           auction_id: auction.id,
-          user_id: userId,
           amount,
+          user_id: userId,
         }),
       })
 
@@ -154,7 +146,7 @@ export default function AuctionDetailPage() {
     }
   }
 
-  /* ---------------- PAY WINNER ---------------- */
+  /* ---------------- PAYSTACK ---------------- */
 
   const payNow = async () => {
     if (!auction) return
