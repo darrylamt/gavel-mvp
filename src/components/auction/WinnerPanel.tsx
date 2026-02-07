@@ -1,10 +1,3 @@
-type Props = {
-  hasEnded: boolean
-  isWinner: boolean
-  paid: boolean
-  onPay: () => void
-}
-
 export default function WinnerPanel({
   hasEnded,
   isWinner,
@@ -13,28 +6,24 @@ export default function WinnerPanel({
 }: Props) {
   if (!hasEnded || !isWinner) return null
 
-  if (paid) {
-    return (
-      <div className="mt-4 p-4 border rounded bg-green-50">
-        <p className="font-bold text-green-700">
-          ✅ Payment received
-        </p>
-      </div>
-    )
-  }
-
   return (
-    <div className="mt-4 p-4 border rounded bg-green-50">
-      <p className="font-bold text-green-700">
+    <div className="mt-6 p-5 rounded-xl border bg-gradient-to-br from-green-50 to-white">
+      <p className="font-semibold text-green-700 text-lg">
         🎉 You won this auction
       </p>
 
-      <button
-        onClick={onPay}
-        className="mt-3 bg-black text-white px-4 py-2"
-      >
-        Pay Now
-      </button>
+      {paid ? (
+        <p className="mt-2 text-sm text-green-600">
+          ✅ Payment received. Seller will contact you.
+        </p>
+      ) : (
+        <button
+          onClick={onPay}
+          className="mt-4 w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-900 transition"
+        >
+          Pay Now
+        </button>
+      )}
     </div>
   )
 }

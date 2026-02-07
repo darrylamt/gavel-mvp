@@ -23,13 +23,15 @@ export default function AuctionDetailPage() {
   const [bidError, setBidError] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState('Calculating…')
 
-  /* ---------------- hooks FIRST ---------------- */
+  /* ---------------- AUTH ---------------- */
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
     })
   }, [])
+
+  /* ---------------- LOAD AUCTION + BIDS ---------------- */
 
   useEffect(() => {
     if (!id) return
@@ -41,7 +43,7 @@ export default function AuctionDetailPage() {
         .eq('id', id)
         .single()
 
-      const { data: bidsData, error } = await supabase
+      const { data: bidsData } = await supabase
         .from('bids')
         .select(`
           id,
@@ -61,6 +63,8 @@ export default function AuctionDetailPage() {
 
     load()
   }, [id])
+
+  /* ---------------- COUNTDOWN ---------------- */
 
   useEffect(() => {
     if (!auction?.ends_at) return
@@ -93,7 +97,7 @@ export default function AuctionDetailPage() {
     return () => clearInterval(i)
   }, [auction?.ends_at])
 
-  /* ---------------- logic ---------------- */
+  /* ---------------- GUARDS ---------------- */
 
   if (loading) return <p className="p-6">Loading auction…</p>
   if (!auction)
@@ -109,6 +113,8 @@ export default function AuctionDetailPage() {
     hasEnded &&
     bids.length > 0 &&
     bids[0]?.user_id === userId
+
+  /* ---------------- BID ---------------- */
 
   const placeBid = async () => {
     if (!auction || !userId) {
@@ -131,8 +137,8 @@ export default function AuctionDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           auction_id: auction.id,
-          amount,
           user_id: userId,
+          amount,
         }),
       })
 
@@ -148,24 +154,35 @@ export default function AuctionDetailPage() {
     }
   }
 
+  /* ---------------- PAY WINNER ---------------- */
+
   const payNow = async () => {
-    const { data } = await supabase.auth.getUser()
-    if (!data.user) return
+    if (!auction) return
+
+    const { data: auth } = await supabase.auth.getUser()
+    if (!auth.user || !auth.user.email) {
+      alert('You must be logged in')
+      return
+    }
 
     const res = await fetch('/api/paystack/init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         auction_id: auction.id,
-        user_id: data.user.id,
-        email: data.user.email,
+        user_id: auth.user.id,
+        email: auth.user.email,
       }),
     })
 
-    const json = await res.json()
-    if (res.ok) {
-      window.location.href = json.authorization_url
+    const data = await res.json()
+
+    if (!res.ok) {
+      alert(data.error || 'Payment failed')
+      return
     }
+
+    window.location.href = data.authorization_url
   }
 
   /* ---------------- UI ---------------- */
@@ -184,7 +201,6 @@ export default function AuctionDetailPage() {
 
       <hr className="my-4" />
 
-
       <BidForm
         hasEnded={hasEnded}
         bidAmount={bidAmount}
@@ -194,7 +210,6 @@ export default function AuctionDetailPage() {
         onBidAmountChange={setBidAmount}
         onSubmit={placeBid}
       />
-
 
       <WinnerPanel
         hasEnded={hasEnded}
