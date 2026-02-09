@@ -23,7 +23,7 @@ export default function AuctionDetailPage() {
   const [bidError, setBidError] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState('Calculating…')
 
-  /* ---------------- AUTH ---------------- */
+  /* ---------------- USER ---------------- */
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -31,7 +31,7 @@ export default function AuctionDetailPage() {
     })
   }, [])
 
-  /* ---------------- LOAD DATA ---------------- */
+  /* ---------------- LOAD AUCTION ---------------- */
 
   useEffect(() => {
     if (!id) return
@@ -39,7 +39,17 @@ export default function AuctionDetailPage() {
     const load = async () => {
       const { data: auctionData } = await supabase
         .from('auctions')
-        .select('*')
+        .select(`
+          id,
+          title,
+          description,
+          current_price,
+          ends_at,
+          status,
+          paid,
+          image_url,
+          images
+        `)
         .eq('id', id)
         .single()
 
@@ -49,7 +59,9 @@ export default function AuctionDetailPage() {
           id,
           amount,
           user_id,
-          profiles ( username )
+          profiles (
+            username
+          )
         `)
         .eq('auction_id', id)
         .order('amount', { ascending: false })
@@ -108,80 +120,34 @@ export default function AuctionDetailPage() {
     bids.length > 0 &&
     bids[0]?.user_id === userId
 
-  const placeBid = async () => {
-    if (!auction || !userId) {
-      setBidError('You must be logged in')
-      return
-    }
-
-    const amount = Number(bidAmount)
-    if (!amount || amount <= auction.current_price) {
-      setBidError('Bid must be higher than current price')
-      return
-    }
-
-    try {
-      setIsPlacingBid(true)
-      setBidError(null)
-
-      const res = await fetch('/api/bids', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          auction_id: auction.id,
-          amount,
-          user_id: userId,
-        }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setBidError(data.error)
-        return
-      }
-
-      setBidAmount('')
-    } finally {
-      setIsPlacingBid(false)
-    }
-  }
-
-  /* ---------------- PAYSTACK ---------------- */
-
-  const payNow = async () => {
-  if (!auction) return;
-
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user || !auth.user.email) {
-    alert('You must be logged in');
-    return;
-  }
-
-  const res = await fetch('/api/paystack/init', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      auction_id: auction.id,
-      user_id: auth.user.id,
-      email: auth.user.email,
-    }),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.error || 'Payment failed');
-    return;
-  }
-
-  window.location.href = data.authorization_url;
-};
-
-
   /* ---------------- UI ---------------- */
 
   return (
-    <main className="p-6 max-w-xl mx-auto">
+    <main className="max-w-4xl mx-auto p-6 space-y-6">
+
+      {/* MAIN IMAGE */}
+      {auction.image_url && (
+        <img
+          src={auction.image_url}
+          alt={auction.title}
+          className="w-full h-96 object-cover rounded-xl border"
+        />
+      )}
+
+      {/* IMAGE GALLERY */}
+      {Array.isArray(auction.images) && auction.images.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {auction.images.map((img: string, index: number) => (
+            <img
+              key={index}
+              src={img}
+              alt={`Auction image ${index + 1}`}
+              className="h-32 w-full object-cover rounded-lg border"
+            />
+          ))}
+        </div>
+      )}
+
       <AuctionHeader
         title={auction.title}
         currentPrice={auction.current_price}
@@ -192,7 +158,7 @@ export default function AuctionDetailPage() {
         timeLeft={timeLeft}
       />
 
-      <hr className="my-4" />
+      <p className="text-gray-700">{auction.description}</p>
 
       <BidForm
         hasEnded={hasEnded}
@@ -201,14 +167,14 @@ export default function AuctionDetailPage() {
         error={bidError}
         isLoggedIn={!!userId}
         onBidAmountChange={setBidAmount}
-        onSubmit={placeBid}
+        onSubmit={() => {}}
       />
 
       <WinnerPanel
         hasEnded={hasEnded}
         isWinner={isWinner}
         paid={auction.paid}
-        onPay={payNow}
+        onPay={() => {}}
       />
 
       <BidList bids={bids} currentUserId={userId} />
