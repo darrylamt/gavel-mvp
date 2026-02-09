@@ -7,34 +7,68 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Token packs (you can adjust prices later)
-const TOKEN_PACKS: Record<
-  string,
-  { tokens: number; amountGHS: number }
-> = {
-  small: { tokens: 10, amountGHS: 10 },
-  medium: { tokens: 50, amountGHS: 45 },
-  large: { tokens: 100, amountGHS: 80 },
-}
-
 export async function POST(req: Request) {
-  const { pack, user_id, email } = await req.json()
+  const { auction_id, user_id, email } = await req.json()
 
-  if (!pack || !user_id || !email) {
+  if (!auction_id || !user_id || !email) {
     return NextResponse.json(
       { error: 'Missing required fields' },
       { status: 400 }
     )
   }
 
-  const selected = TOKEN_PACKS[pack]
-  if (!selected) {
+  // 1️⃣ Fetch auction
+  const { data: auction, error: auctionError } = await supabase
+    .from('auctions')
+    .select('id, status, current_price, paid')
+    .eq('id', auction_id)
+    .single()
+
+  if (auctionError || !auction) {
     return NextResponse.json(
-      { error: 'Invalid token pack' },
+      { error: 'Auction not found' },
+      { status: 404 }
+    )
+  }
+
+  if (auction.status !== 'ended') {
+    return NextResponse.json(
+      { error: 'Auction not ended' },
       { status: 400 }
     )
   }
 
+  if (auction.paid) {
+    return NextResponse.json(
+      { error: 'Auction already paid' },
+      { status: 400 }
+    )
+  }
+
+  // 2️⃣ Get highest bid (authoritative)
+  const { data: topBid } = await supabase
+    .from('bids')
+    .select('id, amount, user_id')
+    .eq('auction_id', auction_id)
+    .order('amount', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (!topBid) {
+    return NextResponse.json(
+      { error: 'No bids found' },
+      { status: 400 }
+    )
+  }
+
+  if (topBid.user_id !== user_id) {
+    return NextResponse.json(
+      { error: 'Not auction winner' },
+      { status: 403 }
+    )
+  }
+
+  // 3️⃣ Init Paystack
   const res = await fetch(
     'https://api.paystack.co/transaction/initialize',
     {
@@ -45,13 +79,14 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         email,
-        amount: selected.amountGHS * 100, // Paystack = kobo
+        amount: Math.round(topBid.amount * 100),
         metadata: {
-          type: 'token_purchase', // 🔑 VERY IMPORTANT
+          type: 'auction_payment',
+          auction_id,
+          bid_id: topBid.id,
           user_id,
-          tokens: selected.tokens,
         },
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/tokens/success`,
+        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success`,
       }),
     }
   )
@@ -60,7 +95,7 @@ export async function POST(req: Request) {
 
   if (!json.status) {
     return NextResponse.json(
-      { error: 'Paystack initialization failed' },
+      { error: 'Paystack init failed' },
       { status: 500 }
     )
   }
