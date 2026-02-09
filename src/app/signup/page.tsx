@@ -2,16 +2,16 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function SignupPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const signUp = async () => {
+  const signUpWithEmail = async () => {
     setLoading(true)
     setError(null)
 
@@ -24,51 +24,59 @@ export default function SignupPage() {
 
     if (error) {
       setError(error.message)
-      return
+    } else {
+      alert('Check your email to confirm your account')
+      router.push('/login')
     }
+  }
 
-    setMessage('Check your email to confirm your account.')
+  const signUpWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/profile`,
+      },
+    })
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md border rounded-xl p-6 bg-white">
-        <h1 className="text-2xl font-bold mb-4">Create Account</h1>
+    <main className="max-w-md mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Create Account</h1>
 
-        <input
-          type="email"
-          placeholder="Email"
-          className="border p-2 w-full mb-3"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+      <button
+        onClick={signUpWithGoogle}
+        className="w-full mb-4 border py-2 rounded hover:bg-gray-50"
+      >
+        Sign up with Google
+      </button>
 
-        <input
-          type="password"
-          placeholder="Password (min 6 chars)"
-          className="border p-2 w-full mb-3"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+      <div className="my-4 text-center text-gray-500">or</div>
 
-        {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
-        {message && <p className="text-green-600 text-sm mb-2">{message}</p>}
+      <input
+        type="email"
+        placeholder="Email"
+        className="border p-2 w-full mb-2"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
 
-        <button
-          onClick={signUp}
-          disabled={loading}
-          className="w-full bg-black text-white py-2 rounded mb-4"
-        >
-          {loading ? 'Creating account…' : 'Sign Up'}
-        </button>
+      <input
+        type="password"
+        placeholder="Password"
+        className="border p-2 w-full mb-2"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
 
-        <p className="text-sm">
-          Already have an account?{' '}
-          <Link href="/login" className="underline">
-            Sign in
-          </Link>
-        </p>
-      </div>
+      {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+
+      <button
+        onClick={signUpWithEmail}
+        disabled={loading}
+        className="w-full bg-black text-white py-2 rounded"
+      >
+        {loading ? 'Creating…' : 'Sign Up'}
+      </button>
     </main>
   )
 }
