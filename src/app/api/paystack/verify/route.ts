@@ -1,19 +1,24 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import 'server-only'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(req: Request) {
   const { reference } = await req.json()
 
   if (!reference) {
-    return NextResponse.json({ error: 'Missing reference' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'Missing reference' },
+      { status: 400 }
+    )
   }
 
-  const verifyRes = await fetch(
+  // 1️⃣ Verify with Paystack
+  const res = await fetch(
     `https://api.paystack.co/transaction/verify/${reference}`,
     {
       headers: {
@@ -22,27 +27,60 @@ export async function POST(req: Request) {
     }
   )
 
-  const verifyData = await verifyRes.json()
+  const json = await res.json()
 
-  if (!verifyData.status || verifyData.data.status !== 'success') {
-    return NextResponse.json({ error: 'Payment not successful' }, { status: 400 })
+  if (!json.status) {
+    return NextResponse.json(
+      { error: 'Paystack verification failed' },
+      { status: 400 }
+    )
   }
 
-  const auctionId = verifyData.data.metadata.auction_id
+  const { metadata } = json.data
 
-  if (!auctionId) {
-    return NextResponse.json({ error: 'Missing auction ID' }, { status: 400 })
+  // 2️⃣ HARD CHECK — token purchases ONLY
+  if (metadata?.type !== 'token_purchase') {
+    return NextResponse.json(
+      { error: 'Invalid transaction type' },
+      { status: 400 }
+    )
   }
 
-  // Mark auction as paid
-  const { error } = await supabase
-    .from('auctions')
-    .update({ paid: true })
-    .eq('id', auctionId)
+  const userId = metadata.user_id
+  const tokens = metadata.tokens
+  const referenceId = json.data.reference
 
-  if (error) {
-    return NextResponse.json({ error: 'Failed to update auction' }, { status: 500 })
+  if (!userId || !tokens) {
+    return NextResponse.json(
+      { error: 'Invalid metadata' },
+      { status: 400 }
+    )
   }
+
+  // 3️⃣ Prevent double credit
+  const { data: existing } = await supabase
+    .from('token_transactions')
+    .select('id')
+    .eq('reference', referenceId)
+    .single()
+
+  if (existing) {
+    return NextResponse.json({ success: true })
+  }
+
+  // 4️⃣ Credit tokens
+  await supabase.rpc('increment_tokens', {
+    uid: userId,
+    amount: tokens,
+  })
+
+  // 5️⃣ Log transaction
+  await supabase.from('token_transactions').insert({
+    user_id: userId,
+    amount: tokens,
+    type: 'purchase',
+    reference: referenceId,
+  })
 
   return NextResponse.json({ success: true })
 }
