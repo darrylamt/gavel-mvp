@@ -2,21 +2,20 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function LoginPage() {
-  const router = useRouter()
+export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const signIn = async () => {
+  const signUp = async () => {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
     })
@@ -28,22 +27,13 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/')
-  }
-
-  const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
-    })
+    setMessage('Check your email to confirm your account.')
   }
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md border rounded-xl p-6 bg-white">
-        <h1 className="text-2xl font-bold mb-4">Sign In</h1>
+        <h1 className="text-2xl font-bold mb-4">Create Account</h1>
 
         <input
           type="email"
@@ -55,37 +45,29 @@ export default function LoginPage() {
 
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Password (min 6 chars)"
           className="border p-2 w-full mb-3"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
         {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+        {message && <p className="text-green-600 text-sm mb-2">{message}</p>}
 
         <button
-          onClick={signIn}
+          onClick={signUp}
           disabled={loading}
-          className="w-full bg-black text-white py-2 rounded mb-3"
+          className="w-full bg-black text-white py-2 rounded mb-4"
         >
-          {loading ? 'Signing in…' : 'Sign In'}
+          {loading ? 'Creating account…' : 'Sign Up'}
         </button>
 
-        <button
-          onClick={signInWithGoogle}
-          className="w-full border py-2 rounded mb-4"
-        >
-          Continue with Google
-        </button>
-
-        <div className="flex justify-between text-sm">
-          <Link href="/signup" className="underline">
-            Create account
+        <p className="text-sm">
+          Already have an account?{' '}
+          <Link href="/login" className="underline">
+            Sign in
           </Link>
-          <Link href="/reset-password" className="underline">
-            Forgot password?
-          </Link>
-        </div>
+        </p>
       </div>
     </main>
   )
