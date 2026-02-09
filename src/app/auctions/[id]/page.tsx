@@ -149,33 +149,34 @@ export default function AuctionDetailPage() {
   /* ---------------- PAYSTACK ---------------- */
 
   const payNow = async () => {
-    if (!auction) return
+  if (!auction) return;
 
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user || !auth.user.email) {
-      alert('You must be logged in')
-      return
-    }
-
-    const res = await fetch('/api/paystack/init', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        auction_id: auction.id,
-        user_id: auth.user.id,
-        email: auth.user.email,
-      }),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      alert(data.error || 'Payment failed')
-      return
-    }
-
-    window.location.href = data.authorization_url
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user || !auth.user.email) {
+    alert('You must be logged in');
+    return;
   }
+
+  const res = await fetch('/api/paystack/init', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      auction_id: auction.id,
+      user_id: auth.user.id,
+      email: auth.user.email,
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || 'Payment failed');
+    return;
+  }
+
+  window.location.href = data.authorization_url;
+};
+
 
   /* ---------------- UI ---------------- */
 
