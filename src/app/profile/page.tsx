@@ -172,6 +172,16 @@ export default function ProfilePage() {
             ))}
           </div>
         )}
+        <button
+  onClick={async () => {
+    await supabase.auth.signOut()
+    window.location.href = '/'
+  }}
+  className="mt-10 w-full border py-2 rounded text-red-600 hover:bg-red-50"
+>
+  Sign Out
+</button>
+
       </section>
     </main>
   )
