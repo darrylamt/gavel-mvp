@@ -24,9 +24,14 @@ export default function AuthCallbackPage() {
         const accessToken = params.get('access_token')
         const refreshToken = params.get('refresh_token')
 
+        console.log('OAuth callback - tokens in URL:', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+        })
+
         if (accessToken && refreshToken) {
-          // Set session in Supabase client
-          const { data: setData, error: setError } = await supabase.auth.setSession({
+          // Set session in Supabase client from OAuth tokens
+          const { error: setError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           })
@@ -37,22 +42,36 @@ export default function AuthCallbackPage() {
             return
           }
 
-          // Remove tokens from the URL so they aren't visible in the address bar
-          if (window.history.replaceState) {
-            window.history.replaceState({}, document.title, window.location.pathname + window.location.search)
-          }
+          // Verify session was actually set by fetching it
+          // (Supabase persists to localStorage/sessionStorage)
+          const { data: verifyData, error: verifyError } = await supabase.auth.getSession()
+          console.log('Session verification after setSession:', {
+            sessionExists: !!verifyData?.session,
+            error: verifyError,
+          })
 
-          if (setData?.session) {
+          if (verifyData?.session) {
+            // Remove tokens from the URL so they aren't visible in the address bar
+            if (window.history.replaceState) {
+              window.history.replaceState({}, document.title, window.location.pathname + window.location.search)
+            }
             router.replace('/auctions')
+            return
+          } else {
+            console.error('Session not set after setSession call')
+            router.replace('/login')
             return
           }
         }
 
-        // Fallback: check existing session
+        // Fallback: check for existing session (in case page is re-visited)
+        console.log('No OAuth tokens in URL, checking existing session...')
         const { data: current } = await supabase.auth.getSession()
         if (current.session) {
+          console.log('Found existing session, redirecting to auctions')
           router.replace('/auctions')
         } else {
+          console.log('No session found, redirecting to login')
           router.replace('/login')
         }
       } catch (err) {
