@@ -8,79 +8,83 @@ export default function AuthCallbackPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const handleAuth = async () => {
+    let isMounted = true
+    let unsubscribe: (() => void) | null = null
+
+    const handleCallback = async () => {
       try {
-        // Parse tokens from URL hash (e.g. #access_token=...&refresh_token=...)
-        if (typeof window === 'undefined') {
-          router.replace('/login')
+        // First, check if we already have a session from the OAuth redirect
+        // (Supabase SDK automatically processes the URL hash on page load)
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (session) {
+          console.log('Session found after OAuth redirect')
+          if (isMounted) {
+            // Clean up the URL hash before redirecting
+            if (window.history.replaceState) {
+              window.history.replaceState({}, document.title, window.location.pathname)
+            }
+            router.replace('/auctions')
+          }
           return
         }
 
-        const hash = window.location.hash.startsWith('#')
-          ? window.location.hash.slice(1)
-          : window.location.hash
-
-        const params = new URLSearchParams(hash)
-        const accessToken = params.get('access_token')
-        const refreshToken = params.get('refresh_token')
-
-        console.log('OAuth callback - tokens in URL:', {
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken,
-        })
-
-        if (accessToken && refreshToken) {
-          // Set session in Supabase client from OAuth tokens
-          const { error: setError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          })
-
-          if (setError) {
-            console.error('Failed to set session from URL tokens:', setError)
-            router.replace('/login')
-            return
-          }
-
-          // Verify session was actually set by fetching it
-          // (Supabase persists to localStorage/sessionStorage)
-          const { data: verifyData, error: verifyError } = await supabase.auth.getSession()
-          console.log('Session verification after setSession:', {
-            sessionExists: !!verifyData?.session,
-            error: verifyError,
-          })
-
-          if (verifyData?.session) {
-            // Remove tokens from the URL so they aren't visible in the address bar
-            if (window.history.replaceState) {
-              window.history.replaceState({}, document.title, window.location.pathname + window.location.search)
+        // If no session yet, listen for auth state changes
+        // (This handles the case where session is being processed)
+        console.log('No session yet, listening for auth changes...')
+        
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (_event, session) => {
+            if (session && isMounted) {
+              console.log('Auth state changed - session established')
+              
+              // Clean up the URL hash
+              if (window.history.replaceState) {
+                window.history.replaceState({}, document.title, window.location.pathname)
+              }
+              
+              // Unsubscribe before redirecting
+              if (unsubscribe) {
+                unsubscribe()
+              }
+              
+              router.replace('/auctions')
             }
-            router.replace('/auctions')
-            return
-          } else {
-            console.error('Session not set after setSession call')
-            router.replace('/login')
-            return
           }
-        }
+        )
 
-        // Fallback: check for existing session (in case page is re-visited)
-        console.log('No OAuth tokens in URL, checking existing session...')
-        const { data: current } = await supabase.auth.getSession()
-        if (current.session) {
-          console.log('Found existing session, redirecting to auctions')
-          router.replace('/auctions')
-        } else {
-          console.log('No session found, redirecting to login')
-          router.replace('/login')
+        unsubscribe = subscription.unsubscribe
+
+        // Timeout: if no session after 5 seconds, give up
+        const timeout = setTimeout(() => {
+          if (isMounted) {
+            console.error('Auth callback timeout - no session established')
+            if (unsubscribe) {
+              unsubscribe()
+            }
+            router.replace('/login')
+          }
+        }, 5000)
+
+        return () => {
+          clearTimeout(timeout)
         }
       } catch (err) {
-        console.error('Auth callback exception:', err)
-        router.replace('/login')
+        console.error('Auth callback error:', err)
+        if (isMounted) {
+          router.replace('/login')
+        }
       }
     }
 
-    handleAuth()
+    handleCallback()
+
+    return () => {
+      isMounted = false
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
   }, [router])
 
   return (
