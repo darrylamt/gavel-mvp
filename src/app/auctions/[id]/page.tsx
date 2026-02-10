@@ -74,6 +74,28 @@ export default function AuctionDetailPage() {
     load()
   }, [id])
 
+  /* ---------------- AUTO END AUCTION ---------------- */
+
+  useEffect(() => {
+    if (!auction?.ends_at || auction.status === 'ended') return
+
+    const ended =
+      new Date(auction.ends_at).getTime() <= Date.now()
+
+    if (ended) {
+      supabase
+        .from('auctions')
+        .update({ status: 'ended' })
+        .eq('id', auction.id)
+        .then(() => {
+          setAuction((prev: any) => ({
+            ...prev,
+            status: 'ended',
+          }))
+        })
+    }
+  }, [auction])
+
   /* ---------------- COUNTDOWN ---------------- */
 
   useEffect(() => {
@@ -120,12 +142,81 @@ export default function AuctionDetailPage() {
     bids.length > 0 &&
     bids[0]?.user_id === userId
 
+  /* ---------------- BID ---------------- */
+
+  const placeBid = async () => {
+    if (!userId) {
+      setBidError('You must be logged in')
+      return
+    }
+
+    const amount = Number(bidAmount)
+    if (!amount || amount <= auction.current_price) {
+      setBidError('Bid must be higher than current price')
+      return
+    }
+
+    try {
+      setIsPlacingBid(true)
+      setBidError(null)
+
+      const res = await fetch('/api/bids', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auction_id: auction.id,
+          user_id: userId,
+          amount,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setBidError(data.error)
+        return
+      }
+
+      setBidAmount('')
+    } finally {
+      setIsPlacingBid(false)
+    }
+  }
+
+  /* ---------------- PAY NOW ---------------- */
+
+  const payNow = async () => {
+    const { data: auth } = await supabase.auth.getUser()
+    if (!auth.user || !auth.user.email) {
+      alert('You must be logged in')
+      return
+    }
+
+    const res = await fetch('/api/paystack/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        auction_id: auction.id,
+        user_id: auth.user.id,
+        email: auth.user.email,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      alert(data.error || 'Payment failed')
+      return
+    }
+
+    window.location.href = data.authorization_url
+  }
+
   /* ---------------- UI ---------------- */
 
   return (
     <main className="max-w-4xl mx-auto p-6 space-y-6">
 
-      {/* MAIN IMAGE */}
       {auction.image_url && (
         <img
           src={auction.image_url}
@@ -134,14 +225,12 @@ export default function AuctionDetailPage() {
         />
       )}
 
-      {/* IMAGE GALLERY */}
       {Array.isArray(auction.images) && auction.images.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
-          {auction.images.map((img: string, index: number) => (
+          {auction.images.map((img: string, i: number) => (
             <img
-              key={index}
+              key={i}
               src={img}
-              alt={`Auction image ${index + 1}`}
               className="h-32 w-full object-cover rounded-lg border"
             />
           ))}
@@ -167,14 +256,14 @@ export default function AuctionDetailPage() {
         error={bidError}
         isLoggedIn={!!userId}
         onBidAmountChange={setBidAmount}
-        onSubmit={() => {}}
+        onSubmit={placeBid}
       />
 
       <WinnerPanel
         hasEnded={hasEnded}
         isWinner={isWinner}
         paid={auction.paid}
-        onPay={() => {}}
+        onPay={payNow}
       />
 
       <BidList bids={bids} currentUserId={userId} />
