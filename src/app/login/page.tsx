@@ -33,7 +33,9 @@ export default function LoginPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/profile`,
+        // Redirect to the auth callback page so the app can parse the
+        // OAuth tokens from the URL hash and establish the session.
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
   }
