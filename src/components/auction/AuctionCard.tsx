@@ -5,6 +5,7 @@ type AuctionCardProps = {
   title: string
   currentPrice: number
   endsAt: string
+  imageUrl?: string | null
 }
 
 export default function AuctionCard({
@@ -12,6 +13,7 @@ export default function AuctionCard({
   title,
   currentPrice,
   endsAt,
+  imageUrl,
 }: AuctionCardProps) {
   const timeLeftMs = new Date(endsAt).getTime() - Date.now()
   const isEnded = timeLeftMs <= 0
@@ -22,8 +24,18 @@ export default function AuctionCard({
       className="group block rounded-2xl border bg-white overflow-hidden hover:shadow-lg transition"
     >
       {/* IMAGE */}
-      <div className="h-48 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
-        Product Image
+      <div className="h-48 bg-gray-100 overflow-hidden">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={title}
+            className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+          />
+        ) : (
+          <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+            No image
+          </div>
+        )}
       </div>
 
       {/* CONTENT */}
