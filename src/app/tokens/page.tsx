@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import TokenFAQ from '@/components/tokens/TokenFAQ'
+import TokenPricingCard from '@/components/tokens/TokenPricingCard'
 
 const PACKS = [
   {
@@ -11,6 +12,12 @@ const PACKS = [
     price: 10,
     label: 'Starter',
     highlight: false,
+    features: [
+      'Buy with Paystack',
+      'Instant delivery',
+      'Use for bidding',
+      'Non-refundable',
+    ],
   },
   {
     id: 'medium',
@@ -18,6 +25,12 @@ const PACKS = [
     price: 45,
     label: 'Most Popular',
     highlight: true,
+    features: [
+      '50 tokens included',
+      'Buy with Paystack',
+      'Instant delivery',
+      'Use for bidding',
+    ],
   },
   {
     id: 'large',
@@ -25,6 +38,12 @@ const PACKS = [
     price: 80,
     label: 'Best Value',
     highlight: false,
+    features: [
+      'Buy with Paystack',
+      'Instant delivery',
+      'Use for bidding',
+      'Non-refundable',
+    ],
   },
 ]
 
@@ -75,53 +94,21 @@ export default function BuyTokensPage() {
       </div>
 
       {/* PACKS */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-8 justify-items-center mb-12">
         {PACKS.map((pack) => (
-          <div
+          <TokenPricingCard
             key={pack.id}
-            className={`relative rounded-2xl border p-6 flex flex-col ${
-              pack.highlight
-                ? 'border-black shadow-lg'
-                : 'border-gray-200'
-            }`}
-          >
-            {pack.highlight && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-3 py-1 rounded-full">
-                Most Popular
-              </span>
-            )}
-
-            <h2 className="text-xl font-bold mb-2">
-              {pack.label}
-            </h2>
-
-            <div className="text-4xl font-extrabold mb-1">
-              {pack.tokens}
-              <span className="text-base font-medium text-gray-500">
-                {' '}tokens
-              </span>
-            </div>
-
-            <p className="text-gray-600 mb-6">
-              GHS {pack.price}
-            </p>
-
-            <button
-              onClick={() => buyTokens(pack.id)}
-              disabled={loading === pack.id}
-              className={`mt-auto w-full py-3 rounded-xl font-semibold transition ${
-                pack.highlight
-                  ? 'bg-black text-white hover:bg-gray-900'
-                  : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-            >
-              {loading === pack.id
-                ? 'Redirecting…'
-                : 'Buy Tokens'}
-            </button>
-          </div>
+            label={pack.label}
+            tokens={pack.tokens}
+            price={pack.price}
+            highlight={pack.highlight}
+            isLoading={loading === pack.id}
+            features={pack.features}
+            onBuy={() => buyTokens(pack.id)}
+          />
         ))}
       </div>
+
       <TokenFAQ />
 
       {/* FOOTER INFO */}
