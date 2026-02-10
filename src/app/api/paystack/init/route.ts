@@ -17,6 +17,22 @@ export async function POST(req: Request) {
     )
   }
 
+  if (!process.env.PAYSTACK_SECRET_KEY) {
+    console.error('PAYSTACK_SECRET_KEY not configured')
+    return NextResponse.json(
+      { error: 'Payment service not configured' },
+      { status: 500 }
+    )
+  }
+
+  if (!process.env.NEXT_PUBLIC_SITE_URL) {
+    console.error('NEXT_PUBLIC_SITE_URL not configured')
+    return NextResponse.json(
+      { error: 'Site URL not configured' },
+      { status: 500 }
+    )
+  }
+
   // 1️⃣ Fetch auction
   const { data: auction, error: auctionError } = await supabase
     .from('auctions')
@@ -94,8 +110,17 @@ export async function POST(req: Request) {
   const json = await res.json()
 
   if (!json.status) {
+    console.error('Paystack init failed:', json)
     return NextResponse.json(
-      { error: 'Paystack init failed' },
+      { error: json.message || 'Paystack init failed' },
+      { status: 500 }
+    )
+  }
+
+  if (!json.data?.authorization_url) {
+    console.error('No authorization_url in Paystack response:', json.data)
+    return NextResponse.json(
+      { error: 'Invalid Paystack response' },
       { status: 500 }
     )
   }

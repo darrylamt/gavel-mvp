@@ -30,6 +30,7 @@ export async function POST(req: Request) {
   const json = await res.json()
 
   if (!json.status) {
+    console.error('Paystack verification failed:', json)
     return NextResponse.json(
       { error: 'Verification failed' },
       { status: 400 }
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
   const { metadata } = json.data
 
   if (metadata?.type !== 'auction_payment') {
+    console.error('Invalid payment type:', metadata?.type)
     return NextResponse.json(
       { error: 'Invalid payment type' },
       { status: 400 }
@@ -55,11 +57,12 @@ export async function POST(req: Request) {
     .single()
 
   if (auction?.paid) {
+    console.log('Auction already paid:', auction_id)
     return NextResponse.json({ success: true })
   }
 
   // 3️⃣ Mark auction as paid
-  await supabase
+  const { error: updateError } = await supabase
     .from('auctions')
     .update({
       paid: true,
@@ -67,6 +70,14 @@ export async function POST(req: Request) {
       winning_bid_id: bid_id,
     })
     .eq('id', auction_id)
+
+  if (updateError) {
+    console.error('Failed to update auction:', updateError)
+    return NextResponse.json(
+      { error: 'Failed to process payment' },
+      { status: 500 }
+    )
+  }
 
   // 4️⃣ Log payment
   await supabase.from('payments').insert({
@@ -78,5 +89,6 @@ export async function POST(req: Request) {
     type: 'auction',
   })
 
+  console.log('Payment successful for auction:', auction_id)
   return NextResponse.json({ success: true })
 }

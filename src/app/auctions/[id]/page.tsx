@@ -209,6 +209,11 @@ export default function AuctionDetailPage() {
       return
     }
 
+    if (!data.authorization_url) {
+      alert('Payment initialization failed - no authorization URL received')
+      return
+    }
+
     window.location.href = data.authorization_url
   }
 
