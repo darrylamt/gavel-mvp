@@ -17,7 +17,7 @@ export default function PaymentSuccessClient() {
     }
 
     const verifyPayment = async () => {
-      const res = await fetch('/api/paystack/verify', {
+      const res = await fetch('/api/auction-payments/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reference }),
