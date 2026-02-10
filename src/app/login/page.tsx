@@ -1,8 +1,9 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import AuthForm from '@/components/auth/AuthForm'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -33,64 +34,25 @@ export default function LoginPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        // Redirect to the auth callback page so the app can parse the
-        // OAuth tokens from the URL hash and establish the session.
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
   }
 
   return (
-    <main className="max-w-md mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Sign In</h1>
-
-      <button
-        onClick={signInWithGoogle}
-        className="w-full mb-4 border py-2 rounded hover:bg-gray-50"
-      >
-        Continue with Google
-      </button>
-
-      <div className="my-4 text-center text-gray-500">or</div>
-
-      <input
-        type="email"
-        placeholder="Email"
-        className="border p-2 w-full mb-2"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+    <main>
+      <AuthForm
+        email={email}
+        password={password}
+        error={error}
+        loading={loading}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={signInWithEmail}
+        onGoogleClick={signInWithGoogle}
+        onSignUpClick={() => router.push('/signup')}
+        onForgotPasswordClick={() => router.push('/reset-password')}
       />
-
-      <input
-        type="password"
-        placeholder="Password"
-        className="border p-2 w-full mb-2"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-
-      {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
-
-      <button
-        onClick={signInWithEmail}
-        disabled={loading}
-        className="w-full bg-black text-white py-2 rounded"
-      >
-        {loading ? 'Signing in…' : 'Sign In'}
-      </button>
-
-      <p className="mt-4 text-sm text-center">
-        Don’t have an account?{' '}
-        <a href="/signup" className="underline">
-          Sign up
-        </a>
-      </p>
-
-      <p className="mt-2 text-sm text-center">
-        <a href="/reset-password" className="underline">
-          Forgot password?
-        </a>
-      </p>
     </main>
   )
 }

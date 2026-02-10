@@ -26,7 +26,7 @@ const TokenPricingCard: React.FC<TokenPricingCardProps> = ({
   onBuy,
 }) => {
   return (
-    <StyledWrapper highlight={highlight}>
+    <StyledWrapper $highlight={highlight}>
       <div className="card">
         {highlight && <div className="badge">Most Popular</div>}
         <div className="pricing-block-content">
@@ -88,7 +88,7 @@ const CheckmarkIcon = () => (
 )
 
 interface StyledWrapperProps {
-  highlight?: boolean
+  $highlight?: boolean
 }
 
 const StyledWrapper = styled.div<StyledWrapperProps>`
@@ -97,13 +97,13 @@ const StyledWrapper = styled.div<StyledWrapperProps>`
     position: relative;
     width: 100%;
     max-width: 280px;
-    background: ${props => (props.highlight ? '#000000' : '#ffffff')};
+    background: ${props => (props.$highlight ? '#000000' : '#ffffff')};
     padding: 1.5rem;
     border-radius: 0.75rem;
     border: 2px solid #1a1a1a;
     box-shadow: 0.5rem 0.5rem 0px #1a1a1a;
     overflow: hidden;
-    color: ${props => (props.highlight ? '#ffffff' : '#1a1a1a')};
+    color: ${props => (props.$highlight ? '#ffffff' : '#1a1a1a')};
     transition: all 0.3s ease;
 
     &:hover {
@@ -133,11 +133,11 @@ const StyledWrapper = styled.div<StyledWrapperProps>`
     height: 100%;
     flex-direction: column;
     gap: 0.75rem;
-    margin-top: ${props => (props.highlight ? '0.5rem' : '0')};
+    margin-top: ${props => (props.$highlight ? '0.5rem' : '0')};
   }
 
   .pricing-plan {
-    color: ${props => (props.highlight ? '#ffffff' : '#1a1a1a')};
+    color: ${props => (props.$highlight ? '#ffffff' : '#1a1a1a')};
     font-size: 1.25rem;
     line-height: 1.25;
     font-weight: 700;
@@ -156,27 +156,27 @@ const StyledWrapper = styled.div<StyledWrapperProps>`
     line-height: 1;
     font-weight: 700;
     margin: 0;
-    color: ${props => (props.highlight ? '#ffffff' : '#1a1a1a')};
+    color: ${props => (props.$highlight ? '#ffffff' : '#1a1a1a')};
   }
 
   .price-currency {
     font-size: 0.75rem;
     font-weight: 600;
-    color: ${props => (props.highlight ? '#aaaaaa' : '#666666')};
+    color: ${props => (props.$highlight ? '#aaaaaa' : '#666666')};
     text-transform: uppercase;
   }
 
   .price-period {
     font-size: 0.875rem;
     font-weight: 500;
-    color: ${props => (props.highlight ? '#aaaaaa' : '#666666')};
+    color: ${props => (props.$highlight ? '#aaaaaa' : '#666666')};
     margin: 0;
   }
 
   .pricing-note {
     font-size: 1.1rem;
     font-weight: 600;
-    color: ${props => (props.highlight ? '#ffffff' : '#1a1a1a')};
+    color: ${props => (props.$highlight ? '#ffffff' : '#1a1a1a')};
     margin: 0;
   }
 
@@ -196,7 +196,7 @@ const StyledWrapper = styled.div<StyledWrapperProps>`
     align-items: center;
     gap: 0.75rem;
     font-size: 0.9rem;
-    color: ${props => (props.highlight ? '#dddddd' : '#333333')};
+    color: ${props => (props.$highlight ? '#dddddd' : '#333333')};
     margin: 0;
   }
 
@@ -213,12 +213,12 @@ const StyledWrapper = styled.div<StyledWrapperProps>`
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    background: ${props => (props.highlight ? '#ffffff' : '#1a1a1a')};
-    color: ${props => (props.highlight ? '#1a1a1a' : '#ffffff')};
-    border: 2px solid ${props => (props.highlight ? '#ffffff' : '#1a1a1a')};
+    background: ${props => (props.$highlight ? '#ffffff' : '#1a1a1a')};
+    color: ${props => (props.$highlight ? '#1a1a1a' : '#ffffff')};
+    border: 2px solid ${props => (props.$highlight ? '#ffffff' : '#1a1a1a')};
 
     &:hover:not(:disabled) {
-      box-shadow: inset 0 0 20px ${props => (props.highlight ? '#00000010' : '#ffffff10')};
+      box-shadow: inset 0 0 20px ${props => (props.$highlight ? '#00000010' : '#ffffff10')};
       transform: scale(1.02);
     }
 
