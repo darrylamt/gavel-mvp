@@ -1,13 +1,16 @@
 'use client'
 
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { Search, Menu, User, LogOut } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuthUser } from '@/hooks/useAuthUser'
 
 export default function Navbar() {
+  const router = useRouter()
   const { user, loading } = useAuthUser()
   const [tokens, setTokens] = useState<number | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -28,49 +31,215 @@ export default function Navbar() {
     loadTokens()
   }, [user])
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const query = formData.get('search')
+    if (query) {
+      router.push(`/auctions?search=${query}`)
+    }
+  }
+
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b">
-      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-extrabold">
-          Gavel
-        </Link>
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="w-full px-4 md:px-6">
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-8">
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <div className="text-2xl font-bold tracking-tight text-black">
+                Gavel
+              </div>
+            </button>
 
-        {!loading && (
-          <div className="flex items-center gap-4">
-            {/* Not logged in */}
-            {!user && (
-              <Link
-                href="/login"
-                className="px-4 py-2 rounded-full border hover:bg-gray-50"
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-6">
+              <button
+                onClick={() => router.push('/auctions')}
+                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
               >
-                Sign In
-              </Link>
-            )}
-
-            {/* Logged in */}
-            {user && (
-              <>
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200">
-                  <span>🪙</span>
-                  <span className="font-semibold text-amber-700">
-                    {tokens ?? 0}
-                  </span>
-                </div>
-
-                <Link
-                  href="/profile"
-                  className="flex items-center gap-2 px-3 py-2 rounded-full border hover:bg-gray-50"
-                >
-                  <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold">
-                    {user.email?.[0]?.toUpperCase()}
-                  </div>
-                  <span>Profile</span>
-                </Link>
-              </>
-            )}
+                Auctions
+              </button>
+              <button
+                onClick={() => router.push('/tokens')}
+                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+              >
+                Tokens
+              </button>
+              <button
+                onClick={() => router.push('/faq')}
+                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+              >
+                FAQ
+              </button>
+              <button
+                onClick={() => router.push('/contact')}
+                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+              >
+                Contact
+              </button>
+            </nav>
           </div>
+
+          {/* Search Bar - Desktop */}
+          <form
+            onSubmit={handleSearch}
+            className="hidden lg:flex flex-1 max-w-md mx-8"
+          >
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="search"
+                name="search"
+                placeholder="Search auctions..."
+                className="w-full pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+              />
+            </div>
+          </form>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            {/* Search Mobile */}
+            <button
+              onClick={() => router.push('/auctions')}
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Search className="h-5 w-5 text-gray-700" />
+            </button>
+
+            {/* Tokens Display */}
+            {!loading && user && (
+              <button
+                onClick={() => router.push('/tokens')}
+                className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors"
+              >
+                <span className="text-lg">🪙</span>
+                <span className="font-semibold text-amber-700 text-sm">
+                  {tokens ?? 0}
+                </span>
+              </button>
+            )}
+
+            {/* User Profile / Auth */}
+            {!loading && !user ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.push('/login')}
+                  className="hidden sm:flex px-4 py-2 text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => router.push('/signup')}
+                  className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Sign Up
+                </button>
+              </div>
+            ) : (
+              <div className="relative group">
+                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                </button>
+
+                {/* Desktop Dropdown */}
+                <div className="hidden group-hover:flex absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg flex-col z-50">
+                  <button
+                    onClick={() => router.push('/profile')}
+                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
+                  >
+                    My Profile
+                  </button>
+                  <button
+                    onClick={() => router.push('/tokens')}
+                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
+                  >
+                    Buy Tokens
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log Out
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Mobile Menu */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Menu className="h-5 w-5 text-gray-700" />
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <nav className="md:hidden pb-4 flex flex-col gap-2">
+            <button
+              onClick={() => {
+                router.push('/auctions')
+                setMobileMenuOpen(false)
+              }}
+              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Auctions
+            </button>
+            <button
+              onClick={() => {
+                router.push('/tokens')
+                setMobileMenuOpen(false)
+              }}
+              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Tokens
+            </button>
+            <button
+              onClick={() => {
+                router.push('/faq')
+                setMobileMenuOpen(false)
+              }}
+              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              FAQ
+            </button>
+            <button
+              onClick={() => {
+                router.push('/contact')
+                setMobileMenuOpen(false)
+              }}
+              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Contact
+            </button>
+            {user && (
+              <button
+                onClick={() => {
+                  router.push('/profile')
+                  setMobileMenuOpen(false)
+                }}
+                className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border-t border-gray-200 mt-2 pt-4"
+              >
+                My Profile
+              </button>
+            )}
+          </nav>
         )}
       </div>
-    </nav>
+    </header>
   )
 }

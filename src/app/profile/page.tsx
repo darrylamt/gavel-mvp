@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
+import ProfileHeader from '@/components/profile/ProfileHeader'
+import ContactDetailsSection from '@/components/profile/ContactDetailsSection'
+import WonAuctionsSection from '@/components/profile/WonAuctionsSection'
+import SignOutButton from '@/components/profile/SignOutButton'
+
 type WonAuction = {
   auction_id: string
   title: string
@@ -14,10 +19,13 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
   const [tokens, setTokens] = useState<number>(0)
+
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [saving, setSaving] = useState(false)
+
   const [wonAuctions, setWonAuctions] = useState<WonAuction[]>([])
   const [loading, setLoading] = useState(true)
-
-  /* ---------------- LOAD PROFILE ---------------- */
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -31,60 +39,60 @@ export default function ProfilePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, token_balance')
+        .select('username, token_balance, phone, address')
         .eq('id', auth.user.id)
         .single()
 
       setUsername(profile?.username ?? null)
       setTokens(profile?.token_balance ?? 0)
+      setPhone(profile?.phone ?? '')
+      setAddress(profile?.address ?? '')
 
       await loadWonAuctions(auth.user.id)
+
       setLoading(false)
     }
 
     loadProfile()
   }, [])
 
-  /* ---------------- LOAD AUCTIONS WON ---------------- */
-
   const loadWonAuctions = async (uid: string) => {
-    /**
-     * Strategy:
-     * 1. Get all ended auctions
-     * 2. Join highest bid per auction
-     * 3. Filter where highest bid.user_id === current user
-     */
-
-    const { data, error } = await supabase.rpc(
+    const { data } = await supabase.rpc(
       'get_auctions_won_by_user',
       { uid }
     )
 
-    if (error) {
-      console.error('Failed to load won auctions', error)
-      return
-    }
-
     setWonAuctions(data || [])
   }
 
-  /* ---------------- PAY NOW ---------------- */
+  const saveContactDetails = async () => {
+    if (!userId) return
+
+    setSaving(true)
+
+    await supabase
+      .from('profiles')
+      .update({
+        phone,
+        address,
+      })
+      .eq('id', userId)
+
+    setSaving(false)
+    alert('Profile updated successfully')
+  }
 
   const payNow = async (auctionId: string, amount: number) => {
     const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user || !auth.user.email) {
-      alert('You must be logged in')
-      return
-    }
+    if (!auth.user || !auth.user.email) return
 
-    const res = await fetch('/api/paystack/init', {
+    const res = await fetch('/api/auction-payments/init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         auction_id: auctionId,
         user_id: auth.user.id,
         email: auth.user.email,
-        amount,
       }),
     })
 
@@ -98,11 +106,7 @@ export default function ProfilePage() {
     window.location.href = data.authorization_url
   }
 
-  /* ---------------- UI ---------------- */
-
-  if (loading) {
-    return <p className="p-6">Loading profile…</p>
-  }
+  if (loading) return <p className="p-6">Loading profile…</p>
 
   if (!userId) {
     return (
@@ -114,74 +118,26 @@ export default function ProfilePage() {
 
   return (
     <main className="max-w-4xl mx-auto p-6 space-y-10">
-      {/* PROFILE HEADER */}
-      <section className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center text-xl font-bold">
-          {username ? username[0].toUpperCase() : 'U'}
-        </div>
+      <ProfileHeader
+        username={username}
+        tokens={tokens}
+      />
 
-        <div>
-          <h1 className="text-2xl font-bold">
-            {username ?? 'Anonymous'}
-          </h1>
-          <p className="text-sm text-gray-600">
-            🪙 {tokens} tokens
-          </p>
-        </div>
-      </section>
+      <ContactDetailsSection
+        phone={phone}
+        address={address}
+        onPhoneChange={setPhone}
+        onAddressChange={setAddress}
+        onSave={saveContactDetails}
+        saving={saving}
+      />
 
-      {/* AUCTIONS WON */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4">
-          Auctions Won
-        </h2>
+      <WonAuctionsSection
+        auctions={wonAuctions}
+        onPay={payNow}
+      />
 
-        {wonAuctions.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            You haven’t won any auctions yet.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {wonAuctions.map((a) => (
-              <div
-                key={a.auction_id}
-                className="border rounded-lg p-4 flex items-center justify-between"
-              >
-                <div>
-                  <p className="font-medium">{a.title}</p>
-                  <p className="text-sm text-gray-600">
-                    Winning bid: GHS {a.amount}
-                  </p>
-                </div>
-
-                {a.paid ? (
-                  <span className="text-green-600 font-semibold">
-                    Paid
-                  </span>
-                ) : (
-                  <button
-                    onClick={() =>
-                      payNow(a.auction_id, a.amount)
-                    }
-                    className="bg-black text-white px-4 py-2 rounded"
-                  >
-                    Pay Now
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut()
-            window.location.href = '/'
-          }}
-          className="mt-8 w-full border py-2 rounded text-red-600"
-        >
-          Sign Out
-        </button>
-      </section>
+      <SignOutButton />
     </main>
   )
 }
