@@ -1,16 +1,19 @@
 'use client'
 
-import { Search, Menu, User, LogOut } from 'lucide-react'
+import { Menu, LogOut } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuthUser } from '@/hooks/useAuthUser'
+import AvatarLabelGroup from '@/components/base/avatar/avatar-label-group'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 
 export default function Navbar() {
   const router = useRouter()
   const { user, loading } = useAuthUser()
   const [tokens, setTokens] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const isAdmin = useIsAdmin()
 
   useEffect(() => {
     if (!user) {
@@ -36,14 +39,7 @@ export default function Navbar() {
     router.push('/login')
   }
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const query = formData.get('search')
-    if (query) {
-      router.push(`/auctions?search=${query}`)
-    }
-  }
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -68,6 +64,14 @@ export default function Navbar() {
               >
                 Auctions
               </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => router.push('/admin')}
+                    className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                  >
+                    Admin
+                  </button>
+                )}
               <button
                 onClick={() => router.push('/tokens')}
                 className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
@@ -89,33 +93,9 @@ export default function Navbar() {
             </nav>
           </div>
 
-          {/* Search Bar - Desktop */}
-          <form
-            onSubmit={handleSearch}
-            className="hidden lg:flex flex-1 max-w-md mx-8"
-          >
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="search"
-                name="search"
-                placeholder="Search auctions..."
-                className="w-full pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
-              />
-            </div>
-          </form>
-
           {/* Actions */}
           <div className="flex items-center gap-2">
-            {/* Search Mobile */}
-            <button
-              onClick={() => router.push('/auctions')}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Search className="h-5 w-5 text-gray-700" />
-            </button>
-
-            {/* Tokens Display */}
+          {/* Actions */}
             {!loading && user && (
               <button
                 onClick={() => router.push('/tokens')}
@@ -146,11 +126,14 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="relative group">
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                    <User className="h-5 w-5 text-white" />
-                  </div>
-                </button>
+                <AvatarLabelGroup
+                  size="md"
+                  src={user?.user_metadata?.avatar_url || null}
+                  alt={user?.email || 'User'}
+                  title={user?.user_metadata?.full_name || user?.email || 'User'}
+                  subtitle={user?.email || undefined}
+                  onClick={() => router.push('/profile')}
+                />
 
                 {/* Desktop Dropdown */}
                 <div className="hidden group-hover:flex absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg flex-col z-50">

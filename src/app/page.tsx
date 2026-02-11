@@ -12,7 +12,7 @@ const supabase = createClient(
 export default async function HomePage() {
   const { data: auctions } = await supabase
     .from('auctions')
-    .select('id, title, current_price, ends_at')
+    .select('id, title, current_price, ends_at, starts_at, status, image_url')
     .order('created_at', { ascending: false })
     .limit(6)
 
@@ -49,9 +49,13 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* HERO IMAGE PLACEHOLDER */}
-        <div className="hidden lg:flex h-80 bg-gray-100 rounded-2xl items-center justify-center text-gray-400 text-lg">
-          Product imagery coming soon
+        {/* HERO IMAGE */}
+        <div className="hidden lg:flex h-80 rounded-2xl overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1400&q=80"
+            alt="Hero"
+            className="w-full h-full object-cover"
+          />
         </div>
       </section>
 
@@ -84,6 +88,9 @@ export default async function HomePage() {
               title={a.title}
               currentPrice={a.current_price}
               endsAt={a.ends_at}
+              startsAt={a.starts_at}
+              status={a.status}
+              imageUrl={a.image_url}
             />
           ))}
         </div>

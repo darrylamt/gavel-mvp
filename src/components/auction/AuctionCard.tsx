@@ -5,6 +5,8 @@ type AuctionCardProps = {
   title: string
   currentPrice: number
   endsAt: string
+  startsAt?: string | null
+  status?: string | null
   imageUrl?: string | null
 }
 
@@ -13,10 +15,15 @@ export default function AuctionCard({
   title,
   currentPrice,
   endsAt,
+  startsAt,
+  status,
   imageUrl,
 }: AuctionCardProps) {
   const timeLeftMs = new Date(endsAt).getTime() - Date.now()
   const isEnded = timeLeftMs <= 0
+  const startsAtMs = startsAt ? new Date(startsAt).getTime() : 0
+  const isScheduled = startsAtMs > Date.now()
+  const isActive = (status === 'active' || (!status && !isScheduled)) && !isEnded
 
   return (
     <Link
@@ -54,10 +61,12 @@ export default function AuctionCard({
           className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
             isEnded
               ? 'bg-red-100 text-red-700'
+              : isScheduled
+              ? 'bg-gray-100 text-gray-700'
               : 'bg-green-100 text-green-700'
           }`}
         >
-          {isEnded ? 'Ended' : 'Live'}
+          {isEnded ? 'Ended' : isScheduled ? 'Scheduled' : 'Live'}
         </span>
       </div>
     </Link>

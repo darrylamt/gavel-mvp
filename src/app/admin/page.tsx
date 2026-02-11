@@ -1,61 +1,49 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import Link from 'next/link'
 
 export default function AdminPage() {
-  const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: auth } = await supabase.auth.getUser()
-
-      if (!auth.user) {
-        setIsAdmin(false)
-        setLoading(false)
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', auth.user.id)
-        .single()
-
-      setIsAdmin(profile?.role === 'admin')
-      setLoading(false)
-    }
-
-    checkAdmin()
-  }, [])
-
-  if (loading) {
-    return <p className="p-6">Loading admin panel…</p>
-  }
-
-  if (!isAdmin) {
-    return (
-      <main className="p-10 text-center">
-        <h1 className="text-2xl font-bold text-red-600">
-          Access Denied
-        </h1>
-        <p className="mt-2 text-gray-600">
-          You do not have permission to view this page.
-        </p>
-      </main>
-    )
-  }
-
   return (
-    <main className="max-w-7xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">
-        Admin Dashboard
-      </h1>
+    <main className="max-w-6xl mx-auto p-8 space-y-10">
+      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
 
-      <p className="text-gray-600">
-        Welcome, Admin. More tools coming soon.
-      </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <Link
+          href="/admin/users"
+          className="border rounded-xl p-6 hover:shadow-md transition"
+        >
+          <h2 className="text-xl font-semibold mb-2">
+            Users
+          </h2>
+          <p className="text-sm text-gray-600">
+            View and manage platform users.
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/auctions"
+          className="border rounded-xl p-6 hover:shadow-md transition"
+        >
+          <h2 className="text-xl font-semibold mb-2">
+            Auctions
+          </h2>
+          <p className="text-sm text-gray-600">
+            Create, edit, or remove auctions.
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/products"
+          className="border rounded-xl p-6 hover:shadow-md transition"
+        >
+          <h2 className="text-xl font-semibold mb-2">
+            Products
+          </h2>
+          <p className="text-sm text-gray-600">
+            Manage product listings.
+          </p>
+        </Link>
+
+      </div>
     </main>
   )
 }

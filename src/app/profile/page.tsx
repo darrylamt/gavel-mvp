@@ -7,6 +7,7 @@ import ProfileHeader from '@/components/profile/ProfileHeader'
 import ContactDetailsSection from '@/components/profile/ContactDetailsSection'
 import WonAuctionsSection from '@/components/profile/WonAuctionsSection'
 import SignOutButton from '@/components/profile/SignOutButton'
+import EditProfileModal from '@/components/profile/EditProfileModal'
 
 type WonAuction = {
   auction_id: string
@@ -26,6 +27,8 @@ export default function ProfilePage() {
 
   const [wonAuctions, setWonAuctions] = useState<WonAuction[]>([])
   const [loading, setLoading] = useState(true)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -47,6 +50,7 @@ export default function ProfilePage() {
       setTokens(profile?.token_balance ?? 0)
       setPhone(profile?.phone ?? '')
       setAddress(profile?.address ?? '')
+      setAvatarUrl((profile as any)?.avatar_url ?? null)
 
       await loadWonAuctions(auth.user.id)
 
@@ -121,6 +125,8 @@ export default function ProfilePage() {
       <ProfileHeader
         username={username}
         tokens={tokens}
+        avatarUrl={avatarUrl}
+        onEdit={() => setEditOpen(true)}
       />
 
       <ContactDetailsSection
@@ -138,6 +144,22 @@ export default function ProfilePage() {
       />
 
       <SignOutButton />
+
+      <EditProfileModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        userId={userId!}
+        initialUsername={username}
+        initialPhone={phone}
+        initialAddress={address}
+        initialAvatarUrl={avatarUrl}
+        onSaved={(d) => {
+          if (d.username) setUsername(d.username)
+          if (typeof d.phone !== 'undefined') setPhone(d.phone)
+          if (typeof d.address !== 'undefined') setAddress(d.address)
+          if (d.avatarUrl) setAvatarUrl(d.avatarUrl)
+        }}
+      />
     </main>
   )
 }
