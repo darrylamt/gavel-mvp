@@ -16,6 +16,14 @@ export default async function HomePage() {
     .order('created_at', { ascending: false })
     .limit(6)
 
+  const { data: startingSoon } = await supabase
+    .from('auctions')
+    .select('id, title, current_price, ends_at, starts_at, status, image_url')
+    .gt('starts_at', new Date().toISOString())
+    .eq('status', 'scheduled')
+    .order('starts_at', { ascending: true })
+    .limit(6)
+
   return (
     <main className="max-w-7xl mx-auto px-6 py-14">
       {/* HERO */}
@@ -58,6 +66,31 @@ export default async function HomePage() {
           />
         </div>
       </section>
+
+      {/* STARTING SOON */}
+      {startingSoon && startingSoon.length > 0 && (
+        <section className="mt-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Starting Soon</h2>
+            <Link href="/auctions" className="text-sm font-semibold underline">View all</Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {startingSoon.map((a: any) => (
+              <AuctionCard
+                key={a.id}
+                id={a.id}
+                title={a.title}
+                currentPrice={a.current_price}
+                endsAt={a.ends_at}
+                startsAt={a.starts_at}
+                status={a.status}
+                imageUrl={a.image_url}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* FEATURED AUCTIONS */}
       <section>

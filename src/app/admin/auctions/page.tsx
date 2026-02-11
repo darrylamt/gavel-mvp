@@ -1,8 +1,8 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
-import Link from 'next/link'
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabaseClient"
+import Link from "next/link"
 
 type Auction = {
   id: string
@@ -25,9 +25,9 @@ export default function AdminAuctionsPage() {
 
   const loadAuctions = async () => {
     const { data } = await supabase
-      .from('auctions')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .from("auctions")
+      .select("*")
+      .order("created_at", { ascending: false })
 
     setAuctions(data || [])
     setLoading(false)
@@ -37,16 +37,33 @@ export default function AdminAuctionsPage() {
     const confirmed = confirm('Delete this auction permanently?')
     if (!confirmed) return
 
-    await supabase.from('auctions').delete().eq('id', id)
+    try {
+      const res = await fetch('/api/admin/delete-auction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auctionId: id }),
+      })
 
-    loadAuctions()
+      const data = await res.json()
+
+      if (!res.ok) {
+        console.error('Delete API error:', data)
+        alert(`Failed to delete auction: ${data.error || res.statusText}`)
+        return
+      }
+
+      loadAuctions()
+    } catch (err: any) {
+      console.error('Delete request failed:', err)
+      alert(`Delete failed: ${err.message || err}`)
+    }
   }
 
   const markDelivered = async (id: string) => {
     await supabase
-      .from('auctions')
-      .update({ shipping_status: 'delivered' })
-      .eq('id', id)
+      .from("auctions")
+      .update({ shipping_status: "delivered" })
+      .eq("id", id)
 
     loadAuctions()
   }
@@ -60,10 +77,7 @@ export default function AdminAuctionsPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Admin – Auctions</h1>
 
-        <Link
-          href="/admin/auctions/new"
-          className="bg-black text-white px-4 py-2 rounded"
-        >
+        <Link href="/admin/new" className="bg-black text-white px-4 py-2 rounded">
           + Create Auction
         </Link>
       </div>
@@ -71,56 +85,33 @@ export default function AdminAuctionsPage() {
       <div className="space-y-4">
         {auctions.map((auction) => {
           const hasStarted =
-            auction.starts_at &&
-            new Date(auction.starts_at).getTime() <= Date.now()
+            auction.starts_at && new Date(auction.starts_at).getTime() <= Date.now()
 
           return (
-            <div
-              key={auction.id}
-              className="border rounded-lg p-4 flex justify-between items-center"
-            >
+            <div key={auction.id} className="border rounded-lg p-4 flex justify-between items-center">
               <div>
                 <p className="font-semibold">{auction.title}</p>
 
-                <p className="text-sm text-gray-500">
-                  Status: {auction.status ?? 'N/A'}
-                </p>
+                <p className="text-sm text-gray-500">Status: {auction.status ?? "N/A"}</p>
 
-                <p className="text-sm text-gray-500">
-                  Paid: {auction.paid ? 'Yes' : 'No'}
-                </p>
+                <p className="text-sm text-gray-500">Paid: {auction.paid ? "Yes" : "No"}</p>
 
-                <p className="text-sm text-gray-500">
-                  Delivery: {auction.shipping_status ?? 'Pending'}
-                </p>
+                <p className="text-sm text-gray-500">Delivery: {auction.shipping_status ?? "Pending"}</p>
               </div>
 
               <div className="flex gap-2">
-
-                {/* EDIT — only if NOT started */}
                 {!hasStarted && (
-                  <Link
-                    href={`/admin/auctions/edit/${auction.id}`}
-                    className="px-3 py-1 border rounded text-sm"
-                  >
+                  <Link href={`/admin/auctions/edit/${auction.id}`} className="px-3 py-1 border rounded text-sm">
                     Edit
                   </Link>
                 )}
 
-                {/* DELETE */}
-                <button
-                  onClick={() => deleteAuction(auction.id)}
-                  className="px-3 py-1 border rounded text-sm text-red-600"
-                >
+                <button onClick={() => deleteAuction(auction.id)} className="px-3 py-1 border rounded text-sm text-red-600">
                   Delete
                 </button>
 
-                {/* MARK DELIVERED */}
-                {auction.paid && auction.shipping_status !== 'delivered' && (
-                  <button
-                    onClick={() => markDelivered(auction.id)}
-                    className="px-3 py-1 bg-green-600 text-white rounded text-sm"
-                  >
+                {auction.paid && auction.shipping_status !== "delivered" && (
+                  <button onClick={() => markDelivered(auction.id)} className="px-3 py-1 bg-green-600 text-white rounded text-sm">
                     Mark Delivered
                   </button>
                 )}
