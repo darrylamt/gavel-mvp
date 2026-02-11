@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   // 1️⃣ Fetch auction
   const { data: auction, error: auctionError } = await supabase
     .from('auctions')
-    .select('id, status, current_price, paid')
+    .select('id, status, current_price, paid, ends_at')
     .eq('id', auction_id)
     .single()
 
@@ -47,7 +47,13 @@ export async function POST(req: Request) {
     )
   }
 
-  if (auction.status !== 'ended') {
+  const endedByTime = auction.ends_at
+    ? new Date(auction.ends_at).getTime() <= Date.now()
+    : false
+
+  const auctionEnded = auction.status === 'ended' || endedByTime
+
+  if (!auctionEnded) {
     return NextResponse.json(
       { error: 'Auction not ended' },
       { status: 400 }
