@@ -12,26 +12,53 @@ export default function Navbar() {
   const router = useRouter()
   const { user, loading } = useAuthUser()
   const [tokens, setTokens] = useState<number | null>(null)
+  const [profileUsername, setProfileUsername] = useState<string | null>(null)
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isAdmin = useIsAdmin()
 
   useEffect(() => {
     if (!user) {
       setTokens(null)
+      setProfileUsername(null)
+      setProfileAvatarUrl(null)
       return
     }
 
-    const loadTokens = async () => {
+    const loadProfile = async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('token_balance')
+        .select('username, token_balance, avatar_url')
         .eq('id', user.id)
         .single()
 
-      setTokens(data?.token_balance ?? 0)
+      setProfileUsername((data as any)?.username ?? null)
+      setTokens((data as any)?.token_balance ?? 0)
+      setProfileAvatarUrl((data as any)?.avatar_url ?? null)
     }
 
-    loadTokens()
+    loadProfile()
+
+    /* Subscribe to profile changes */
+    const subscription = supabase
+      .channel(`profile:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        () => {
+          loadProfile()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [user])
 
   const handleLogout = async () => {
@@ -128,9 +155,9 @@ export default function Navbar() {
               <div className="relative group">
                 <AvatarLabelGroup
                   size="md"
-                  src={user?.user_metadata?.avatar_url || null}
+                  src={profileAvatarUrl || null}
                   alt={user?.email || 'User'}
-                  title={user?.user_metadata?.full_name || user?.email || 'User'}
+                  title={profileUsername || user?.email || 'User'}
                   subtitle={user?.email || undefined}
                   onClick={() => router.push('/profile')}
                 />

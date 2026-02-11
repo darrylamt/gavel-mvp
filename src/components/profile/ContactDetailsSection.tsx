@@ -1,3 +1,5 @@
+import { Input } from '@/components/base/input/input'
+
 type Props = {
   phone: string
   address: string
@@ -21,37 +23,27 @@ export default function ContactDetailsSection({
         Contact Details
       </h2>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">
-          Phone Number
-        </label>
-        <input
-          type="text"
+      <div className="space-y-4">
+        <Input
+          label="Phone Number"
+          type="tel"
           value={phone}
-          onChange={(e) =>
-            onPhoneChange(e.target.value)
-          }
-          className="w-full border rounded px-3 py-2"
+          onChange={(e) => onPhoneChange(e.target.value)}
+          placeholder="+1 (555) 000-0000"
         />
-      </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">
-          Delivery Address
-        </label>
-        <textarea
+        <Input
+          label="Delivery Address"
           value={address}
-          onChange={(e) =>
-            onAddressChange(e.target.value)
-          }
-          className="w-full border rounded px-3 py-2"
+          onChange={(e) => onAddressChange(e.target.value)}
+          placeholder="Enter your address"
         />
       </div>
 
       <button
         onClick={onSave}
         disabled={saving}
-        className="bg-black text-white px-4 py-2 rounded"
+        className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
       >
         {saving ? 'Saving…' : 'Save Changes'}
       </button>

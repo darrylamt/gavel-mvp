@@ -57,42 +57,69 @@ export default function NewAuction() {
 
   try {
     if (imageFile) {
-      const filename = `auctions/${auction.id}/${Date.now()}-${imageFile.name}`
-      const { error: uploadErr } = await supabase.storage
-        .from('auction-images')
-        .upload(filename, imageFile, { upsert: true })
+      console.log('Uploading primary auction image')
+      const formData = new FormData()
+      formData.append('file', imageFile)
+      formData.append('auctionId', auction.id)
 
-      if (uploadErr) throw uploadErr
+      const res = await fetch('/api/upload/auction-image', {
+        method: 'POST',
+        body: formData,
+      })
 
-      const { data: pub } = supabase.storage.from('auction-images').getPublicUrl(filename)
-      uploadedUrls.push(pub.publicUrl)
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.error || 'Primary image upload failed')
+      }
+
+      const data = await res.json()
+      uploadedUrls.push(data.url)
+      console.log('Primary image uploaded:', data.url)
     }
 
     if (extraImages && extraImages.length > 0) {
       for (let i = 0; i < extraImages.length; i++) {
         const f = extraImages[i]
-        const filename = `auctions/${auction.id}/${Date.now()}-${f.name}`
-        const { error: uploadErr } = await supabase.storage
-          .from('auction-images')
-          .upload(filename, f, { upsert: true })
+        console.log('Uploading extra image:', i + 1)
 
-        if (uploadErr) throw uploadErr
+        const formData = new FormData()
+        formData.append('file', f)
+        formData.append('auctionId', auction.id)
 
-        const { data: pub } = supabase.storage.from('auction-images').getPublicUrl(filename)
-        uploadedUrls.push(pub.publicUrl)
+        const res = await fetch('/api/upload/auction-image', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!res.ok) {
+          const errData = await res.json()
+          throw new Error(errData.error || `Extra image ${i + 1} upload failed`)
+        }
+
+        const data = await res.json()
+        uploadedUrls.push(data.url)
+        console.log('Extra image uploaded:', data.url)
       }
     }
 
     // Update auction with image_url (first) and images (array)
     if (uploadedUrls.length > 0) {
-      await supabase.from('auctions').update({ image_url: uploadedUrls[0], images: uploadedUrls }).eq('id', auction.id)
+      const { error: updateErr } = await supabase
+        .from('auctions')
+        .update({ image_url: uploadedUrls[0], images: uploadedUrls })
+        .eq('id', auction.id)
+
+      if (updateErr) {
+        console.error('Auction update error:', updateErr)
+        throw new Error(`Auction update failed: ${updateErr.message}`)
+      }
     }
 
     alert('Auction created successfully')
     router.push(`/auctions/${auction.id}`)
   } catch (err: any) {
     console.error('Upload error', err)
-    alert('Failed to upload images')
+    alert(`Failed to complete auction creation: ${err.message}`)
   }
 }
 
