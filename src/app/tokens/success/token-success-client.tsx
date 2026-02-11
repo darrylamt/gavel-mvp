@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function TokenSuccessClient() {
   const params = useSearchParams()
@@ -22,7 +23,9 @@ export default function TokenSuccessClient() {
       body: JSON.stringify({ reference }),
     })
       .then((res) => res.json())
-      .then(() => {
+      .then(async () => {
+        /* Refresh auth session to prevent logout */
+        await supabase.auth.refreshSession()
         setStatus('Tokens added successfully 🎉')
         setTimeout(() => router.push('/'), 2000)
       })

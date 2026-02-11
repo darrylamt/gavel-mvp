@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -23,20 +23,18 @@ export default function AuctionDetailPage() {
   const [bidError, setBidError] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState('Calculating…')
 
-  /* ---------------- USER ---------------- */
-
+  /* Load current user */
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
     })
   }, [])
 
-  /* ---------------- LOAD AUCTION ---------------- */
-
+  /* Load auction data */
   useEffect(() => {
     if (!id) return
 
-    const load = async () => {
+    const loadAuction = async () => {
       const { data: auctionData } = await supabase
         .from('auctions')
         .select(`
@@ -53,29 +51,63 @@ export default function AuctionDetailPage() {
         .eq('id', id)
         .single()
 
-      const { data: bidsData } = await supabase
-        .from('bids')
-        .select(`
-          id,
-          amount,
-          user_id,
-          profiles (
-            username
-          )
-        `)
-        .eq('auction_id', id)
-        .order('amount', { ascending: false })
-
       setAuction(auctionData)
-      setBids(bidsData || [])
       setLoading(false)
     }
 
-    load()
+    loadAuction()
   }, [id])
 
-  /* ---------------- AUTO END AUCTION ---------------- */
+  /* Load and subscribe to bids in real-time */
+  const loadBids = useCallback(async () => {
+    if (!id) return
 
+    const { data: bidsData, error } = await supabase
+      .from('bids')
+      .select(`
+        id,
+        amount,
+        user_id,
+        profiles (
+          username
+        )
+      `)
+      .eq('auction_id', id)
+      .order('amount', { ascending: false })
+
+    if (!error && bidsData) {
+      setBids(bidsData)
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+
+    loadBids()
+
+    /* Subscribe to real-time bid updates */
+    const subscription = supabase
+      .channel(`bids:${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bids',
+          filter: `auction_id=eq.${id}`,
+        },
+        (payload) => {
+          loadBids()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [id, loadBids])
+
+  /* Auto-end auction when time expires */
   useEffect(() => {
     if (!auction?.ends_at || auction.status === 'ended') return
 
@@ -96,8 +128,7 @@ export default function AuctionDetailPage() {
     }
   }, [auction])
 
-  /* ---------------- COUNTDOWN ---------------- */
-
+  /* Update countdown timer */
   useEffect(() => {
     if (!auction?.ends_at) return
 
@@ -129,8 +160,6 @@ export default function AuctionDetailPage() {
     return () => clearInterval(i)
   }, [auction?.ends_at])
 
-  /* ---------------- LOGIC ---------------- */
-
   if (loading) return <p className="p-6">Loading auction…</p>
   if (!auction)
     return <p className="p-6 text-red-500">Auction not found</p>
@@ -142,8 +171,7 @@ export default function AuctionDetailPage() {
     bids.length > 0 &&
     bids[0]?.user_id === userId
 
-  /* ---------------- BID ---------------- */
-
+  /* Place bid and refresh */
   const placeBid = async () => {
     if (!userId) {
       setBidError('You must be logged in')
@@ -178,13 +206,14 @@ export default function AuctionDetailPage() {
       }
 
       setBidAmount('')
+      /* Refresh bids after successful bid */
+      await loadBids()
     } finally {
       setIsPlacingBid(false)
     }
   }
 
-  /* ---------------- PAY NOW ---------------- */
-
+  /* Payment handler */
   const payNow = async () => {
     const { data: auth } = await supabase.auth.getUser()
     if (!auth.user || !auth.user.email) {
@@ -217,11 +246,8 @@ export default function AuctionDetailPage() {
     window.location.href = data.authorization_url
   }
 
-  /* ---------------- UI ---------------- */
-
   return (
     <main className="max-w-4xl mx-auto p-6 space-y-6">
-
       {auction.image_url && (
         <img
           src={auction.image_url}

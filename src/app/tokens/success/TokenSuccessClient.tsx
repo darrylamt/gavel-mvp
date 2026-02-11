@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function TokenSuccessClient() {
   const searchParams = useSearchParams()
@@ -19,6 +20,8 @@ export default function TokenSuccessClient() {
       })
 
       if (res.ok) {
+        /* Refresh auth session to prevent logout */
+        await supabase.auth.refreshSession()
         setStatus('✅ Tokens added to your account')
       } else {
         setStatus('❌ Verification failed')

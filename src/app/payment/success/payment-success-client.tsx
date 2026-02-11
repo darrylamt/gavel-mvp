@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function PaymentSuccessClient() {
   const params = useSearchParams()
@@ -24,6 +25,8 @@ export default function PaymentSuccessClient() {
       })
 
       if (res.ok) {
+        /* Refresh auth session to prevent logout */
+        await supabase.auth.refreshSession()
         setStatus('success')
       } else {
         setStatus('error')
