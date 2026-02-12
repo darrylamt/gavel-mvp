@@ -11,12 +11,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <Analytics/>
-      <SpeedInsights/>
       <body>
         <Navbar />
         {children}
         <Footer />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
