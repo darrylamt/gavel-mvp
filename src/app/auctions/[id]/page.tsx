@@ -46,7 +46,9 @@ export default function AuctionDetailPage() {
           status,
           paid,
           image_url,
-          images
+          images,
+          reserve_price,
+          starts_at
         `)
         .eq('id', id)
         .single()

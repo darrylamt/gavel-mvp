@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   const { data: auction, error: auctionError } = await supabase
     .from('auctions')
-    .select('id, status, starts_at, ends_at, current_price')
+    .select('id, status, starts_at, ends_at, current_price, reserve_price')
     .eq('id', auction_id)
     .single()
 
@@ -67,9 +67,18 @@ export async function POST(req: Request) {
     )
   }
 
+  /* Check bid amount against current price */
   if (Number(amount) <= auction.current_price) {
     return NextResponse.json(
       { error: 'Bid must be higher than current price' },
+      { status: 400 }
+    )
+  }
+
+  /* Check bid amount against reserve price if set */
+  if (auction.reserve_price != null && Number(amount) < auction.reserve_price) {
+    return NextResponse.json(
+      { error: `Bid must meet the reserve price of GHS ${auction.reserve_price}` },
       { status: 400 }
     )
   }
