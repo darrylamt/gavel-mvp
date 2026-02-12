@@ -11,7 +11,7 @@ const supabase = createClient(
 export default async function AuctionsPage() {
   const { data: auctions } = await supabase
     .from('auctions')
-    .select('id, title, current_price, ends_at, starts_at, status, image_url, reserve_price')
+    .select('id, title, description, starting_price, current_price, ends_at, starts_at, status, image_url, images, reserve_price, min_increment, max_increment')
     .order('created_at', { ascending: false })
 
 return (
@@ -32,16 +32,22 @@ return (
     )}
 
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-      {auctions?.map((auction) => (
+      {auctions?.map((auction: any) => (
         <AuctionCard
           key={auction.id}
           id={auction.id}
           title={auction.title}
+          description={auction.description}
+          startingPrice={auction.starting_price}
           currentPrice={auction.current_price}
           endsAt={auction.ends_at}
           startsAt={auction.starts_at}
           status={auction.status}
           imageUrl={auction.image_url}
+          images={auction.images}
+          reservePrice={auction.reserve_price}
+          minIncrement={auction.min_increment}
+          maxIncrement={auction.max_increment}
         />
       ))}
     </div>

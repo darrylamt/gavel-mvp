@@ -1,3 +1,12 @@
+import { Faq1 } from '@/components/faq1'
+
+export default function FaqPage() {
+  return (
+    <main>
+      <Faq1 />
+    </main>
+  )
+}
 export default function FAQPage() {
   return (
     <main className="max-w-3xl mx-auto px-6 py-12">

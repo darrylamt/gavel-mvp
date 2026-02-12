@@ -278,7 +278,39 @@ export default function AuctionDetailPage() {
         timeLeft={timeLeft}
       />
 
-      <p className="text-gray-700">{auction.description}</p>
+      <div className="space-y-4">
+        <p className="text-gray-700">{auction.description}</p>
+
+        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+          {auction.starts_at && (
+            <div>
+              <div className="font-medium">Starts</div>
+              <div>{new Date(auction.starts_at).toLocaleString()}</div>
+            </div>
+          )}
+
+          {auction.ends_at && (
+            <div>
+              <div className="font-medium">Ends</div>
+              <div>{new Date(auction.ends_at).toLocaleString()}</div>
+            </div>
+          )}
+
+          {auction.reserve_price != null && (
+            <div>
+              <div className="font-medium">Reserve Price</div>
+              <div>GHS {Number(auction.reserve_price).toLocaleString()}</div>
+            </div>
+          )}
+
+          <div>
+            <div className="font-medium">Bid Increment</div>
+            <div>
+              {auction.min_increment ?? 1}{auction.max_increment ? ` - ${auction.max_increment}` : ''} GHS
+            </div>
+          </div>
+        </div>
+      </div>
 
       <BidForm
         hasEnded={hasEnded}
