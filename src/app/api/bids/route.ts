@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   const { data: auction, error: auctionError } = await supabase
     .from('auctions')
-    .select('id, status, ends_at, current_price')
+    .select('id, status, starts_at, ends_at, current_price')
     .eq('id', auction_id)
     .single()
 
@@ -35,6 +35,20 @@ export async function POST(req: Request) {
   }
 
   const now = Date.now()
+
+  /* Check if auction has started */
+  const hasStarted =
+    !auction.starts_at ||
+    new Date(auction.starts_at).getTime() <= now
+
+  if (!hasStarted) {
+    return NextResponse.json(
+      { error: 'Auction has not started yet' },
+      { status: 403 }
+    )
+  }
+
+  /* Check if auction has ended */
   const endedByTime =
     auction.ends_at &&
     new Date(auction.ends_at).getTime() <= now

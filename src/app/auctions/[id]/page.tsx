@@ -296,19 +296,7 @@ export default function AuctionDetailPage() {
             </div>
           )}
 
-          {auction.reserve_price != null && (
-            <div>
-              <div className="font-medium">Reserve Price</div>
-              <div>GHS {Number(auction.reserve_price).toLocaleString()}</div>
-            </div>
-          )}
 
-          <div>
-            <div className="font-medium">Bid Increment</div>
-            <div>
-              {auction.min_increment ?? 1}{auction.max_increment ? ` - ${auction.max_increment}` : ''} GHS
-            </div>
-          </div>
         </div>
       </div>
 

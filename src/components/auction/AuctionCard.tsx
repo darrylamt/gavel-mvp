@@ -115,10 +115,6 @@ export default function AuctionCard({
           <p className="text-sm text-gray-500 mb-1">Starting: GHS {startingPrice.toLocaleString()}</p>
         )}
 
-        {reservePrice != null && (
-          <p className="text-sm text-gray-500 mb-1">Reserve: GHS {reservePrice.toLocaleString()}</p>
-        )}
-
         <span
           className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
             isEnded
