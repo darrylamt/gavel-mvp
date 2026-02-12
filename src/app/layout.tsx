@@ -2,6 +2,7 @@ import Footer from '@/components/layout/Footer'
 import './globals.css'
 import Navbar from '@/components/layout/Navbar'
 import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function RootLayout({
   children,
@@ -11,6 +12,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <Analytics/>
+      <SpeedInsights/>
       <body>
         <Navbar />
         {children}
