@@ -140,10 +140,11 @@ export default function AuctionDetailPage() {
   }, [id, loadBids])
 
   useEffect(() => {
-    if (!auction?.ends_at) return
+    const endsAt = auction?.ends_at
+    if (!endsAt) return
 
     const tick = () => {
-      const diff = new Date(auction.ends_at).getTime() - Date.now()
+      const diff = new Date(endsAt).getTime() - Date.now()
       if (diff <= 0) {
         setTimeLeft('Auction Ended')
         return
