@@ -102,7 +102,14 @@ export default function AuctionDetailPage() {
       .order('amount', { ascending: false })
 
     if (!error && bidsData) {
-      setBids(bidsData)
+      const normalized = bidsData.map((bid: any) => ({
+        ...bid,
+        profiles: Array.isArray(bid.profiles)
+          ? bid.profiles[0] ?? null
+          : bid.profiles ?? null,
+      }))
+
+      setBids(normalized)
     }
   }, [id])
 
