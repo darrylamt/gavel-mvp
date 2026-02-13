@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -9,47 +9,77 @@ import AuctionCountdown from '@/components/auction/AuctionCountdown'
 import BidForm from '@/components/auction/BidForm'
 import BidList from '@/components/auction/BidList'
 import WinnerPanel from '@/components/auction/WinnerPanel'
+import ImageGallery from '@/components/auction/ImageGallery'
+
+type AuctionRecord = {
+  id: string
+  title: string
+  description: string | null
+  current_price: number
+  starts_at: string | null
+  ends_at: string | null
+  status: string | null
+  paid: boolean
+  image_url: string | null
+  images: string[] | null
+}
+
+type BidRecord = {
+  id: string
+  amount: number
+  user_id: string
+  profiles?: {
+    username: string | null
+  }
+}
 
 export default function AuctionDetailPage() {
   const { id } = useParams()
 
-  const [auction, setAuction] = useState<any>(null)
-  const [bids, setBids] = useState<any[]>([])
+  const [auction, setAuction] = useState<AuctionRecord | null>(null)
+  const [bids, setBids] = useState<BidRecord[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-
   const [bidAmount, setBidAmount] = useState('')
   const [isPlacingBid, setIsPlacingBid] = useState(false)
   const [bidError, setBidError] = useState<string | null>(null)
-  const [timeLeft, setTimeLeft] = useState('Calculating…')
+  const [timeLeft, setTimeLeft] = useState('Calculating...')
 
-  /* Load current user */
+  const now = Date.now()
+
+  const startsAtMs = useMemo(() => {
+    if (!auction?.starts_at) return null
+    return new Date(auction.starts_at).getTime()
+  }, [auction?.starts_at])
+
+  const endsAtMs = useMemo(() => {
+    if (!auction?.ends_at) return null
+    return new Date(auction.ends_at).getTime()
+  }, [auction?.ends_at])
+
+  const isScheduled = startsAtMs != null && startsAtMs > now
+  const hasEnded =
+    auction?.status === 'ended' ||
+    (endsAtMs != null && endsAtMs <= now)
+
+  const isWinner =
+    hasEnded && bids.length > 0 && bids[0]?.user_id === userId
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
     })
   }, [])
 
-  /* Load auction data */
   useEffect(() => {
     if (!id) return
 
     const loadAuction = async () => {
       const { data: auctionData } = await supabase
         .from('auctions')
-        .select(`
-          id,
-          title,
-          description,
-          current_price,
-          ends_at,
-          status,
-          paid,
-          image_url,
-          images,
-          reserve_price,
-          starts_at
-        `)
+        .select(
+          'id, title, description, current_price, ends_at, status, paid, image_url, images, starts_at'
+        )
         .eq('id', id)
         .single()
 
@@ -60,20 +90,14 @@ export default function AuctionDetailPage() {
     loadAuction()
   }, [id])
 
-  /* Load and subscribe to bids in real-time */
   const loadBids = useCallback(async () => {
     if (!id) return
 
     const { data: bidsData, error } = await supabase
       .from('bids')
-      .select(`
-        id,
-        amount,
-        user_id,
-        profiles (
-          username
-        )
-      `)
+      .select(
+        'id, amount, user_id, profiles (username)'
+      )
       .eq('auction_id', id)
       .order('amount', { ascending: false })
 
@@ -87,7 +111,6 @@ export default function AuctionDetailPage() {
 
     loadBids()
 
-    /* Subscribe to real-time bid updates */
     const subscription = supabase
       .channel(`bids:${id}`)
       .on(
@@ -98,7 +121,7 @@ export default function AuctionDetailPage() {
           table: 'bids',
           filter: `auction_id=eq.${id}`,
         },
-        (payload) => {
+        () => {
           loadBids()
         }
       )
@@ -109,35 +132,11 @@ export default function AuctionDetailPage() {
     }
   }, [id, loadBids])
 
-  /* Auto-end auction when time expires */
-  useEffect(() => {
-    if (!auction?.ends_at || auction.status === 'ended') return
-
-    const ended =
-      new Date(auction.ends_at).getTime() <= Date.now()
-
-    if (ended) {
-      supabase
-        .from('auctions')
-        .update({ status: 'ended' })
-        .eq('id', auction.id)
-        .then(() => {
-          setAuction((prev: any) => ({
-            ...prev,
-            status: 'ended',
-          }))
-        })
-    }
-  }, [auction])
-
-  /* Update countdown timer */
   useEffect(() => {
     if (!auction?.ends_at) return
 
     const tick = () => {
-      const diff =
-        new Date(auction.ends_at).getTime() - Date.now()
-
+      const diff = new Date(auction.ends_at).getTime() - Date.now()
       if (diff <= 0) {
         setTimeLeft('Auction Ended')
         return
@@ -162,26 +161,24 @@ export default function AuctionDetailPage() {
     return () => clearInterval(i)
   }, [auction?.ends_at])
 
-  if (loading) return <p className="p-6">Loading auction…</p>
-  if (!auction)
-    return <p className="p-6 text-red-500">Auction not found</p>
-
-  const hasEnded = auction.status === 'ended'
-
-  const isWinner =
-    hasEnded &&
-    bids.length > 0 &&
-    bids[0]?.user_id === userId
-
-  /* Place bid and refresh */
   const placeBid = async () => {
     if (!userId) {
       setBidError('You must be logged in')
       return
     }
 
+    if (isScheduled) {
+      setBidError('Auction has not started yet')
+      return
+    }
+
+    if (hasEnded) {
+      setBidError('Auction has ended')
+      return
+    }
+
     const amount = Number(bidAmount)
-    if (!amount || amount <= auction.current_price) {
+    if (!amount || amount <= auction!.current_price) {
       setBidError('Bid must be higher than current price')
       return
     }
@@ -194,7 +191,7 @@ export default function AuctionDetailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          auction_id: auction.id,
+          auction_id: auction!.id,
           user_id: userId,
           amount,
         }),
@@ -208,14 +205,12 @@ export default function AuctionDetailPage() {
       }
 
       setBidAmount('')
-      /* Refresh bids after successful bid */
       await loadBids()
     } finally {
       setIsPlacingBid(false)
     }
   }
 
-  /* Payment handler */
   const payNow = async () => {
     const { data: auth } = await supabase.auth.getUser()
     if (!auth.user || !auth.user.email) {
@@ -227,7 +222,7 @@ export default function AuctionDetailPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        auction_id: auction.id,
+        auction_id: auction!.id,
         user_id: auth.user.id,
         email: auth.user.email,
       }),
@@ -248,76 +243,87 @@ export default function AuctionDetailPage() {
     window.location.href = data.authorization_url
   }
 
+  if (loading) return <p className="p-6">Loading auction...</p>
+  if (!auction) return <p className="p-6 text-red-500">Auction not found</p>
+
   return (
-    <main className="max-w-4xl mx-auto p-6 space-y-6">
-      {auction.image_url && (
-        <img
-          src={auction.image_url}
-          alt={auction.title}
-          className="w-full h-96 object-cover rounded-xl border"
-        />
-      )}
+    <main className="mx-auto w-full max-w-5xl px-6 py-8 space-y-6">
+      <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+        <section className="space-y-6">
+          <ImageGallery
+            images={
+              auction.images && auction.images.length > 0
+                ? auction.images
+                : auction.image_url
+                ? [auction.image_url]
+                : []
+            }
+          />
 
-      {Array.isArray(auction.images) && auction.images.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          {auction.images.map((img: string, i: number) => (
-            <img
-              key={i}
-              src={img}
-              className="h-32 w-full object-cover rounded-lg border"
+          <div className="space-y-4">
+            <AuctionHeader
+              title={auction.title}
+              currentPrice={auction.current_price}
             />
-          ))}
-        </div>
-      )}
 
-      <AuctionHeader
-        title={auction.title}
-        currentPrice={auction.current_price}
-      />
+            {auction.ends_at && (
+              <AuctionCountdown
+                endsAt={auction.ends_at}
+                timeLeft={timeLeft}
+              />
+            )}
 
-      <AuctionCountdown
-        endsAt={auction.ends_at}
-        timeLeft={timeLeft}
-      />
+            <p className="text-gray-700 leading-relaxed">
+              {auction.description || 'No description provided.'}
+            </p>
 
-      <div className="space-y-4">
-        <p className="text-gray-700">{auction.description}</p>
+            <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 sm:grid-cols-2">
+              {auction.starts_at && (
+                <div>
+                  <div className="font-medium">Starts</div>
+                  <div>{new Date(auction.starts_at).toLocaleString()}</div>
+                </div>
+              )}
+              {auction.ends_at && (
+                <div>
+                  <div className="font-medium">Ends</div>
+                  <div>{new Date(auction.ends_at).toLocaleString()}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
 
-        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-          {auction.starts_at && (
-            <div>
-              <div className="font-medium">Starts</div>
-              <div>{new Date(auction.starts_at).toLocaleString()}</div>
+        <aside className="space-y-4">
+          {isScheduled && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              This auction has not started yet.
+            </div>
+          )}
+          {hasEnded && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              This auction has ended.
             </div>
           )}
 
-          {auction.ends_at && (
-            <div>
-              <div className="font-medium">Ends</div>
-              <div>{new Date(auction.ends_at).toLocaleString()}</div>
-            </div>
-          )}
+          <BidForm
+            hasEnded={hasEnded || isScheduled}
+            bidAmount={bidAmount}
+            isPlacingBid={isPlacingBid}
+            error={bidError}
+            isLoggedIn={!!userId}
+            onBidAmountChange={setBidAmount}
+            onSubmit={placeBid}
+          />
 
-
-        </div>
+          <WinnerPanel
+            hasEnded={hasEnded}
+            isWinner={isWinner}
+            paid={auction.paid}
+            onPay={payNow}
+          />
+        </aside>
       </div>
-
-      <BidForm
-        hasEnded={hasEnded}
-        bidAmount={bidAmount}
-        isPlacingBid={isPlacingBid}
-        error={bidError}
-        isLoggedIn={!!userId}
-        onBidAmountChange={setBidAmount}
-        onSubmit={placeBid}
-      />
-
-      <WinnerPanel
-        hasEnded={hasEnded}
-        isWinner={isWinner}
-        paid={auction.paid}
-        onPay={payNow}
-      />
 
       <BidList bids={bids} currentUserId={userId} />
     </main>

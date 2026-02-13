@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   const { data: auction, error: auctionError } = await supabase
     .from('auctions')
-    .select('id, status, starts_at, ends_at, current_price, reserve_price')
+    .select('id, status, starts_at, ends_at, current_price')
     .eq('id', auction_id)
     .single()
 
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     auction.ends_at &&
     new Date(auction.ends_at).getTime() <= now
 
-  if (auction.status === 'ended' || endedByTime) {
+  if (endedByTime || auction.status === 'ended') {
     if (auction.status !== 'ended') {
       await supabase
         .from('auctions')
@@ -67,18 +67,25 @@ export async function POST(req: Request) {
     )
   }
 
-  /* Check bid amount against current price */
-  if (Number(amount) <= auction.current_price) {
+  if (auction.status === 'scheduled') {
+    await supabase
+      .from('auctions')
+      .update({ status: 'active' })
+      .eq('id', auction_id)
+  }
+
+  const bidAmount = Number(amount)
+  if (!Number.isFinite(bidAmount) || bidAmount <= 0) {
     return NextResponse.json(
-      { error: 'Bid must be higher than current price' },
+      { error: 'Invalid bid amount' },
       { status: 400 }
     )
   }
 
-  /* Check bid amount against reserve price if set */
-  if (auction.reserve_price != null && Number(amount) < auction.reserve_price) {
+  /* Check bid amount against current price */
+  if (bidAmount <= auction.current_price) {
     return NextResponse.json(
-      { error: `Bid must meet the reserve price of GHS ${auction.reserve_price}` },
+      { error: 'Bid must be higher than current price' },
       { status: 400 }
     )
   }
@@ -112,12 +119,13 @@ export async function POST(req: Request) {
     .insert({
       auction_id,
       user_id,
-      amount,
+      amount: bidAmount,
     })
 
   if (bidError) {
+    console.error('Bid insert error:', bidError)
     return NextResponse.json(
-      { error: 'Failed to place bid' },
+      { error: `Failed to place bid: ${bidError.message}` },
       { status: 500 }
     )
   }
@@ -126,7 +134,7 @@ export async function POST(req: Request) {
 
   await supabase
     .from('auctions')
-    .update({ current_price: amount })
+    .update({ current_price: bidAmount })
     .eq('id', auction_id)
 
   /* ---------------- DEDUCT TOKEN ---------------- */
