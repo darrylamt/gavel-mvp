@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Heart } from 'lucide-react'
+import { useStarredAuctions } from '@/hooks/useStarredAuctions'
 
 type AuctionCardProps = {
   id: string
@@ -34,11 +36,19 @@ export default function AuctionCard({
   minIncrement,
   maxIncrement,
 }: AuctionCardProps) {
-  const timeLeftMs = new Date(endsAt).getTime() - Date.now()
+  const { isStarred, toggleStarred } = useStarredAuctions()
+  const starred = isStarred(id)
+  const [nowMs, setNowMs] = useState(0)
+
+  useEffect(() => {
+    const ticker = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(ticker)
+  }, [])
+
+  const timeLeftMs = new Date(endsAt).getTime() - nowMs
   const isEnded = timeLeftMs <= 0
   const startsAtMs = startsAt ? new Date(startsAt).getTime() : 0
-  const isScheduled = startsAtMs > Date.now()
-  const isActive = (status === 'active' || (!status && !isScheduled)) && !isEnded
+  const isScheduled = startsAtMs > nowMs
 
   const [startCountdown, setStartCountdown] = useState<string | null>(null)
 
@@ -78,6 +88,19 @@ export default function AuctionCard({
     >
       {/* IMAGE */}
       <div className="h-48 bg-gray-100 overflow-hidden relative">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            toggleStarred(id)
+          }}
+          aria-label={starred ? 'Remove from starred auctions' : 'Add to starred auctions'}
+          className="absolute left-2 top-2 z-10 rounded-full bg-white/90 p-2 text-gray-700 shadow-sm transition hover:bg-white"
+        >
+          <Heart className={`h-4 w-4 ${starred ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+        </button>
+
         {images && images.length > 0 ? (
           <img
             src={images[0]}

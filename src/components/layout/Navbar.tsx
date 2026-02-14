@@ -1,12 +1,19 @@
 'use client'
 
-import { Menu, LogOut } from 'lucide-react'
+import { Menu, LogOut, Heart } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuthUser } from '@/hooks/useAuthUser'
 import AvatarLabelGroup from '@/components/base/avatar/avatar-label-group'
 import { useIsAdmin } from '@/hooks/useIsAdmin'
+import { useStarredAuctions } from '@/hooks/useStarredAuctions'
+
+type ProfileData = {
+  username: string | null
+  token_balance: number | null
+  avatar_url: string | null
+}
 
 export default function Navbar() {
   const router = useRouter()
@@ -16,12 +23,10 @@ export default function Navbar() {
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isAdmin = useIsAdmin()
+  const { starredCount } = useStarredAuctions()
 
   useEffect(() => {
     if (!user) {
-      setTokens(null)
-      setProfileUsername(null)
-      setProfileAvatarUrl(null)
       return
     }
 
@@ -32,9 +37,10 @@ export default function Navbar() {
         .eq('id', user.id)
         .single()
 
-      setProfileUsername((data as any)?.username ?? null)
-      setTokens((data as any)?.token_balance ?? 0)
-      setProfileAvatarUrl((data as any)?.avatar_url ?? null)
+      const profile = (data as ProfileData | null) ?? null
+      setProfileUsername(profile?.username ?? null)
+      setTokens(profile?.token_balance ?? 0)
+      setProfileAvatarUrl(profile?.avatar_url ?? null)
     }
 
     loadProfile()
@@ -122,6 +128,19 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/starred')}
+              className="relative p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              aria-label="Starred auctions"
+            >
+              <Heart className="h-5 w-5 text-gray-700" />
+              {starredCount > 0 && (
+                <span className="absolute -top-1 -right-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
+                  {starredCount}
+                </span>
+              )}
+            </button>
+
           {/* Actions */}
             {!loading && user && (
               <button
