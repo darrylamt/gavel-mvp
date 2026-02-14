@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import sharp from 'sharp'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,16 +20,35 @@ export async function POST(req: Request) {
       )
     }
 
-    const filename = `auctions/${auctionId}/${Date.now()}-${file.name}`
-    const buffer = await file.arrayBuffer()
+    const originalBuffer = Buffer.from(await file.arrayBuffer())
+    const safeBaseName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9-_]/g, '_')
+
+    let uploadBuffer = originalBuffer
+    let uploadContentType = file.type || 'application/octet-stream'
+    let uploadExtension = file.name.split('.').pop() || 'bin'
+
+    if (file.type.startsWith('image/') && file.type !== 'image/gif' && file.type !== 'image/svg+xml') {
+      const compressed = await sharp(originalBuffer)
+        .rotate()
+        .resize({ width: 1920, withoutEnlargement: true })
+        .webp({ quality: 78 })
+        .toBuffer()
+
+      uploadBuffer = Buffer.from(compressed)
+
+      uploadContentType = 'image/webp'
+      uploadExtension = 'webp'
+    }
+
+    const filename = `auctions/${auctionId}/${Date.now()}-${safeBaseName}.${uploadExtension}`
 
     console.log('Uploading auction image:', filename)
 
     const { data, error } = await supabase.storage
       .from('auction-images')
-      .upload(filename, Buffer.from(buffer), {
+      .upload(filename, uploadBuffer, {
         upsert: true,
-        contentType: file.type,
+        contentType: uploadContentType,
       })
 
     if (error) {
@@ -49,10 +69,11 @@ export async function POST(req: Request) {
       url: publicUrl.publicUrl,
       path: filename,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown upload error'
     console.error('Upload error:', err)
     return NextResponse.json(
-      { error: `Upload failed: ${err.message}` },
+      { error: `Upload failed: ${message}` },
       { status: 500 }
     )
   }

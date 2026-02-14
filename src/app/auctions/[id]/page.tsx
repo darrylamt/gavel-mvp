@@ -113,8 +113,8 @@ export default function AuctionDetailPage() {
       const normalized = (bidsData as RawBidRecord[]).map((bid) => ({
         ...bid,
         profiles: Array.isArray(bid.profiles)
-          ? bid.profiles[0] ?? null
-          : bid.profiles ?? null,
+          ? bid.profiles[0] ?? undefined
+          : bid.profiles ?? undefined,
       }))
 
       setBids(normalized)
@@ -306,7 +306,7 @@ export default function AuctionDetailPage() {
               />
             )}
 
-            <p className="text-gray-700 leading-relaxed">
+            <p className="whitespace-pre-line text-gray-700 leading-relaxed">
               {auction.description || 'No description provided.'}
             </p>
 
