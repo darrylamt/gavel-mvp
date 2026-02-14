@@ -136,10 +136,10 @@ export default function EditProfileModal({
           </div>
 
           <Input
-            label="Address"
+            label="Home Address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="Enter your address"
+            placeholder="Enter your Home address"
           />
 
           <div className="space-y-2">
