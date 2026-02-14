@@ -1,85 +1,136 @@
 import Link from 'next/link'
+import { Facebook, Instagram, Github, Twitter } from 'lucide-react'
 
 export default function Footer() {
   return (
-    <footer className="mt-20 border-t bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div>
-            <h3 className="text-lg font-bold mb-2">Gavel</h3>
-            <p className="text-sm text-gray-600">
-              A modern auction platform where bids are powered by tokens.
-            </p>
-          </div>
+    <footer className="bg-gray-50 py-10 sm:pt-16 lg:pt-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 gap-x-12 gap-y-16 md:grid-cols-3 lg:grid-cols-6">
+          <div className="col-span-2 md:col-span-3 lg:col-span-2 lg:pr-8">
+            <Link href="/" className="inline-flex text-2xl font-bold tracking-tight text-black hover:opacity-80">
+              Gavel
+            </Link>
 
-          {/* Product */}
-          <div>
-            <h4 className="text-sm font-semibold mb-3">Product</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
+            <p className="mt-7 text-base leading-relaxed text-gray-600">
+              A modern auction platform where bids are powered by tokens, auctions are transparent,
+              and winning is seamless.
+            </p>
+
+            <ul className="mt-9 flex items-center space-x-3">
               <li>
-                <Link href="/auctions" className="hover:text-black">
-                  Auctions
-                </Link>
+                <a
+                  href="https://x.com/gavelgh"
+                  aria-label="Twitter"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-white transition-all duration-200 hover:bg-blue-600 focus:bg-blue-600"
+                >
+                  <Twitter className="h-4 w-4" />
+                </a>
               </li>
               <li>
-                <Link href="/tokens" className="hover:text-black">
-                  Buy Tokens
-                </Link>
+                <a
+                  href="#"
+                  aria-label="Facebook"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-white transition-all duration-200 hover:bg-blue-600 focus:bg-blue-600"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
               </li>
               <li>
-                <Link href="/profile" className="hover:text-black">
-                  Profile
-                </Link>
+                <a
+                  href="https://www.instagram.com/gavel.gh/"
+                  aria-label="Instagram"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-white transition-all duration-200 hover:bg-blue-600 focus:bg-blue-600"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
               </li>
             </ul>
           </div>
 
-          {/* Support */}
           <div>
-            <h4 className="text-sm font-semibold mb-3">Support</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
+            <p className="text-sm font-semibold uppercase tracking-widest text-gray-400">Company</p>
+
+            <ul className="mt-6 space-y-4">
               <li>
-                <Link href="/faq" className="hover:text-black">
-                  FAQs
+                <Link href="/" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
+                  About
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-black">
+                <Link href="/auctions" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
+                  Auctions
+                </Link>
+              </li>
+              <li>
+                <Link href="/tokens" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
+                  Tokens
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
                   Contact
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Legal */}
           <div>
-            <h4 className="text-sm font-semibold mb-3">Legal</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
+            <p className="text-sm font-semibold uppercase tracking-widest text-gray-400">Help</p>
+
+            <ul className="mt-6 space-y-4">
               <li>
-                <Link href="/terms" className="hover:text-black">
-                  Terms of Service
+                <Link href="/faq" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
+                  Customer Support
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="hover:text-black">
+                <Link href="/contact" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
+                  Delivery Details
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
+                  Terms & Conditions
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
                   Privacy Policy
                 </Link>
               </li>
             </ul>
           </div>
+
+          <div className="col-span-2 md:col-span-1 lg:col-span-2 lg:pl-8">
+            <p className="text-sm font-semibold uppercase tracking-widest text-gray-400">Subscribe to newsletter</p>
+
+            <form className="mt-6" action="#" method="POST">
+              <div>
+                <label htmlFor="newsletter-email" className="sr-only">Email</label>
+                <input
+                  id="newsletter-email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="block w-full rounded-md border border-gray-200 bg-white p-4 text-black placeholder-gray-500 caret-blue-600 transition-all duration-200 focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="mt-3 inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-4 font-semibold text-white transition-all duration-200 hover:bg-blue-700 focus:bg-blue-700"
+              >
+                Subscribe
+              </button>
+            </form>
+          </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-10 pt-6 border-t flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
-          <p>
-            © {new Date().getFullYear()} Gavel. All rights reserved.
-          </p>
+        <hr className="my-10 mt-16 border-gray-200" />
 
-          <p className="mt-2 md:mt-0">
-            Payments secured by Paystack
-          </p>
-        </div>
+        <p className="text-center text-sm text-gray-600">
+          © {new Date().getFullYear()} Gavel. All rights reserved.
+        </p>
       </div>
     </footer>
   )

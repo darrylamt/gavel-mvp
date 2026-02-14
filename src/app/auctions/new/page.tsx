@@ -156,13 +156,19 @@ export default function NewAuction() {
               isRequired
             />
 
-            <Input
-              label="Description"
-              placeholder="Describe your item in detail..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              isRequired
-            />
+            <div className="w-full space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Description
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={`Describe your item in detail...\n\n• Condition\n• Included accessories\n• Any defects or notes`}
+                rows={8}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Product Images</label>

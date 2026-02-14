@@ -33,6 +33,13 @@ type BidRecord = {
   }
 }
 
+type RawBidRecord = {
+  id: string
+  amount: number
+  user_id: string
+  profiles: { username: string | null } | { username: string | null }[] | null
+}
+
 export default function AuctionDetailPage() {
   const { id } = useParams()
 
@@ -44,6 +51,7 @@ export default function AuctionDetailPage() {
   const [isPlacingBid, setIsPlacingBid] = useState(false)
   const [bidError, setBidError] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState('Calculating...')
+  const [countdownPhase, setCountdownPhase] = useState<'starts' | 'ends' | 'ended'>('ends')
 
   const now = Date.now()
 
@@ -102,7 +110,7 @@ export default function AuctionDetailPage() {
       .order('amount', { ascending: false })
 
     if (!error && bidsData) {
-      const normalized = bidsData.map((bid: any) => ({
+      const normalized = (bidsData as RawBidRecord[]).map((bid) => ({
         ...bid,
         profiles: Array.isArray(bid.profiles)
           ? bid.profiles[0] ?? null
@@ -140,34 +148,50 @@ export default function AuctionDetailPage() {
   }, [id, loadBids])
 
   useEffect(() => {
+    const startsAt = auction?.starts_at
     const endsAt = auction?.ends_at
-    if (!endsAt) return
+    if (!startsAt && !endsAt) return
 
-    const tick = () => {
-      const diff = new Date(endsAt).getTime() - Date.now()
-      if (diff <= 0) {
-        setTimeLeft('Auction Ended')
-        return
-      }
-
+    const formatDuration = (diff: number) => {
       const s = Math.floor((diff / 1000) % 60)
       const m = Math.floor((diff / (1000 * 60)) % 60)
       const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
       const d = Math.floor(diff / (1000 * 60 * 60 * 24))
 
-      const parts = []
+      const parts: string[] = []
       if (d) parts.push(`${d}d`)
       if (h) parts.push(`${h}h`)
       if (m) parts.push(`${m}m`)
       parts.push(`${s}s`)
 
-      setTimeLeft(parts.join(' '))
+      return parts.join(' ')
+    }
+
+    const tick = () => {
+      const nowMs = Date.now()
+      const startsAtMs = startsAt ? new Date(startsAt).getTime() : null
+      const endsAtMs = endsAt ? new Date(endsAt).getTime() : null
+
+      if (startsAtMs != null && nowMs < startsAtMs) {
+        setCountdownPhase('starts')
+        setTimeLeft(formatDuration(startsAtMs - nowMs))
+        return
+      }
+
+      if (endsAtMs != null && nowMs < endsAtMs) {
+        setCountdownPhase('ends')
+        setTimeLeft(formatDuration(endsAtMs - nowMs))
+        return
+      }
+
+      setCountdownPhase('ended')
+      setTimeLeft('Auction Ended')
     }
 
     tick()
     const i = setInterval(tick, 1000)
     return () => clearInterval(i)
-  }, [auction?.ends_at])
+  }, [auction?.starts_at, auction?.ends_at])
 
   const placeBid = async () => {
     if (!userId) {
@@ -274,9 +298,10 @@ export default function AuctionDetailPage() {
               currentPrice={auction.current_price}
             />
 
-            {auction.ends_at && (
+            {(auction.starts_at || auction.ends_at) && (
               <AuctionCountdown
-                endsAt={auction.ends_at}
+                targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
+                phase={countdownPhase}
                 timeLeft={timeLeft}
               />
             )}

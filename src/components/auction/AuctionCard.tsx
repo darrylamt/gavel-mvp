@@ -48,7 +48,8 @@ export default function AuctionCard({
   const timeLeftMs = new Date(endsAt).getTime() - nowMs
   const isEnded = timeLeftMs <= 0
   const startsAtMs = startsAt ? new Date(startsAt).getTime() : 0
-  const isScheduled = startsAtMs > nowMs
+  const isScheduled = status === 'scheduled' || startsAtMs > nowMs
+  const canToggleStar = isScheduled || starred
 
   const [startCountdown, setStartCountdown] = useState<string | null>(null)
 
@@ -88,18 +89,27 @@ export default function AuctionCard({
     >
       {/* IMAGE */}
       <div className="h-48 bg-gray-100 overflow-hidden relative">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            toggleStarred(id)
-          }}
-          aria-label={starred ? 'Remove from starred auctions' : 'Add to starred auctions'}
-          className="absolute left-2 top-2 z-10 rounded-full bg-white/90 p-2 text-gray-700 shadow-sm transition hover:bg-white"
-        >
-          <Heart className={`h-4 w-4 ${starred ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-        </button>
+        {!isEnded && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              if (!canToggleStar) return
+              toggleStarred(id)
+            }}
+            aria-label={starred ? 'Remove from starred auctions' : 'Add to starred auctions'}
+            title={canToggleStar ? (starred ? 'Remove from starred auctions' : 'Add to starred auctions') : 'Only scheduled auctions can be starred'}
+            disabled={!canToggleStar}
+            className={`absolute left-2 top-2 z-10 rounded-full p-2 shadow-sm transition ${
+              canToggleStar
+                ? 'bg-white/90 text-gray-700 hover:bg-white'
+                : 'bg-white/70 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            <Heart className={`h-4 w-4 ${starred ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+          </button>
+        )}
 
         {images && images.length > 0 ? (
           <img
