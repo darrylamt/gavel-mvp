@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { supabasePublic } from '@/lib/supabasePublicClient'
@@ -57,6 +58,7 @@ export default function AuctionDetailPage() {
   const [loading, setLoading] = useState(true)
   const [bidAmount, setBidAmount] = useState('')
   const [isPlacingBid, setIsPlacingBid] = useState(false)
+  const [hasRequestedSettlement, setHasRequestedSettlement] = useState(false)
   const [bidError, setBidError] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState('Calculating...')
   const [countdownPhase, setCountdownPhase] = useState<'starts' | 'ends' | 'ended'>('ends')
@@ -158,6 +160,32 @@ export default function AuctionDetailPage() {
       subscription.unsubscribe()
     }
   }, [id, loadBids])
+
+  useEffect(() => {
+    if (!auction?.id) return
+    if (!hasEnded) return
+    if (auction.status === 'ended') return
+    if (hasRequestedSettlement) return
+
+    setHasRequestedSettlement(true)
+
+    const settleAuction = async () => {
+      try {
+        await fetch('/api/auctions/close', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ auction_id: auction.id }),
+        })
+
+        setAuction((prev) => (prev ? { ...prev, status: 'ended' } : prev))
+        await loadBids()
+      } catch {
+        // No-op: settlement can be retried on refresh if network fails
+      }
+    }
+
+    settleAuction()
+  }, [auction?.id, auction?.status, hasEnded, hasRequestedSettlement, loadBids])
 
   useEffect(() => {
     const startsAt = auction?.starts_at
@@ -404,7 +432,11 @@ export default function AuctionDetailPage() {
           )}
           {hasEnded && !reserveMet && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-              Reserve price was not met. This item is not sold.
+              <p className="font-semibold">Sorry, the final bid did not hit the reserve price.</p>
+              <p className="mt-1">This item was not sold, and your bid tokens will be refunded.</p>
+              <Link href="/faq#reserve-price" className="mt-2 inline-block font-medium underline underline-offset-2">
+                What does reserve price mean?
+              </Link>
             </div>
           )}
 
