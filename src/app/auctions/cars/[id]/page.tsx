@@ -270,6 +270,10 @@ export default function CarAuctionDetailPage() {
   if (auction.auction_type !== 'car') return <p className="p-6 text-red-500">This listing is not a car auction.</p>
 
   const specs = auction.car_specs
+  const formattedDescription = (auction.description ?? '')
+    .replace(/\s*•\s*/g, '\n• ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 
   return (
     <main className="mx-auto max-w-[1500px] px-6 py-8">
@@ -386,7 +390,7 @@ export default function CarAuctionDetailPage() {
 
       <div className="mt-8 rounded-xl border bg-white p-5">
         <h2 className="mb-2 text-lg font-semibold">Description</h2>
-        <p className="whitespace-pre-line text-gray-700">{auction.description || 'No description provided.'}</p>
+        <p className="whitespace-pre-line text-gray-700">{formattedDescription || 'No description provided.'}</p>
       </div>
     </main>
   )

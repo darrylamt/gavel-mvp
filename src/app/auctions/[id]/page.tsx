@@ -278,6 +278,11 @@ export default function AuctionDetailPage() {
   if (loading) return <p className="p-6">Loading auction...</p>
   if (!auction) return <p className="p-6 text-red-500">Auction not found</p>
 
+  const formattedDescription = (auction.description ?? '')
+    .replace(/\s*•\s*/g, '\n• ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-8 space-y-6">
       <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
@@ -307,7 +312,7 @@ export default function AuctionDetailPage() {
             )}
 
             <p className="whitespace-pre-line text-gray-700 leading-relaxed">
-              {auction.description || 'No description provided.'}
+              {formattedDescription || 'No description provided.'}
             </p>
 
             <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 sm:grid-cols-2">
