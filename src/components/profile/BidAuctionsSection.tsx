@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { buildAuctionPath } from '@/lib/seo'
 
 type BidAuction = {
   auctionId: string
@@ -32,7 +33,7 @@ export default function BidAuctionsSection({ auctions }: Props) {
               </div>
 
               <Link
-                href={`/auctions/${auction.auctionId}`}
+                href={buildAuctionPath(auction.auctionId, auction.title)}
                 className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-gray-50"
               >
                 View

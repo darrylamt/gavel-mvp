@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { parseAuctionMeta } from '@/lib/auctionMeta'
+import { buildAuctionPath } from '@/lib/seo'
 
 type AuctionRecord = {
   id: string
@@ -32,7 +33,7 @@ async function getAuction(id: string) {
 }
 
 function targetHref(auction: AuctionRecord) {
-  return `/auctions/${auction.id}`
+  return buildAuctionPath(auction.id, auction.title)
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

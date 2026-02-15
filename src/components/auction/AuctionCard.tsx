@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Heart } from 'lucide-react'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
+import { buildAuctionPath } from '@/lib/seo'
 
 type AuctionCardProps = {
   id: string
@@ -84,7 +85,7 @@ export default function AuctionCard({
 
   return (
     <Link
-      href={`/auctions/${id}`}
+      href={buildAuctionPath(id, title)}
       className="group block rounded-2xl border bg-white overflow-hidden hover:shadow-lg transition"
     >
       {/* IMAGE */}
@@ -115,12 +116,16 @@ export default function AuctionCard({
           <img
             src={images[0]}
             alt={title}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover group-hover:scale-105 transition-transform"
           />
         ) : imageUrl ? (
           <img
             src={imageUrl}
             alt={title}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover group-hover:scale-105 transition-transform"
           />
         ) : (

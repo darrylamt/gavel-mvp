@@ -33,6 +33,9 @@ export default function ImageGallery({ images }: Props) {
           <img
             src={images[active]}
             alt="Auction product image"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
             className="w-full h-full object-contain"
           />
         </div>
@@ -53,6 +56,8 @@ export default function ImageGallery({ images }: Props) {
                 <img
                   src={img}
                   alt="Thumbnail"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               </button>
@@ -94,6 +99,8 @@ export default function ImageGallery({ images }: Props) {
               <img
                 src={images[modalImageIndex]}
                 alt="Full size product image"
+                loading="lazy"
+                decoding="async"
                 className="max-w-full max-h-[90vh] object-contain"
               />
             </div>
@@ -136,6 +143,8 @@ export default function ImageGallery({ images }: Props) {
                       <img
                         src={img}
                         alt="Thumbnail"
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                     </button>

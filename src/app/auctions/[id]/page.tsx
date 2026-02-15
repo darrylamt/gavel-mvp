@@ -13,6 +13,7 @@ import WinnerPanel from '@/components/auction/WinnerPanel'
 import ImageGallery from '@/components/auction/ImageGallery'
 import ShareAuctionButton from '@/components/auction/ShareAuctionButton'
 import { parseAuctionMeta } from '@/lib/auctionMeta'
+import { buildAuctionPath } from '@/lib/seo'
 
 type AuctionRecord = {
   id: string
@@ -299,8 +300,27 @@ export default function AuctionDetailPage() {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+  const productUrl = `${siteUrl}${buildAuctionPath(auction.id, auction.title)}`
+  const imageUrl = auction.images?.[0] || auction.image_url || `${siteUrl}/share/auction/${auction.id}/opengraph-image`
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: auction.title,
+    description: formattedDescription || `Auction listing for ${auction.title}`,
+    image: [imageUrl],
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'GHS',
+      price: auction.current_price,
+      availability: hasEnded ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+      url: productUrl,
+    },
+  }
+
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-8 space-y-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
         <section className="space-y-6">
           <ImageGallery

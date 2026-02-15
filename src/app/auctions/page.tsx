@@ -1,7 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 import AuctionsGridClient from '@/components/auction/AuctionsGridClient'
+import type { Metadata } from 'next'
+import { buildAuctionPath } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+
+export const metadata: Metadata = {
+  title: 'Browse Auctions',
+  description: 'Explore active and upcoming auctions on Gavel Ghana.',
+  alternates: {
+    canonical: '/auctions',
+  },
+}
 
 type Auction = {
   id: string
@@ -39,8 +51,20 @@ export default async function AuctionsPage({
 
   const typedAuctions: Auction[] = (auctions ?? []) as Auction[]
 
+  const itemListStructuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: typedAuctions.slice(0, 30).map((auction, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: `${siteUrl}${buildAuctionPath(auction.id, auction.title)}`,
+      name: auction.title,
+    })),
+  }
+
 return (
   <main className="max-w-7xl mx-auto px-6 py-12">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListStructuredData) }} />
     <div className="mb-10 flex items-start justify-between gap-4">
       <div>
         <h1 className="text-4xl font-extrabold mb-2">
