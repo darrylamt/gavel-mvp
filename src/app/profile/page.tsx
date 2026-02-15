@@ -16,6 +16,14 @@ type WonAuction = {
   paid: boolean
 }
 
+type ProfileData = {
+  username: string | null
+  token_balance: number | null
+  phone: string | null
+  address: string | null
+  avatar_url: string | null
+}
+
 export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
@@ -23,12 +31,20 @@ export default function ProfilePage() {
 
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [saving, setSaving] = useState(false)
 
   const [wonAuctions, setWonAuctions] = useState<WonAuction[]>([])
   const [loading, setLoading] = useState(true)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+
+  const loadWonAuctions = async (uid: string) => {
+    const { data } = await supabase.rpc(
+      'get_auctions_won_by_user',
+      { uid }
+    )
+
+    setWonAuctions(data || [])
+  }
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -42,15 +58,17 @@ export default function ProfilePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, token_balance, phone, address')
+        .select('username, token_balance, phone, address, avatar_url')
         .eq('id', auth.user.id)
         .single()
 
-      setUsername(profile?.username ?? null)
-      setTokens(profile?.token_balance ?? 0)
-      setPhone(profile?.phone ?? '')
-      setAddress(profile?.address ?? '')
-      setAvatarUrl((profile as any)?.avatar_url ?? null)
+      const profileData = (profile as ProfileData | null) ?? null
+
+      setUsername(profileData?.username ?? null)
+      setTokens(profileData?.token_balance ?? 0)
+      setPhone(profileData?.phone ?? '')
+      setAddress(profileData?.address ?? '')
+      setAvatarUrl(profileData?.avatar_url ?? null)
 
       await loadWonAuctions(auth.user.id)
 
@@ -60,33 +78,7 @@ export default function ProfilePage() {
     loadProfile()
   }, [])
 
-  const loadWonAuctions = async (uid: string) => {
-    const { data } = await supabase.rpc(
-      'get_auctions_won_by_user',
-      { uid }
-    )
-
-    setWonAuctions(data || [])
-  }
-
-  const saveContactDetails = async () => {
-    if (!userId) return
-
-    setSaving(true)
-
-    await supabase
-      .from('profiles')
-      .update({
-        phone,
-        address,
-      })
-      .eq('id', userId)
-
-    setSaving(false)
-    alert('Profile updated successfully')
-  }
-
-  const payNow = async (auctionId: string, amount: number) => {
+  const payNow = async (auctionId: string) => {
     const { data: auth } = await supabase.auth.getUser()
     if (!auth.user || !auth.user.email) return
 
@@ -132,10 +124,6 @@ export default function ProfilePage() {
       <ContactDetailsSection
         phone={phone}
         address={address}
-        onPhoneChange={setPhone}
-        onAddressChange={setAddress}
-        onSave={saveContactDetails}
-        saving={saving}
       />
 
       <WonAuctionsSection

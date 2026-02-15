@@ -7,7 +7,7 @@ type WonAuction = {
 
 type Props = {
   auctions: WonAuction[]
-  onPay: (auctionId: string, amount: number) => void
+  onPay: (auctionId: string) => void
 }
 
 export default function WonAuctionsSection({
@@ -47,7 +47,7 @@ export default function WonAuctionsSection({
               ) : (
                 <button
                   onClick={() =>
-                    onPay(a.auction_id, a.amount)
+                    onPay(a.auction_id)
                   }
                   className="bg-black text-white px-4 py-2 rounded"
                 >

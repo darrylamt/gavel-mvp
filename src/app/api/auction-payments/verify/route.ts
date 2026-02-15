@@ -7,6 +7,60 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+const BID_TOKEN_COST = 1
+
+async function refundLosingBidders(auctionId: string, winnerUserId: string) {
+  const { data: allBids, error: bidsError } = await supabase
+    .from('bids')
+    .select('user_id')
+    .eq('auction_id', auctionId)
+
+  if (bidsError) {
+    throw new Error('Failed to load bids for refund')
+  }
+
+  const loserBidCounts = new Map<string, number>()
+
+  for (const bid of allBids ?? []) {
+    if (!bid.user_id) continue
+    if (bid.user_id === winnerUserId) continue
+    loserBidCounts.set(bid.user_id, (loserBidCounts.get(bid.user_id) ?? 0) + 1)
+  }
+
+  for (const [userId, bidCount] of loserBidCounts.entries()) {
+    const refundAmount = bidCount * BID_TOKEN_COST
+    const refundReference = `refund:${auctionId}:${userId}`
+
+    const { data: existingRefund } = await supabase
+      .from('token_transactions')
+      .select('id')
+      .eq('reference', refundReference)
+      .maybeSingle()
+
+    if (existingRefund) continue
+
+    const { error: incrementError } = await supabase.rpc('increment_tokens', {
+      uid: userId,
+      amount: refundAmount,
+    })
+
+    if (incrementError) {
+      throw new Error('Failed to credit loser refund')
+    }
+
+    const { error: refundLogError } = await supabase.from('token_transactions').insert({
+      user_id: userId,
+      amount: refundAmount,
+      type: 'bid',
+      reference: refundReference,
+    })
+
+    if (refundLogError) {
+      throw new Error('Failed to log loser refund')
+    }
+  }
+}
+
 export async function POST(req: Request) {
   const { reference } = await req.json()
 
@@ -57,6 +111,7 @@ export async function POST(req: Request) {
     .single()
 
   if (auction?.paid) {
+    await refundLosingBidders(auction_id, user_id)
     console.log('Auction already paid:', auction_id)
     return NextResponse.json({ success: true })
   }
@@ -65,6 +120,7 @@ export async function POST(req: Request) {
   const { error: updateError } = await supabase
     .from('auctions')
     .update({
+      status: 'ended',
       paid: true,
       winner_id: user_id,
       winning_bid_id: bid_id,
@@ -78,6 +134,8 @@ export async function POST(req: Request) {
       { status: 500 }
     )
   }
+
+  await refundLosingBidders(auction_id, user_id)
 
   // 4️⃣ Log payment
   await supabase.from('payments').insert({

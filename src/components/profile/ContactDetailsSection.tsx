@@ -1,21 +1,11 @@
-import { Input } from '@/components/base/input/input'
-
 type Props = {
   phone: string
   address: string
-  onPhoneChange: (v: string) => void
-  onAddressChange: (v: string) => void
-  onSave: () => void
-  saving: boolean
 }
 
 export default function ContactDetailsSection({
   phone,
   address,
-  onPhoneChange,
-  onAddressChange,
-  onSave,
-  saving,
 }: Props) {
   return (
     <section className="space-y-4">
@@ -23,30 +13,17 @@ export default function ContactDetailsSection({
         Contact Details
       </h2>
 
-      <div className="space-y-4">
-        <Input
-          label="Phone Number"
-          type="tel"
-          value={phone}
-          onChange={(e) => onPhoneChange(e.target.value)}
-          placeholder="+1 (555) 000-0000"
-        />
+      <div className="space-y-4 rounded-xl border bg-white p-4">
+        <div>
+          <p className="text-sm font-medium text-gray-700">Phone Number</p>
+          <p className="mt-1 text-base text-gray-900">{phone || 'Not provided'}</p>
+        </div>
 
-        <Input
-          label="Delivery Address"
-          value={address}
-          onChange={(e) => onAddressChange(e.target.value)}
-          placeholder="Enter your address"
-        />
+        <div>
+          <p className="text-sm font-medium text-gray-700">Delivery Address</p>
+          <p className="mt-1 text-base text-gray-900">{address || 'Not provided'}</p>
+        </div>
       </div>
-
-      <button
-        onClick={onSave}
-        disabled={saving}
-        className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
-      >
-        {saving ? 'Saving…' : 'Save Changes'}
-      </button>
     </section>
   )
 }

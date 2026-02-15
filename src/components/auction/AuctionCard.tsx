@@ -38,7 +38,7 @@ export default function AuctionCard({
 }: AuctionCardProps) {
   const { isStarred, toggleStarred } = useStarredAuctions()
   const starred = isStarred(id)
-  const [nowMs, setNowMs] = useState(0)
+  const [nowMs, setNowMs] = useState(() => Date.now())
 
   useEffect(() => {
     const ticker = setInterval(() => setNowMs(Date.now()), 1000)
@@ -48,7 +48,7 @@ export default function AuctionCard({
   const timeLeftMs = new Date(endsAt).getTime() - nowMs
   const isEnded = timeLeftMs <= 0
   const startsAtMs = startsAt ? new Date(startsAt).getTime() : 0
-  const isScheduled = status === 'scheduled' || startsAtMs > nowMs
+  const isScheduled = !isEnded && startsAtMs > nowMs
   const canToggleStar = isScheduled || starred
 
   const [startCountdown, setStartCountdown] = useState<string | null>(null)
