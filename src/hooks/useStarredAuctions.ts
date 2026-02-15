@@ -14,7 +14,8 @@ function readStarredIds(): string[] {
   try {
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter((value): value is string => typeof value === 'string')
+    const ids = parsed.filter((value): value is string => typeof value === 'string')
+    return Array.from(new Set(ids))
   } catch {
     return []
   }
@@ -22,7 +23,8 @@ function readStarredIds(): string[] {
 
 function writeStarredIds(ids: string[]) {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(STARRED_AUCTIONS_KEY, JSON.stringify(ids))
+  const uniqueIds = Array.from(new Set(ids))
+  window.localStorage.setItem(STARRED_AUCTIONS_KEY, JSON.stringify(uniqueIds))
   window.dispatchEvent(new CustomEvent(STARRED_AUCTIONS_EVENT))
 }
 
@@ -51,6 +53,17 @@ export function useStarredAuctions() {
     return !isStarred
   }, [])
 
+  const pruneStarred = useCallback((validAuctionIds: string[]) => {
+    const validSet = new Set(validAuctionIds)
+    const ids = readStarredIds()
+    const nextIds = ids.filter((id) => validSet.has(id))
+
+    if (nextIds.length !== ids.length) {
+      writeStarredIds(nextIds)
+      setStarredIds(nextIds)
+    }
+  }, [])
+
   const starredSet = useMemo(() => new Set(starredIds), [starredIds])
 
   return {
@@ -59,5 +72,6 @@ export function useStarredAuctions() {
     starredSet,
     isStarred: (auctionId: string) => starredSet.has(auctionId),
     toggleStarred,
+    pruneStarred,
   }
 }

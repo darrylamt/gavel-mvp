@@ -200,6 +200,21 @@ export default function NewAuction() {
       {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">{error}</div>}
 
       <div className="bg-white border rounded-lg p-8 space-y-6">
+        <div className="w-full space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Type of Auction
+            <span className="text-red-500 ml-1">*</span>
+          </label>
+          <select
+            value={auctionType}
+            onChange={(e) => setAuctionType(e.target.value as AuctionType)}
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
+          >
+            <option value="normal">Normal</option>
+            <option value="car">Cars</option>
+          </select>
+        </div>
+
         {/* Product Details */}
         <div>
           <h2 className="text-lg font-semibold mb-4">Product Details</h2>
@@ -211,21 +226,6 @@ export default function NewAuction() {
               onChange={(e) => setTitle(e.target.value)}
               isRequired
             />
-
-            <div className="w-full space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Type of Auction
-                <span className="text-red-500 ml-1">*</span>
-              </label>
-              <select
-                value={auctionType}
-                onChange={(e) => setAuctionType(e.target.value as AuctionType)}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                <option value="normal">Normal</option>
-                <option value="car">Cars</option>
-              </select>
-            </div>
 
             <div className="w-full space-y-2">
               <label className="block text-sm font-medium text-gray-700">

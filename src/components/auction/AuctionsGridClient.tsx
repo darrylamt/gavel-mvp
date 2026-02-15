@@ -2,6 +2,7 @@
 
 import AuctionCard from '@/components/auction/AuctionCard'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
+import { useEffect } from 'react'
 
 type Auction = {
   id: string
@@ -25,7 +26,13 @@ type AuctionsGridClientProps = {
 }
 
 export default function AuctionsGridClient({ auctions, starredOnly = false }: AuctionsGridClientProps) {
-  const { starredSet } = useStarredAuctions()
+  const { starredSet, pruneStarred } = useStarredAuctions()
+
+  useEffect(() => {
+    if (!starredOnly) return
+    const validAuctionIds = auctions.map((auction) => auction.id)
+    pruneStarred(validAuctionIds)
+  }, [auctions, starredOnly, pruneStarred])
 
   const visibleAuctions = starredOnly
     ? auctions.filter((auction) => starredSet.has(auction.id))
