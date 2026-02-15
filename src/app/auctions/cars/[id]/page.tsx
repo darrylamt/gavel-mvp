@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import ImageGallery from '@/components/auction/ImageGallery'
 import WinnerPanel from '@/components/auction/WinnerPanel'
+import ShareAuctionButton from '@/components/auction/ShareAuctionButton'
 
 type CarSpecs = {
   titleCode?: string
@@ -279,9 +280,12 @@ export default function CarAuctionDetailPage() {
     <main className="mx-auto max-w-[1500px] px-6 py-8">
       <div className="mb-6 flex items-center justify-between gap-3">
         <h1 className="text-4xl font-extrabold tracking-tight">{auction.title}</h1>
-        <Link href="/auctions/cars" className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50">
-          Back to cars
-        </Link>
+        <div className="flex items-center gap-2">
+          <ShareAuctionButton auctionId={auction.id} />
+          <Link href="/auctions/cars" className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50">
+            Back to cars
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[2fr_1.7fr_1.2fr]">

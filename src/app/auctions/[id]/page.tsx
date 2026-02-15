@@ -10,6 +10,7 @@ import BidForm from '@/components/auction/BidForm'
 import BidList from '@/components/auction/BidList'
 import WinnerPanel from '@/components/auction/WinnerPanel'
 import ImageGallery from '@/components/auction/ImageGallery'
+import ShareAuctionButton from '@/components/auction/ShareAuctionButton'
 
 type AuctionRecord = {
   id: string
@@ -298,10 +299,13 @@ export default function AuctionDetailPage() {
           />
 
           <div className="space-y-4">
-            <AuctionHeader
-              title={auction.title}
-              currentPrice={auction.current_price}
-            />
+            <div className="flex items-start justify-between gap-3">
+              <AuctionHeader
+                title={auction.title}
+                currentPrice={auction.current_price}
+              />
+              <ShareAuctionButton auctionId={auction.id} />
+            </div>
 
             {(auction.starts_at || auction.ends_at) && (
               <AuctionCountdown
