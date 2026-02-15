@@ -9,11 +9,21 @@ export function useAuthUser() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial user
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user ?? null)
+    const loadUser = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+
+      if (sessionData.session?.user) {
+        setUser(sessionData.session.user)
+        setLoading(false)
+        return
+      }
+
+      const { data: refreshed } = await supabase.auth.refreshSession()
+      setUser(refreshed.session?.user ?? null)
       setLoading(false)
-    })
+    }
+
+    loadUser()
 
     // Listen for auth changes
     const { data: listener } = supabase.auth.onAuthStateChange(

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { supabasePublic } from '@/lib/supabasePublicClient'
 import ImageGallery from '@/components/auction/ImageGallery'
 import WinnerPanel from '@/components/auction/WinnerPanel'
 import ShareAuctionButton from '@/components/auction/ShareAuctionButton'
@@ -86,11 +87,11 @@ export default function CarAuctionDetailPage() {
     if (!id) return
 
     const loadAuction = async () => {
-      const { data: auctionData } = await supabase
+      const { data: auctionData } = await supabasePublic
         .from('auctions')
         .select('id, title, description, auction_type, car_specs, current_price, ends_at, status, paid, image_url, images, starts_at')
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
       setAuction(auctionData)
       setLoading(false)
@@ -102,7 +103,7 @@ export default function CarAuctionDetailPage() {
   const loadBids = useCallback(async () => {
     if (!id) return
 
-    const { data: bidsData } = await supabase
+    const { data: bidsData } = await supabasePublic
       .from('bids')
       .select('id, amount, user_id')
       .eq('auction_id', id)
@@ -115,7 +116,7 @@ export default function CarAuctionDetailPage() {
     if (!id) return
     loadBids()
 
-    const subscription = supabase
+    const subscription = supabasePublic
       .channel(`bids:car:${id}`)
       .on(
         'postgres_changes',

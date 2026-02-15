@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { supabasePublic } from '@/lib/supabasePublicClient'
 
 import AuctionHeader from '@/components/auction/AuctionHeader'
 import AuctionCountdown from '@/components/auction/AuctionCountdown'
@@ -84,13 +85,13 @@ export default function AuctionDetailPage() {
     if (!id) return
 
     const loadAuction = async () => {
-      const { data: auctionData } = await supabase
+      const { data: auctionData } = await supabasePublic
         .from('auctions')
         .select(
           'id, title, description, current_price, ends_at, status, paid, image_url, images, starts_at'
         )
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
       setAuction(auctionData)
       setLoading(false)
@@ -102,7 +103,7 @@ export default function AuctionDetailPage() {
   const loadBids = useCallback(async () => {
     if (!id) return
 
-    const { data: bidsData, error } = await supabase
+    const { data: bidsData, error } = await supabasePublic
       .from('bids')
       .select(
         'id, amount, user_id, profiles (username)'
@@ -127,7 +128,7 @@ export default function AuctionDetailPage() {
 
     loadBids()
 
-    const subscription = supabase
+    const subscription = supabasePublic
       .channel(`bids:${id}`)
       .on(
         'postgres_changes',

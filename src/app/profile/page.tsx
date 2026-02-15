@@ -48,18 +48,27 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const { data: auth } = await supabase.auth.getUser()
-      if (!auth.user) {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const activeUser = sessionData.session?.user
+
+      let authUser = activeUser
+
+      if (!authUser) {
+        const { data: refreshed } = await supabase.auth.refreshSession()
+        authUser = refreshed.session?.user
+      }
+
+      if (!authUser) {
         setLoading(false)
         return
       }
 
-      setUserId(auth.user.id)
+      setUserId(authUser.id)
 
       const { data: profile } = await supabase
         .from('profiles')
         .select('username, token_balance, phone, address, avatar_url')
-        .eq('id', auth.user.id)
+        .eq('id', authUser.id)
         .single()
 
       const profileData = (profile as ProfileData | null) ?? null
@@ -70,7 +79,7 @@ export default function ProfilePage() {
       setAddress(profileData?.address ?? '')
       setAvatarUrl(profileData?.avatar_url ?? null)
 
-      await loadWonAuctions(auth.user.id)
+      await loadWonAuctions(authUser.id)
 
       setLoading(false)
     }
