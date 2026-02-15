@@ -86,21 +86,31 @@ export async function POST(req: Request) {
     const auction_id = metadata?.auction_id
 
     if (metadata?.type === 'auction_payment' && auction_id) {
-      let winnerUserId: string | null = metadata?.user_id ?? null
-      let winningBidId: string | null = metadata?.bid_id ?? null
+      const { data: auction } = await supabase
+        .from('auctions')
+        .select('reserve_price')
+        .eq('id', auction_id)
+        .single()
 
-      if (!winnerUserId || !winningBidId) {
-        const { data: topBid } = await supabase
-          .from('bids')
-          .select('id, user_id')
-          .eq('auction_id', auction_id)
-          .order('amount', { ascending: false })
-          .limit(1)
-          .single()
+      const { data: topBid } = await supabase
+        .from('bids')
+        .select('id, amount, user_id')
+        .eq('auction_id', auction_id)
+        .order('amount', { ascending: false })
+        .limit(1)
+        .single()
 
-        winnerUserId = topBid?.user_id ?? null
-        winningBidId = topBid?.id ?? null
+      if (!topBid) {
+        return NextResponse.json({ received: true })
       }
+
+      const reservePrice = auction?.reserve_price as number | null
+      if (reservePrice != null && topBid.amount < reservePrice) {
+        return NextResponse.json({ received: true })
+      }
+
+      const winnerUserId: string | null = topBid.user_id
+      const winningBidId: string | null = topBid.id
 
       await supabase
         .from('auctions')

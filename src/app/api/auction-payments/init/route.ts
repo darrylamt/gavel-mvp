@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   // 1️⃣ Fetch auction
   const { data: auction } = await supabase
     .from('auctions')
-    .select('id, status, current_price, paid')
+    .select('id, status, current_price, paid, reserve_price')
     .eq('id', auction_id)
     .single()
 
@@ -49,6 +49,14 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: 'Not auction winner' },
       { status: 403 }
+    )
+  }
+
+  const reservePrice = auction.reserve_price as number | null
+  if (reservePrice != null && topBid.amount < reservePrice) {
+    return NextResponse.json(
+      { error: 'Reserve price not met. This item cannot be sold yet.' },
+      { status: 400 }
     )
   }
 

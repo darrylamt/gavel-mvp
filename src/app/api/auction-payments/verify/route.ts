@@ -101,17 +101,37 @@ export async function POST(req: Request) {
     )
   }
 
-  const { auction_id, bid_id, user_id } = metadata
+  const { auction_id } = metadata
 
   // 2️⃣ Prevent double payment
   const { data: auction } = await supabase
     .from('auctions')
-    .select('paid')
+    .select('paid, reserve_price')
     .eq('id', auction_id)
     .single()
 
+  const { data: topBid } = await supabase
+    .from('bids')
+    .select('id, amount, user_id')
+    .eq('auction_id', auction_id)
+    .order('amount', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (!topBid) {
+    return NextResponse.json({ error: 'No bids found for this auction' }, { status: 400 })
+  }
+
+  const reservePrice = auction?.reserve_price as number | null
+  if (reservePrice != null && topBid.amount < reservePrice) {
+    return NextResponse.json(
+      { error: 'Reserve price not met. This item cannot be sold.' },
+      { status: 400 }
+    )
+  }
+
   if (auction?.paid) {
-    await refundLosingBidders(auction_id, user_id)
+    await refundLosingBidders(auction_id, topBid.user_id)
     console.log('Auction already paid:', auction_id)
     return NextResponse.json({ success: true })
   }
@@ -122,8 +142,8 @@ export async function POST(req: Request) {
     .update({
       status: 'ended',
       paid: true,
-      winner_id: user_id,
-      winning_bid_id: bid_id,
+      winner_id: topBid.user_id,
+      winning_bid_id: topBid.id,
     })
     .eq('id', auction_id)
 
@@ -135,11 +155,11 @@ export async function POST(req: Request) {
     )
   }
 
-  await refundLosingBidders(auction_id, user_id)
+  await refundLosingBidders(auction_id, topBid.user_id)
 
   // 4️⃣ Log payment
   await supabase.from('payments').insert({
-    user_id,
+    user_id: topBid.user_id,
     auction_id,
     amount: json.data.amount / 100,
     reference,

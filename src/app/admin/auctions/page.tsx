@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
+import { parseAuctionMeta } from "@/lib/auctionMeta"
 
 type Auction = {
   id: string
   title: string
+  description: string | null
   status: string | null
   starts_at: string | null
   ends_at: string | null
@@ -90,13 +92,27 @@ export default function AdminAuctionsPage() {
           return (
             <div key={auction.id} className="border rounded-lg p-4 flex justify-between items-center">
               <div>
+                {(() => {
+                  const { meta } = parseAuctionMeta(auction.description)
+                  return (
+                    <>
                 <p className="font-semibold">{auction.title}</p>
 
                 <p className="text-sm text-gray-500">Status: {auction.status ?? "N/A"}</p>
+                <p className="text-sm text-gray-500">Source: {meta?.saleSource === 'seller' ? 'External seller' : 'Gavel'}</p>
+                {meta?.saleSource === 'seller' && meta.sellerName && (
+                  <p className="text-sm text-gray-500">Seller: {meta.sellerName}</p>
+                )}
+                {meta?.saleSource === 'seller' && meta.sellerPhone && (
+                  <p className="text-sm text-gray-500">Phone: {meta.sellerPhone}</p>
+                )}
 
                 <p className="text-sm text-gray-500">Paid: {auction.paid ? "Yes" : "No"}</p>
 
                 <p className="text-sm text-gray-500">Delivery: {auction.shipping_status ?? "Pending"}</p>
+                    </>
+                  )
+                })()}
               </div>
 
               <div className="flex gap-2">

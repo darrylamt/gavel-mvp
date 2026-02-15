@@ -21,6 +21,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing auction_id' }, { status: 400 })
   }
 
+  const { data: auctionData, error: auctionError } = await supabase
+    .from('auctions')
+    .select('reserve_price')
+    .eq('id', auction_id)
+    .single()
+
+  if (auctionError || !auctionData) {
+    return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
+  }
+
   const { data: topBid, error: topBidError } = await supabase
     .from('bids')
     .select('id, amount, user_id')
@@ -33,19 +43,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to fetch top bid' }, { status: 500 })
   }
 
+  const reservePrice = auctionData.reserve_price as number | null
+  const reserveMet = topBid ? (reservePrice == null || topBid.amount >= reservePrice) : false
+  const winningBidId = reserveMet ? topBid?.id ?? null : null
+  const winnerUserId = reserveMet ? topBid?.user_id ?? null : null
+
   const { error: closeError } = await supabase
     .from('auctions')
     .update({
       status: 'ended',
-      winning_bid_id: topBid?.id ?? null,
+      winning_bid_id: winningBidId,
     })
     .eq('id', auction_id)
 
   if (closeError) {
     return NextResponse.json({ error: 'Failed to close auction' }, { status: 500 })
   }
-
-  const winnerUserId = topBid?.user_id ?? null
 
   const { data: allBids, error: bidsError } = await supabase
     .from('bids')
@@ -99,6 +112,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     success: true,
-    winningBidId: topBid?.id ?? null,
+    winningBidId,
+    reserveMet,
   })
 }

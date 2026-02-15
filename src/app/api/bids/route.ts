@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   const { data: auction, error: auctionError } = await supabase
     .from('auctions')
-    .select('id, status, starts_at, ends_at, current_price')
+    .select('id, status, starts_at, ends_at, current_price, reserve_price')
     .eq('id', auction_id)
     .single()
 
@@ -132,9 +132,21 @@ export async function POST(req: Request) {
 
   /* ---------------- UPDATE AUCTION ---------------- */
 
+  const endsAtMs = auction.ends_at ? new Date(auction.ends_at).getTime() : null
+  const remainingMs = endsAtMs != null ? endsAtMs - now : null
+  const shouldExtendBy30s = remainingMs != null && remainingMs > 0 && remainingMs <= 30_000
+
+  const nextAuctionUpdate: { current_price: number; ends_at?: string } = {
+    current_price: bidAmount,
+  }
+
+  if (shouldExtendBy30s && endsAtMs != null) {
+    nextAuctionUpdate.ends_at = new Date(endsAtMs + 30_000).toISOString()
+  }
+
   await supabase
     .from('auctions')
-    .update({ current_price: bidAmount })
+    .update(nextAuctionUpdate)
     .eq('id', auction_id)
 
   /* ---------------- DEDUCT TOKEN ---------------- */

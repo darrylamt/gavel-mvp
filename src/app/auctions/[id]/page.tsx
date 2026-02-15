@@ -12,12 +12,14 @@ import BidList from '@/components/auction/BidList'
 import WinnerPanel from '@/components/auction/WinnerPanel'
 import ImageGallery from '@/components/auction/ImageGallery'
 import ShareAuctionButton from '@/components/auction/ShareAuctionButton'
+import { parseAuctionMeta } from '@/lib/auctionMeta'
 
 type AuctionRecord = {
   id: string
   title: string
   description: string | null
   current_price: number
+  reserve_price: number | null
   starts_at: string | null
   ends_at: string | null
   status: string | null
@@ -72,8 +74,12 @@ export default function AuctionDetailPage() {
     auction?.status === 'ended' ||
     (endsAtMs != null && endsAtMs <= now)
 
+  const reserveMet =
+    auction?.reserve_price == null ||
+    ((bids[0]?.amount ?? 0) >= auction.reserve_price)
+
   const isWinner =
-    hasEnded && bids.length > 0 && bids[0]?.user_id === userId
+    hasEnded && reserveMet && bids.length > 0 && bids[0]?.user_id === userId
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -88,7 +94,7 @@ export default function AuctionDetailPage() {
       const { data: auctionData } = await supabasePublic
         .from('auctions')
         .select(
-          'id, title, description, current_price, ends_at, status, paid, image_url, images, starts_at'
+          'id, title, description, current_price, reserve_price, ends_at, status, paid, image_url, images, starts_at'
         )
         .eq('id', id)
         .maybeSingle()
@@ -280,7 +286,9 @@ export default function AuctionDetailPage() {
   if (loading) return <p className="p-6">Loading auction...</p>
   if (!auction) return <p className="p-6 text-red-500">Auction not found</p>
 
-  const formattedDescription = (auction.description ?? '')
+  const { description: publicDescription, meta } = parseAuctionMeta(auction.description)
+
+  const formattedDescription = (publicDescription ?? '')
     .replace(/\s*•\s*/g, '\n• ')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
@@ -321,6 +329,26 @@ export default function AuctionDetailPage() {
             </p>
 
             <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 sm:grid-cols-2">
+              <div>
+                <div className="font-medium">Sale Source</div>
+                <div>{meta?.saleSource === 'seller' ? 'External seller' : 'Gavel'}</div>
+              </div>
+              {meta?.saleSource === 'seller' && (
+                <>
+                  {meta.sellerName && (
+                    <div>
+                      <div className="font-medium">Seller Name</div>
+                      <div>{meta.sellerName}</div>
+                    </div>
+                  )}
+                  {meta.sellerPhone && (
+                    <div>
+                      <div className="font-medium">Seller Phone</div>
+                      <div>{meta.sellerPhone}</div>
+                    </div>
+                  )}
+                </>
+              )}
               {auction.starts_at && (
                 <div>
                   <div className="font-medium">Starts</div>
@@ -346,6 +374,11 @@ export default function AuctionDetailPage() {
           {hasEnded && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               This auction has ended.
+            </div>
+          )}
+          {hasEnded && !reserveMet && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              Reserve price was not met. This item is not sold.
             </div>
           )}
 

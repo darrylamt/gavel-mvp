@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { parseAuctionMeta } from '@/lib/auctionMeta'
 
 type AuctionRecord = {
   id: string
@@ -9,7 +10,6 @@ type AuctionRecord = {
   current_price: number
   image_url: string | null
   images: string[] | null
-  auction_type?: 'normal' | 'car' | null
 }
 
 type PageProps = {
@@ -24,7 +24,7 @@ const supabase = createClient(
 async function getAuction(id: string) {
   const { data } = await supabase
     .from('auctions')
-    .select('id, title, description, current_price, image_url, images, auction_type')
+    .select('id, title, description, current_price, image_url, images')
     .eq('id', id)
     .single()
 
@@ -32,9 +32,7 @@ async function getAuction(id: string) {
 }
 
 function targetHref(auction: AuctionRecord) {
-  return auction.auction_type === 'car'
-    ? `/auctions/cars/${auction.id}`
-    : `/auctions/${auction.id}`
+  return `/auctions/${auction.id}`
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -51,7 +49,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
   const shareUrl = `${siteUrl}/share/auction/${auction.id}`
   const imageUrl = `${siteUrl}/share/auction/${auction.id}/opengraph-image`
-  const description = (auction.description || 'Bid on this auction on Gavel.')
+  const { description: publicDescription } = parseAuctionMeta(auction.description)
+  const description = (publicDescription || 'Bid on this auction on Gavel.')
     .replace(/\s*•\s*/g, ' • ')
     .slice(0, 180)
 

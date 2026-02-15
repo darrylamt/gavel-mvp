@@ -5,26 +5,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize } from '@/components/base/file-upload/file-upload'
-
-type AuctionType = 'normal' | 'car'
-
-type CarSpecs = {
-  titleCode?: string
-  odometer?: string
-  primaryDamage?: string
-  cylinders?: string
-  color?: string
-  hasKey?: string
-  engineType?: string
-  transmission?: string
-  vehicleType?: string
-  drivetrain?: string
-  fuel?: string
-  saleDate?: string
-  location?: string
-  engineStarts?: string
-  transmissionEngages?: string
-}
+import { buildAuctionDescription, type SaleSource } from '@/lib/auctionMeta'
 
 type UploadedFileItem = {
   id: string
@@ -41,24 +22,10 @@ export default function NewAuction() {
   /* Form state */
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [auctionType, setAuctionType] = useState<AuctionType>('normal')
-  const [carSpecs, setCarSpecs] = useState<CarSpecs>({
-    titleCode: '',
-    odometer: '',
-    primaryDamage: '',
-    cylinders: '',
-    color: '',
-    hasKey: '',
-    engineType: '',
-    transmission: '',
-    vehicleType: '',
-    drivetrain: '',
-    fuel: '',
-    saleDate: '',
-    location: '',
-    engineStarts: '',
-    transmissionEngages: '',
-  })
+  const [saleSource, setSaleSource] = useState<SaleSource>('gavel')
+  const [sellerName, setSellerName] = useState('')
+  const [sellerPhone, setSellerPhone] = useState('')
+  const [sellerNetAmount, setSellerNetAmount] = useState('')
   const [startingPrice, setStartingPrice] = useState('')
   const [reservePrice, setReservePrice] = useState('')
   const [minIncrement, setMinIncrement] = useState('')
@@ -97,10 +64,15 @@ export default function NewAuction() {
       if (!startsAt) throw new Error('Start time is required')
       if (!endsAt) throw new Error('End time is required')
 
-      if (auctionType === 'car') {
-        if (!carSpecs.titleCode?.trim()) throw new Error('Title code is required for car auctions')
-        if (!carSpecs.odometer?.trim()) throw new Error('Odometer is required for car auctions')
-        if (!carSpecs.transmission?.trim()) throw new Error('Transmission is required for car auctions')
+      if (saleSource === 'seller') {
+        if (!sellerName.trim()) throw new Error('Seller name is required')
+        if (!sellerPhone.trim()) throw new Error('Seller phone number is required')
+        if (!sellerNetAmount) throw new Error('Seller expected amount is required')
+      }
+
+      const sellerAmountValue = saleSource === 'seller' ? Number(sellerNetAmount) : null
+      if (saleSource === 'seller' && (!sellerAmountValue || sellerAmountValue <= 0)) {
+        throw new Error('Seller expected amount must be greater than 0')
       }
 
       const startTime = new Date(startsAt).getTime()
@@ -114,15 +86,27 @@ export default function NewAuction() {
       const { data: authData } = await supabase.auth.getUser()
       if (!authData?.user) throw new Error('Not logged in')
 
+      const computedReserve =
+        saleSource === 'seller'
+          ? Math.round((sellerAmountValue as number) * 1.1 * 100) / 100
+          : reservePrice
+          ? Number(reservePrice)
+          : null
+
+      const descriptionWithMeta = buildAuctionDescription(description, {
+        saleSource,
+        sellerName: saleSource === 'seller' ? sellerName.trim() : undefined,
+        sellerPhone: saleSource === 'seller' ? sellerPhone.trim() : undefined,
+        sellerNetAmount: saleSource === 'seller' ? (sellerAmountValue as number) : undefined,
+      })
+
       /* Create auction */
       const payload = {
         title: title.trim(),
-        description: description.trim(),
-        auction_type: auctionType,
-        car_specs: auctionType === 'car' ? carSpecs : null,
+        description: descriptionWithMeta,
         starting_price: Number(startingPrice),
         current_price: Number(startingPrice),
-        reserve_price: reservePrice ? Number(reservePrice) : null,
+        reserve_price: computedReserve,
         min_increment: minIncrement ? Number(minIncrement) : 1,
         max_increment: maxIncrement ? Number(maxIncrement) : null,
         starts_at: new Date(startsAt).toISOString(),
@@ -200,19 +184,53 @@ export default function NewAuction() {
       {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">{error}</div>}
 
       <div className="bg-white border rounded-lg p-8 space-y-6">
-        <div className="w-full space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Type of Auction
-            <span className="text-red-500 ml-1">*</span>
-          </label>
-          <select
-            value={auctionType}
-            onChange={(e) => setAuctionType(e.target.value as AuctionType)}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
-          >
-            <option value="normal">Normal</option>
-            <option value="car">Cars</option>
-          </select>
+        <div className="space-y-4 rounded-lg border border-gray-200 p-4">
+          <h2 className="text-lg font-semibold">Sale Source</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Who owns this item?</label>
+              <select
+                value={saleSource}
+                onChange={(e) => setSaleSource(e.target.value as SaleSource)}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
+              >
+                <option value="gavel">Gavel</option>
+                <option value="seller">External seller</option>
+              </select>
+            </div>
+
+            {saleSource === 'seller' && (
+              <Input
+                label="Seller Expected Amount (GHS)"
+                type="number"
+                placeholder="0.00"
+                value={sellerNetAmount}
+                onChange={(e) => setSellerNetAmount(e.target.value)}
+                isRequired
+                hint={`Reserve auto-calculated: GHS ${((Number(sellerNetAmount || 0) * 1.1) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                tooltip="Gavel adds 10% on top of the seller's expected amount and uses that as reserve price."
+              />
+            )}
+          </div>
+
+          {saleSource === 'seller' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Seller Name"
+                placeholder="Full name"
+                value={sellerName}
+                onChange={(e) => setSellerName(e.target.value)}
+                isRequired
+              />
+              <Input
+                label="Seller Phone"
+                placeholder="e.g. 0240000000"
+                value={sellerPhone}
+                onChange={(e) => setSellerPhone(e.target.value)}
+                isRequired
+              />
+            </div>
+          )}
         </div>
 
         {/* Product Details */}
@@ -240,30 +258,6 @@ export default function NewAuction() {
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
-
-            {auctionType === 'car' && (
-              <div className="space-y-4 rounded-lg border border-gray-200 p-4">
-                <h3 className="text-base font-semibold">Car Specifications</h3>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Input label="Title code" placeholder="e.g., ME - Certificate Of Title" value={carSpecs.titleCode || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, titleCode: e.target.value }))} isRequired />
-                  <Input label="Odometer" placeholder="e.g., 150,348 mi Actual" value={carSpecs.odometer || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, odometer: e.target.value }))} isRequired />
-                  <Input label="Primary damage" placeholder="e.g., Normal Wear" value={carSpecs.primaryDamage || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, primaryDamage: e.target.value }))} />
-                  <Input label="Cylinders" placeholder="e.g., 6" value={carSpecs.cylinders || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, cylinders: e.target.value }))} />
-                  <Input label="Color" placeholder="e.g., Black" value={carSpecs.color || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, color: e.target.value }))} />
-                  <Input label="Has key" placeholder="e.g., Yes" value={carSpecs.hasKey || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, hasKey: e.target.value }))} />
-                  <Input label="Engine type" placeholder="e.g., 3.0L 6" value={carSpecs.engineType || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, engineType: e.target.value }))} />
-                  <Input label="Transmission" placeholder="e.g., Automatic" value={carSpecs.transmission || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, transmission: e.target.value }))} isRequired />
-                  <Input label="Vehicle type" placeholder="e.g., Automobile" value={carSpecs.vehicleType || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, vehicleType: e.target.value }))} />
-                  <Input label="Drivetrain" placeholder="e.g., All wheel drive" value={carSpecs.drivetrain || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, drivetrain: e.target.value }))} />
-                  <Input label="Fuel" placeholder="e.g., Gas" value={carSpecs.fuel || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, fuel: e.target.value }))} />
-                  <Input label="Sale date" placeholder="e.g., Wed, Feb 18, 2026 03:00 PM GMT" value={carSpecs.saleDate || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, saleDate: e.target.value }))} />
-                  <Input label="Location" placeholder="e.g., ME - WINDHAM" value={carSpecs.location || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, location: e.target.value }))} />
-                  <Input label="Engine starts" placeholder="e.g., Copart verified that the engine starts" value={carSpecs.engineStarts || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, engineStarts: e.target.value }))} />
-                  <Input label="Transmission engages" placeholder="e.g., Copart verified that the transmission engages" value={carSpecs.transmissionEngages || ''} onChange={(e) => setCarSpecs((prev) => ({ ...prev, transmissionEngages: e.target.value }))} />
-                </div>
-              </div>
-            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
@@ -307,11 +301,16 @@ export default function NewAuction() {
             />
 
             <Input
-              label="Reserve Price (GHS)"
+              label={saleSource === 'seller' ? 'Reserve Price (Auto)' : 'Reserve Price (GHS)'}
               type="number"
-              placeholder="0.00 (optional)"
-              value={reservePrice}
+              placeholder={saleSource === 'seller' ? 'Auto-calculated from seller amount + 10%' : '0.00 (optional)'}
+              value={saleSource === 'seller' ? ((Number(sellerNetAmount || 0) * 1.1) || 0).toString() : reservePrice}
               onChange={(e) => setReservePrice(e.target.value)}
+              tooltip={saleSource === 'seller'
+                ? "Auto-calculated as Seller Expected Amount + 10% Gavel fee."
+                : "Minimum final bid required to sell this item. If bidding ends below this amount, the item is not sold and winner payment is disabled."}
+              hint={saleSource === 'seller' ? 'Derived from seller amount and locked.' : 'Optional: set a minimum sale threshold.'}
+              disabled={saleSource === 'seller'}
             />
           </div>
         </div>
@@ -326,6 +325,7 @@ export default function NewAuction() {
               placeholder="1.00"
               value={minIncrement}
               onChange={(e) => setMinIncrement(e.target.value)}
+              tooltip="Smallest amount each new bid must add above the current highest bid."
             />
 
             <Input
@@ -334,6 +334,7 @@ export default function NewAuction() {
               placeholder="Optional max increment"
               value={maxIncrement}
               onChange={(e) => setMaxIncrement(e.target.value)}
+              tooltip="Optional cap on how much higher a single bid can be than the current highest bid."
             />
           </div>
         </div>
@@ -348,6 +349,7 @@ export default function NewAuction() {
               value={startsAt}
               onChange={(e) => setStartsAt(e.target.value)}
               isRequired
+              tooltip="When bidding opens. Users can star before start; bidding starts at this time."
             />
 
             <Input
@@ -356,6 +358,7 @@ export default function NewAuction() {
               value={endsAt}
               onChange={(e) => setEndsAt(e.target.value)}
               isRequired
+              tooltip="When bidding should end. Last-second bids within 30 seconds extend the timer by 30 seconds."
             />
           </div>
         </div>

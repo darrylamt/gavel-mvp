@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 import AuctionsGridClient from '@/components/auction/AuctionsGridClient'
-import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,11 +50,7 @@ return (
           {starredOnly ? 'Items you have starred to bid on.' : 'Browse live and completed auctions.'}
         </p>
       </div>
-      {!starredOnly && (
-        <Link href="/auctions/cars" className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50">
-          Car Auctions
-        </Link>
-      )}
+      <div />
     </div>
 
     <AuctionsGridClient auctions={typedAuctions} starredOnly={starredOnly} />

@@ -49,7 +49,7 @@ export default function AuctionCard({
   const isEnded = timeLeftMs <= 0
   const startsAtMs = startsAt ? new Date(startsAt).getTime() : 0
   const isScheduled = !isEnded && startsAtMs > nowMs
-  const canToggleStar = isScheduled || starred
+  const canToggleStar = !isEnded || starred
 
   const [startCountdown, setStartCountdown] = useState<string | null>(null)
 
@@ -99,7 +99,7 @@ export default function AuctionCard({
               toggleStarred(id)
             }}
             aria-label={starred ? 'Remove from starred auctions' : 'Add to starred auctions'}
-            title={canToggleStar ? (starred ? 'Remove from starred auctions' : 'Add to starred auctions') : 'Only scheduled auctions can be starred'}
+            title={canToggleStar ? (starred ? 'Remove from starred auctions' : 'Add to starred auctions') : 'Ended auctions cannot be starred'}
             disabled={!canToggleStar}
             className={`absolute left-2 top-2 z-10 rounded-full p-2 shadow-sm transition ${
               canToggleStar

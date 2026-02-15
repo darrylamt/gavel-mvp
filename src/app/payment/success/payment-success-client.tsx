@@ -9,13 +9,12 @@ export default function PaymentSuccessClient() {
   const router = useRouter()
   const reference = params.get('reference')
 
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    reference ? 'loading' : 'error'
+  )
 
   useEffect(() => {
-    if (!reference) {
-      setStatus('error')
-      return
-    }
+    if (!reference) return
 
     const verifyPayment = async () => {
       const res = await fetch('/api/auction-payments/verify', {
@@ -37,29 +36,36 @@ export default function PaymentSuccessClient() {
   }, [reference])
 
   if (status === 'loading') {
-    return <p className="p-6">Verifying payment…</p>
+    return <p className="p-6 text-center">Verifying payment…</p>
   }
 
   if (status === 'error') {
-    return <p className="p-6 text-red-600">Payment verification failed</p>
+    return <p className="p-6 text-center text-red-600">Payment verification failed</p>
   }
 
   return (
-    <main className="p-6 max-w-xl mx-auto text-center">
-      <h1 className="text-2xl font-bold text-green-700">
-        ✅ Payment Successful
-      </h1>
+    <main className="mx-auto flex min-h-[70vh] max-w-xl items-center justify-center p-6">
+      <div className="w-full rounded-2xl border bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto mb-6 flex h-40 w-40 items-center justify-center rounded-full bg-green-100/40">
+          <div className="flex h-28 w-28 items-center justify-center rounded-full bg-green-100">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500 text-3xl font-bold text-white">
+              ✓
+            </div>
+          </div>
+        </div>
 
-      <p className="mt-3">
-        Thank you for completing your payment.
-      </p>
+        <h1 className="text-3xl font-bold text-gray-900">Payment successful!</h1>
+        <p className="mt-3 text-gray-600">
+          Your auction payment has been confirmed successfully.
+        </p>
 
-      <button
-        className="mt-6 bg-black text-white px-4 py-2"
-        onClick={() => router.push('/auctions')}
-      >
-        Back to Auctions
-      </button>
+        <button
+          className="mt-8 inline-flex rounded-lg bg-black px-5 py-3 font-semibold text-white hover:bg-gray-800"
+          onClick={() => router.push('/auctions')}
+        >
+          Continue to Auctions
+        </button>
+      </div>
     </main>
   )
 }

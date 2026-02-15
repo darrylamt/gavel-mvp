@@ -97,12 +97,6 @@ export default function Navbar() {
               >
                 Auctions
               </button>
-              <button
-                onClick={() => router.push('/auctions/cars')}
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
-              >
-                Cars
-              </button>
                 {isAdmin && (
                   <button
                     onClick={() => router.push('/admin')}
@@ -242,15 +236,6 @@ export default function Navbar() {
               className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Tokens
-            </button>
-            <button
-              onClick={() => {
-                router.push('/auctions/cars')
-                setMobileMenuOpen(false)
-              }}
-              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Cars
             </button>
             <button
               onClick={() => {
