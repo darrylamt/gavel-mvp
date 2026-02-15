@@ -159,15 +159,9 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => router.push('/login')}
-                  className="hidden sm:flex px-4 py-2 text-sm font-medium text-gray-700 hover:text-black transition-colors"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => router.push('/signup')}
                   className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
                 >
-                  Sign Up
+                  Sign In
                 </button>
               </div>
             ) : (
@@ -219,6 +213,11 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <nav className="md:hidden pb-4 flex flex-col gap-2">
+            {user && (
+              <div className="mx-1 mb-1 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <span className="font-medium">Tokens:</span> {tokens ?? 0}
+              </div>
+            )}
             <button
               onClick={() => {
                 router.push('/auctions')
@@ -264,6 +263,17 @@ export default function Navbar() {
                 className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border-t border-gray-200 mt-2 pt-4"
               >
                 My Profile
+              </button>
+            )}
+            {!user && (
+              <button
+                onClick={() => {
+                  router.push('/login')
+                  setMobileMenuOpen(false)
+                }}
+                className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border-t border-gray-200 mt-2 pt-4"
+              >
+                Sign In
               </button>
             )}
           </nav>
