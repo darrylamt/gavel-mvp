@@ -11,32 +11,64 @@ export default function AdminAuctionsPage() {
   const [auctions, setAuctions] = useState<DashboardPayload['auctions']>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const load = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+  const loadAuctions = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-      const token = session?.access_token
-      if (!token) {
-        setLoading(false)
-        return
-      }
-
-      const res = await fetch('/api/admin/dashboard', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (res.ok) {
-        const data = (await res.json()) as DashboardPayload
-        setAuctions(data.auctions)
-      }
-
+    const token = session?.access_token
+    if (!token) {
       setLoading(false)
+      return
     }
 
-    load()
+    const res = await fetch('/api/admin/dashboard', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+
+    if (res.ok) {
+      const data = (await res.json()) as DashboardPayload
+      setAuctions(data.auctions)
+    }
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadAuctions()
   }, [])
+
+  const deleteAuction = async (auctionId: string) => {
+    const confirmed = confirm('Delete this auction permanently?')
+    if (!confirmed) return
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    const token = session?.access_token
+    if (!token) {
+      alert('Unauthorized')
+      return
+    }
+
+    const res = await fetch('/api/admin/delete-auction', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ auctionId }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) {
+      alert(data.error || 'Failed to delete auction')
+      return
+    }
+
+    await loadAuctions()
+  }
 
   const statusGraph = useMemo(() => {
     const grouped = new Map<string, number>()
@@ -78,19 +110,45 @@ export default function AdminAuctionsPage() {
                   <th className="py-2">Reserve</th>
                   <th className="py-2">Source</th>
                   <th className="py-2">Seller</th>
+                  <th className="py-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {auctions.map((auction) => (
-                  <tr key={auction.id} className="border-t">
-                    <td className="py-2">{auction.title}</td>
-                    <td className="py-2">{auction.status || '-'}</td>
-                    <td className="py-2">GHS {(auction.current_price ?? 0).toLocaleString()}</td>
-                    <td className="py-2">{auction.reserve_price != null ? `GHS ${auction.reserve_price.toLocaleString()}` : '-'}</td>
-                    <td className="py-2">{auction.sale_source === 'seller' ? 'Seller' : 'Gavel'}</td>
-                    <td className="py-2">{auction.seller_name || '-'}</td>
-                  </tr>
-                ))}
+                {auctions.map((auction) => {
+                  const hasStarted = auction.starts_at ? new Date(auction.starts_at).getTime() <= Date.now() : true
+
+                  return (
+                    <tr key={auction.id} className="border-t">
+                      <td className="py-2">{auction.title}</td>
+                      <td className="py-2">{auction.status || '-'}</td>
+                      <td className="py-2">GHS {(auction.current_price ?? 0).toLocaleString()}</td>
+                      <td className="py-2">{auction.reserve_price != null ? `GHS ${auction.reserve_price.toLocaleString()}` : '-'}</td>
+                      <td className="py-2">{auction.sale_source === 'seller' ? 'Seller' : 'Gavel'}</td>
+                      <td className="py-2">{auction.seller_name || '-'}</td>
+                      <td className="py-2">
+                        <div className="flex items-center gap-2">
+                          {!hasStarted ? (
+                            <Link
+                              href={`/admin/auctions/edit/${auction.id}`}
+                              className="rounded border px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                            >
+                              Edit
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-gray-400">Started</span>
+                          )}
+
+                          <button
+                            onClick={() => deleteAuction(auction.id)}
+                            className="rounded border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

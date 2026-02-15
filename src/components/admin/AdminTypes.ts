@@ -12,6 +12,8 @@ export type DashboardAuction = {
   status: string | null
   current_price: number | null
   reserve_price: number | null
+  starts_at?: string | null
+  ends_at?: string | null
   sale_source: string | null
   seller_name: string | null
   seller_phone: string | null
