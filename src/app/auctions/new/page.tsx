@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize } from '@/components/base/file-upload/file-upload'
-import { buildAuctionDescription, type SaleSource } from '@/lib/auctionMeta'
+import { type SaleSource } from '@/lib/auctionMeta'
 
 type UploadedFileItem = {
   id: string
@@ -93,20 +93,17 @@ export default function NewAuction() {
           ? Number(reservePrice)
           : null
 
-      const descriptionWithMeta = buildAuctionDescription(description, {
-        saleSource,
-        sellerName: saleSource === 'seller' ? sellerName.trim() : undefined,
-        sellerPhone: saleSource === 'seller' ? sellerPhone.trim() : undefined,
-        sellerNetAmount: saleSource === 'seller' ? (sellerAmountValue as number) : undefined,
-      })
-
       /* Create auction */
       const payload = {
         title: title.trim(),
-        description: descriptionWithMeta,
+        description: description.trim(),
         starting_price: Number(startingPrice),
         current_price: Number(startingPrice),
         reserve_price: computedReserve,
+        sale_source: saleSource,
+        seller_name: saleSource === 'seller' ? sellerName.trim() : null,
+        seller_phone: saleSource === 'seller' ? sellerPhone.trim() : null,
+        seller_expected_amount: saleSource === 'seller' ? (sellerAmountValue as number) : null,
         min_increment: minIncrement ? Number(minIncrement) : 1,
         max_increment: maxIncrement ? Number(maxIncrement) : null,
         starts_at: new Date(startsAt).toISOString(),

@@ -8,6 +8,7 @@ import ContactDetailsSection from '@/components/profile/ContactDetailsSection'
 import WonAuctionsSection from '@/components/profile/WonAuctionsSection'
 import SignOutButton from '@/components/profile/SignOutButton'
 import EditProfileModal from '@/components/profile/EditProfileModal'
+import BidAuctionsSection from '@/components/profile/BidAuctionsSection'
 
 type WonAuction = {
   auction_id: string
@@ -24,6 +25,33 @@ type ProfileData = {
   avatar_url: string | null
 }
 
+type BidAuctionItem = {
+  auctionId: string
+  title: string
+  yourHighestBid: number
+  currentPrice: number
+  status: string
+}
+
+type UserBidRow = {
+  auction_id: string
+  amount: number
+  auctions:
+    | {
+        id: string
+        title: string
+        current_price: number
+        status: string | null
+      }
+    | {
+        id: string
+        title: string
+        current_price: number
+        status: string | null
+      }[]
+    | null
+}
+
 export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
@@ -33,6 +61,7 @@ export default function ProfilePage() {
   const [address, setAddress] = useState('')
 
   const [wonAuctions, setWonAuctions] = useState<WonAuction[]>([])
+  const [bidAuctions, setBidAuctions] = useState<BidAuctionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
@@ -44,6 +73,39 @@ export default function ProfilePage() {
     )
 
     setWonAuctions(data || [])
+  }
+
+  const loadBidAuctions = async (uid: string) => {
+    const { data } = await supabase
+      .from('bids')
+      .select('auction_id, amount, auctions(id, title, current_price, status)')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false })
+
+    const rows = (data as UserBidRow[] | null) ?? []
+    const byAuction = new Map<string, BidAuctionItem>()
+
+    for (const row of rows) {
+      const auction = Array.isArray(row.auctions) ? row.auctions[0] : row.auctions
+      if (!auction?.id) continue
+
+      const existing = byAuction.get(auction.id)
+      const amount = Number(row.amount)
+
+      if (!existing) {
+        byAuction.set(auction.id, {
+          auctionId: auction.id,
+          title: auction.title,
+          yourHighestBid: amount,
+          currentPrice: Number(auction.current_price ?? 0),
+          status: auction.status ?? 'unknown',
+        })
+      } else if (amount > existing.yourHighestBid) {
+        existing.yourHighestBid = amount
+      }
+    }
+
+    setBidAuctions(Array.from(byAuction.values()))
   }
 
   useEffect(() => {
@@ -80,6 +142,7 @@ export default function ProfilePage() {
       setAvatarUrl(profileData?.avatar_url ?? null)
 
       await loadWonAuctions(authUser.id)
+      await loadBidAuctions(authUser.id)
 
       setLoading(false)
     }
@@ -139,6 +202,8 @@ export default function ProfilePage() {
         auctions={wonAuctions}
         onPay={payNow}
       />
+
+      <BidAuctionsSection auctions={bidAuctions} />
 
       <SignOutButton />
 

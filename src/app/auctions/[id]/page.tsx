@@ -20,6 +20,9 @@ type AuctionRecord = {
   description: string | null
   current_price: number
   reserve_price: number | null
+  sale_source: 'gavel' | 'seller' | null
+  seller_name: string | null
+  seller_phone: string | null
   starts_at: string | null
   ends_at: string | null
   status: string | null
@@ -94,7 +97,7 @@ export default function AuctionDetailPage() {
       const { data: auctionData } = await supabasePublic
         .from('auctions')
         .select(
-          'id, title, description, current_price, reserve_price, ends_at, status, paid, image_url, images, starts_at'
+          'id, title, description, current_price, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, image_url, images, starts_at'
         )
         .eq('id', id)
         .maybeSingle()
@@ -287,6 +290,9 @@ export default function AuctionDetailPage() {
   if (!auction) return <p className="p-6 text-red-500">Auction not found</p>
 
   const { description: publicDescription, meta } = parseAuctionMeta(auction.description)
+  const saleSource = auction.sale_source ?? meta?.saleSource ?? 'gavel'
+  const sellerName = auction.seller_name ?? meta?.sellerName ?? null
+  const sellerPhone = auction.seller_phone ?? meta?.sellerPhone ?? null
 
   const formattedDescription = (publicDescription ?? '')
     .replace(/\s*•\s*/g, '\n• ')
@@ -331,20 +337,20 @@ export default function AuctionDetailPage() {
             <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 sm:grid-cols-2">
               <div>
                 <div className="font-medium">Sale Source</div>
-                <div>{meta?.saleSource === 'seller' ? 'External seller' : 'Gavel'}</div>
+                <div>{saleSource === 'seller' ? 'External seller' : 'Gavel'}</div>
               </div>
-              {meta?.saleSource === 'seller' && (
+              {saleSource === 'seller' && (
                 <>
-                  {meta.sellerName && (
+                  {sellerName && (
                     <div>
                       <div className="font-medium">Seller Name</div>
-                      <div>{meta.sellerName}</div>
+                      <div>{sellerName}</div>
                     </div>
                   )}
-                  {meta.sellerPhone && (
+                  {sellerPhone && (
                     <div>
                       <div className="font-medium">Seller Phone</div>
-                      <div>{meta.sellerPhone}</div>
+                      <div>{sellerPhone}</div>
                     </div>
                   )}
                 </>
