@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     template: '%s | Gavel Ghana',
   },
   description: 'Bid on trusted online auctions in Ghana using Gavel.',
+  verification: {
+    google: 'SDSysJpjhUK_A-YPkPKeDsV6lcNiTaXQYKmafA4_vKA',
+  },
   alternates: {
     canonical: '/',
   },
