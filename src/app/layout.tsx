@@ -5,6 +5,7 @@ import WelcomeTourModal from '@/components/layout/WelcomeTourModal'
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from 'next'
+import gavelTabIcon from './Gavel Logo.jpeg'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
@@ -32,6 +33,11 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Gavel Ghana - Online Auctions',
     description: 'Bid on trusted online auctions in Ghana using Gavel.',
+  },
+  icons: {
+    icon: gavelTabIcon.src,
+    shortcut: gavelTabIcon.src,
+    apple: gavelTabIcon.src,
   },
 }
 

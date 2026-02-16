@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Facebook, Instagram, Github, Twitter } from 'lucide-react'
+import navLogo from '@/app/NAVLOGO.jpeg'
 
 export default function Footer() {
   return (
@@ -7,8 +9,8 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-x-12 gap-y-16 md:grid-cols-3 lg:grid-cols-6">
           <div className="col-span-2 md:col-span-3 lg:col-span-2 lg:pr-8">
-            <Link href="/" className="inline-flex text-2xl font-bold tracking-tight text-black hover:opacity-80">
-              Gavel
+            <Link href="/" className="inline-flex hover:opacity-80">
+              <Image src={navLogo} alt="Gavel" className="h-10 w-auto" />
             </Link>
 
             <p className="mt-7 text-base leading-relaxed text-gray-600">

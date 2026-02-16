@@ -3,11 +3,13 @@
 import { Menu, LogOut, Heart } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuthUser } from '@/hooks/useAuthUser'
 import AvatarLabelGroup from '@/components/base/avatar/avatar-label-group'
 import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
+import navLogo from '@/app/NAVLOGO.jpeg'
 
 type ProfileData = {
   username: string | null
@@ -84,9 +86,7 @@ export default function Navbar() {
               onClick={() => router.push('/')}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="text-2xl font-bold tracking-tight text-black">
-                Gavel
-              </div>
+              <Image src={navLogo} alt="Gavel" className="h-8 w-auto" priority />
             </button>
 
             {/* Desktop Navigation */}
