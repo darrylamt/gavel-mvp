@@ -15,6 +15,7 @@ import ImageGallery from '@/components/auction/ImageGallery'
 import ShareAuctionButton from '@/components/auction/ShareAuctionButton'
 import { parseAuctionMeta } from '@/lib/auctionMeta'
 import { buildAuctionPath } from '@/lib/seo'
+import { getOrCreateViewerKey } from '@/lib/engagement'
 
 type AuctionRecord = {
   id: string
@@ -62,6 +63,7 @@ export default function AuctionDetailPage() {
   const [bidError, setBidError] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState('Calculating...')
   const [countdownPhase, setCountdownPhase] = useState<'starts' | 'ends' | 'ended'>('ends')
+  const [watcherCount, setWatcherCount] = useState(0)
 
   const now = Date.now()
 
@@ -283,6 +285,66 @@ export default function AuctionDetailPage() {
     }
   }
 
+  const bidderCount = useMemo(() => {
+    const userIds = new Set(bids.map((bid) => bid.user_id).filter(Boolean))
+    return userIds.size
+  }, [bids])
+
+  const loadEngagement = useCallback(async () => {
+    if (!id) return
+
+    const res = await fetch(`/api/auctions/engagement?auctionIds=${id}`)
+    if (!res.ok) return
+
+    const data = (await res.json()) as {
+      counts?: Record<string, { bidderCount: number; watcherCount: number }>
+    }
+
+    const counts = data.counts?.[String(id)]
+    if (counts) {
+      setWatcherCount(counts.watcherCount ?? 0)
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+
+    const viewerKey = getOrCreateViewerKey()
+
+    const trackView = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (viewerKey) {
+        await fetch('/api/auctions/engagement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            auction_id: id,
+            viewer_key: viewerKey,
+            user_id: user?.id ?? null,
+            action: 'view',
+          }),
+        })
+      }
+
+      await loadEngagement()
+    }
+
+    trackView()
+  }, [id, loadEngagement])
+
+  useEffect(() => {
+    if (!isScheduled) return
+
+    const timer = setInterval(() => {
+      loadEngagement()
+    }, 15000)
+
+    return () => clearInterval(timer)
+  }, [isScheduled, loadEngagement])
+
   const payNow = async () => {
     const { data: auth } = await supabase.auth.getUser()
     if (!auth.user || !auth.user.email) {
@@ -366,6 +428,10 @@ export default function AuctionDetailPage() {
               <AuctionHeader
                 title={auction.title}
                 currentPrice={auction.current_price}
+                bidderCount={bidderCount}
+                watcherCount={watcherCount}
+                showBidders={!hasEnded && !isScheduled}
+                showWatchers={!hasEnded && isScheduled}
               />
               <ShareAuctionButton auctionId={auction.id} />
             </div>

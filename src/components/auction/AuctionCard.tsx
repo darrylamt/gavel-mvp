@@ -20,6 +20,8 @@ type AuctionCardProps = {
   reservePrice?: number | null
   minIncrement?: number | null
   maxIncrement?: number | null
+  bidderCount?: number
+  watcherCount?: number
 }
 
 export default function AuctionCard({
@@ -36,6 +38,8 @@ export default function AuctionCard({
   reservePrice,
   minIncrement,
   maxIncrement,
+  bidderCount,
+  watcherCount,
 }: AuctionCardProps) {
   const { isStarred, toggleStarred } = useStarredAuctions()
   const starred = isStarred(id)
@@ -167,6 +171,18 @@ export default function AuctionCard({
 
         {isScheduled && startCountdown && (
           <span className="ml-3 text-xs text-gray-600">{startCountdown}</span>
+        )}
+
+        {!isEnded && !isScheduled && typeof bidderCount === 'number' && (
+          <div className="mt-3 text-xs font-medium text-blue-700">
+            {bidderCount} bidder{bidderCount === 1 ? '' : 's'} participating
+          </div>
+        )}
+
+        {!isEnded && isScheduled && typeof watcherCount === 'number' && (
+          <div className="mt-3 text-xs font-medium text-purple-700">
+            {watcherCount} watching
+          </div>
         )}
 
         <div className="mt-3 text-xs text-gray-500">

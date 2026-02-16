@@ -3,6 +3,9 @@
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import AuctionCard from '@/components/auction/AuctionCard'
+import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
+
+export const dynamic = 'force-dynamic'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,19 +13,29 @@ const supabase = createClient(
 )
 
 export default async function HomePage() {
+  const nowIso = new Date().toISOString()
+
   const { data: auctions } = await supabase
     .from('auctions')
     .select('id, title, current_price, ends_at, starts_at, status, image_url')
+    .in('status', ['active', 'scheduled'])
+    .gt('ends_at', nowIso)
     .order('created_at', { ascending: false })
     .limit(6)
 
   const { data: startingSoon } = await supabase
     .from('auctions')
     .select('id, title, current_price, ends_at, starts_at, status, image_url')
-    .gt('starts_at', new Date().toISOString())
-    .eq('status', 'scheduled')
+    .gt('starts_at', nowIso)
+    .neq('status', 'ended')
     .order('starts_at', { ascending: true })
     .limit(6)
+
+  const allAuctionIds = Array.from(
+    new Set([...(auctions ?? []).map((auction) => auction.id), ...(startingSoon ?? []).map((auction) => auction.id)])
+  )
+
+  const engagementCounts = await getAuctionEngagementCounts(allAuctionIds)
 
   return (
     <main className="max-w-7xl mx-auto px-6 py-14">
@@ -77,6 +90,9 @@ export default async function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {startingSoon.map((a: any) => (
+              (() => {
+                const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
+                return (
               <AuctionCard
                 key={a.id}
                 id={a.id}
@@ -86,7 +102,11 @@ export default async function HomePage() {
                 startsAt={a.starts_at}
                 status={a.status}
                 imageUrl={a.image_url}
+                bidderCount={counts.bidderCount}
+                watcherCount={counts.watcherCount}
               />
+                )
+              })()
             ))}
           </div>
         </section>
@@ -115,6 +135,9 @@ export default async function HomePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {auctions?.map((a) => (
+            (() => {
+              const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
+              return (
             <AuctionCard
               key={a.id}
               id={a.id}
@@ -124,7 +147,11 @@ export default async function HomePage() {
               startsAt={a.starts_at}
               status={a.status}
               imageUrl={a.image_url}
+              bidderCount={counts.bidderCount}
+              watcherCount={counts.watcherCount}
             />
+              )
+            })()
           ))}
         </div>
       </section>

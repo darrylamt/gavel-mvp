@@ -23,9 +23,10 @@ type Auction = {
 type AuctionsGridClientProps = {
   auctions: Auction[]
   starredOnly?: boolean
+  engagementCounts?: Record<string, { bidderCount: number; watcherCount: number }>
 }
 
-export default function AuctionsGridClient({ auctions, starredOnly = false }: AuctionsGridClientProps) {
+export default function AuctionsGridClient({ auctions, starredOnly = false, engagementCounts = {} }: AuctionsGridClientProps) {
   const { starredSet, pruneStarred } = useStarredAuctions()
 
   useEffect(() => {
@@ -49,6 +50,9 @@ export default function AuctionsGridClient({ auctions, starredOnly = false }: Au
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
       {visibleAuctions.map((auction) => (
+        (() => {
+          const counts = engagementCounts[auction.id] ?? { bidderCount: 0, watcherCount: 0 }
+          return (
         <AuctionCard
           key={auction.id}
           id={auction.id}
@@ -64,7 +68,11 @@ export default function AuctionsGridClient({ auctions, starredOnly = false }: Au
           reservePrice={auction.reserve_price}
           minIncrement={auction.min_increment}
           maxIncrement={auction.max_increment}
+          bidderCount={counts.bidderCount}
+          watcherCount={counts.watcherCount}
         />
+          )
+        })()
       ))}
     </div>
   )

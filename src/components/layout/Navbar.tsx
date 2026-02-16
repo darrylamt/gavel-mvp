@@ -9,7 +9,7 @@ import { useAuthUser } from '@/hooks/useAuthUser'
 import AvatarLabelGroup from '@/components/base/avatar/avatar-label-group'
 import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
-import navLogo from '@/app/NAVLOGO.jpeg'
+import navLogo from '@/app/NAVLOGO.png'
 
 type ProfileData = {
   username: string | null

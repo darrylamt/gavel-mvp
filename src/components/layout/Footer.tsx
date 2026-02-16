@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Facebook, Instagram, Github, Twitter } from 'lucide-react'
-import navLogo from '@/app/NAVLOGO.jpeg'
+import navLogo from '@/app/NAVLOGO.png'
 
 export default function Footer() {
   return (

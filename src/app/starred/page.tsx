@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import AuctionsGridClient from '@/components/auction/AuctionsGridClient'
+import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,8 @@ type Auction = {
   max_increment?: number | null
 }
 
+type EngagementCounts = Record<string, { bidderCount: number; watcherCount: number }>
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -31,6 +34,11 @@ export default async function StarredAuctionsPage() {
     .order('created_at', { ascending: false })
 
   const typedAuctions: Auction[] = (auctions ?? []) as Auction[]
+  const engagementMap = await getAuctionEngagementCounts(typedAuctions.map((auction) => auction.id))
+  const engagementCounts: EngagementCounts = {}
+  for (const [auctionId, value] of engagementMap.entries()) {
+    engagementCounts[auctionId] = value
+  }
 
   return (
     <main className="max-w-7xl mx-auto px-6 py-12">
@@ -39,7 +47,7 @@ export default async function StarredAuctionsPage() {
         <p className="text-gray-600">Items you have starred to bid on.</p>
       </div>
 
-      <AuctionsGridClient auctions={typedAuctions} starredOnly />
+      <AuctionsGridClient auctions={typedAuctions} starredOnly engagementCounts={engagementCounts} />
     </main>
   )
 }

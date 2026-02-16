@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import AuctionsGridClient from '@/components/auction/AuctionsGridClient'
 import type { Metadata } from 'next'
 import { buildAuctionPath } from '@/lib/seo'
+import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +32,8 @@ type Auction = {
   max_increment?: number | null
 }
 
+type EngagementCounts = Record<string, { bidderCount: number; watcherCount: number }>
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -50,6 +53,11 @@ export default async function AuctionsPage({
     .order('created_at', { ascending: false })
 
   const typedAuctions: Auction[] = (auctions ?? []) as Auction[]
+  const engagementMap = await getAuctionEngagementCounts(typedAuctions.map((auction) => auction.id))
+  const engagementCounts: EngagementCounts = {}
+  for (const [auctionId, value] of engagementMap.entries()) {
+    engagementCounts[auctionId] = value
+  }
 
   const itemListStructuredData = {
     '@context': 'https://schema.org',
@@ -77,7 +85,7 @@ return (
       <div />
     </div>
 
-    <AuctionsGridClient auctions={typedAuctions} starredOnly={starredOnly} />
+    <AuctionsGridClient auctions={typedAuctions} starredOnly={starredOnly} engagementCounts={engagementCounts} />
   </main>
 )
 }
