@@ -14,6 +14,7 @@ const supabase = createClient(
 
 export default async function HomePage() {
   const nowIso = new Date().toISOString()
+  const next24HoursIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
   const { data: auctions } = await supabase
     .from('auctions')
@@ -27,6 +28,7 @@ export default async function HomePage() {
     .from('auctions')
     .select('id, title, current_price, ends_at, starts_at, status, image_url')
     .gt('starts_at', nowIso)
+    .lt('starts_at', next24HoursIso)
     .neq('status', 'ended')
     .order('starts_at', { ascending: true })
     .limit(6)
@@ -113,7 +115,7 @@ export default async function HomePage() {
       )}
 
       {/* FEATURED AUCTIONS */}
-      <section>
+      <section className="mt-10 sm:mt-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">
             Featured Auctions
