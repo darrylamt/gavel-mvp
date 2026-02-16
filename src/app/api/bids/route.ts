@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   const { data: auction, error: auctionError } = await supabase
     .from('auctions')
-    .select('id, status, starts_at, ends_at, current_price, reserve_price')
+    .select('id, status, starts_at, ends_at, current_price, reserve_price, min_increment, max_increment')
     .eq('id', auction_id)
     .single()
 
@@ -86,6 +86,24 @@ export async function POST(req: Request) {
   if (bidAmount <= auction.current_price) {
     return NextResponse.json(
       { error: 'Bid must be higher than current price' },
+      { status: 400 }
+    )
+  }
+
+  const bidIncrement = bidAmount - auction.current_price
+  const minIncrement = Number(auction.min_increment ?? 1)
+  const maxIncrement = auction.max_increment == null ? null : Number(auction.max_increment)
+
+  if (Number.isFinite(minIncrement) && minIncrement > 0 && bidIncrement < minIncrement) {
+    return NextResponse.json(
+      { error: `Bid must be at least GHS ${minIncrement.toLocaleString()} above current price` },
+      { status: 400 }
+    )
+  }
+
+  if (maxIncrement != null && Number.isFinite(maxIncrement) && maxIncrement > 0 && bidIncrement > maxIncrement) {
+    return NextResponse.json(
+      { error: `Bid cannot be more than GHS ${maxIncrement.toLocaleString()} above current price` },
       { status: 400 }
     )
   }

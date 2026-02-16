@@ -4,6 +4,8 @@ type Props = {
   isPlacingBid: boolean
   error: string | null
   isLoggedIn: boolean
+  minIncrement?: number | null
+  maxIncrement?: number | null
   onBidAmountChange: (v: string) => void
   onSubmit: () => void
 }
@@ -14,6 +16,8 @@ export default function BidForm({
   isPlacingBid,
   error,
   isLoggedIn,
+  minIncrement,
+  maxIncrement,
   onBidAmountChange,
   onSubmit,
 }: Props) {
@@ -63,6 +67,14 @@ export default function BidForm({
       <p className="mt-2 text-xs text-gray-500 text-center">
         Each bid deducts tokens from your balance
       </p>
+
+      {typeof minIncrement === 'number' && minIncrement > 0 && (
+        <p className="mt-1 text-xs text-gray-500 text-center">
+          {typeof maxIncrement === 'number' && maxIncrement > 0
+            ? `Allowed increment: +GHS ${minIncrement.toLocaleString()} to +GHS ${maxIncrement.toLocaleString()}`
+            : `Minimum increment: +GHS ${minIncrement.toLocaleString()}`}
+        </p>
+      )}
     </div>
   )
 }

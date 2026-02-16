@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Heart } from 'lucide-react'
+import { Heart, Info } from 'lucide-react'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
 import { buildAuctionPath } from '@/lib/seo'
 
@@ -57,6 +57,7 @@ export default function AuctionCard({
   const canToggleStar = !isEnded || starred
 
   const [startCountdown, setStartCountdown] = useState<string | null>(null)
+  const [openTip, setOpenTip] = useState<'min' | 'max' | null>(null)
 
   useEffect(() => {
     if (!startsAt || !isScheduled) return
@@ -185,9 +186,55 @@ export default function AuctionCard({
           </div>
         )}
 
-        <div className="mt-3 text-xs text-gray-500">
-          {minIncrement != null && <span className="mr-3">Min +{minIncrement}</span>}
-          {maxIncrement != null && <span>Max +{maxIncrement}</span>}
+        <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500">
+          {minIncrement != null && (
+            <div className="relative flex items-center gap-1">
+              <span>Min +{minIncrement}</span>
+              <button
+                type="button"
+                aria-label="Explain minimum increment"
+                className="rounded p-0.5 text-gray-500 hover:bg-gray-100"
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  setOpenTip((prev) => (prev === 'min' ? null : 'min'))
+                }}
+                onMouseEnter={() => setOpenTip('min')}
+                onMouseLeave={() => setOpenTip((prev) => (prev === 'min' ? null : prev))}
+              >
+                <Info className="h-3.5 w-3.5" />
+              </button>
+              {openTip === 'min' && (
+                <div className="absolute left-0 top-6 z-20 w-52 rounded-md border bg-white p-2 text-[11px] text-gray-700 shadow">
+                  The next bid must be at least this amount above the current highest bid.
+                </div>
+              )}
+            </div>
+          )}
+          {maxIncrement != null && (
+            <div className="relative flex items-center gap-1">
+              <span>Max +{maxIncrement}</span>
+              <button
+                type="button"
+                aria-label="Explain maximum increment"
+                className="rounded p-0.5 text-gray-500 hover:bg-gray-100"
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  setOpenTip((prev) => (prev === 'max' ? null : 'max'))
+                }}
+                onMouseEnter={() => setOpenTip('max')}
+                onMouseLeave={() => setOpenTip((prev) => (prev === 'max' ? null : prev))}
+              >
+                <Info className="h-3.5 w-3.5" />
+              </button>
+              {openTip === 'max' && (
+                <div className="absolute left-0 top-6 z-20 w-52 rounded-md border bg-white p-2 text-[11px] text-gray-700 shadow">
+                  The next bid cannot be more than this amount above the current highest bid.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Link>

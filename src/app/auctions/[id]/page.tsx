@@ -22,6 +22,8 @@ type AuctionRecord = {
   title: string
   description: string | null
   current_price: number
+  min_increment: number | null
+  max_increment: number | null
   reserve_price: number | null
   sale_source: 'gavel' | 'seller' | null
   seller_name: string | null
@@ -102,7 +104,7 @@ export default function AuctionDetailPage() {
       const { data: auctionData } = await supabasePublic
         .from('auctions')
         .select(
-          'id, title, description, current_price, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, image_url, images, starts_at'
+          'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, image_url, images, starts_at'
         )
         .eq('id', id)
         .maybeSingle()
@@ -254,6 +256,20 @@ export default function AuctionDetailPage() {
     const amount = Number(bidAmount)
     if (!amount || amount <= auction!.current_price) {
       setBidError('Bid must be higher than current price')
+      return
+    }
+
+    const increment = amount - auction!.current_price
+    const minIncrement = Number(auction?.min_increment ?? 1)
+    const maxIncrement = auction?.max_increment == null ? null : Number(auction.max_increment)
+
+    if (Number.isFinite(minIncrement) && minIncrement > 0 && increment < minIncrement) {
+      setBidError(`Bid must be at least GHS ${minIncrement.toLocaleString()} above current price`)
+      return
+    }
+
+    if (maxIncrement != null && Number.isFinite(maxIncrement) && maxIncrement > 0 && increment > maxIncrement) {
+      setBidError(`Bid cannot be more than GHS ${maxIncrement.toLocaleString()} above current price`)
       return
     }
 
@@ -512,6 +528,8 @@ export default function AuctionDetailPage() {
             isPlacingBid={isPlacingBid}
             error={bidError}
             isLoggedIn={!!userId}
+            minIncrement={auction.min_increment}
+            maxIncrement={auction.max_increment}
             onBidAmountChange={setBidAmount}
             onSubmit={placeBid}
           />
