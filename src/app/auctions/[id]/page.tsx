@@ -88,6 +88,12 @@ export default function AuctionDetailPage() {
     auction?.reserve_price == null ||
     ((bids[0]?.amount ?? 0) >= auction.reserve_price)
 
+  const liveCurrentPrice = useMemo(() => {
+    const auctionPrice = auction?.current_price ?? 0
+    const topBidAmount = bids[0]?.amount ?? 0
+    return Math.max(auctionPrice, topBidAmount)
+  }, [auction?.current_price, bids])
+
   const isWinner =
     hasEnded && reserveMet && bids.length > 0 && bids[0]?.user_id === userId
 
@@ -254,12 +260,12 @@ export default function AuctionDetailPage() {
     }
 
     const amount = Number(bidAmount)
-    if (!amount || amount <= auction!.current_price) {
+    if (!amount || amount <= liveCurrentPrice) {
       setBidError('Bid must be higher than current price')
       return
     }
 
-    const increment = amount - auction!.current_price
+    const increment = amount - liveCurrentPrice
     const minIncrement = Number(auction?.min_increment ?? 1)
     const maxIncrement = auction?.max_increment == null ? null : Number(auction.max_increment)
 
@@ -443,7 +449,7 @@ export default function AuctionDetailPage() {
             <div className="flex items-start justify-between gap-3">
               <AuctionHeader
                 title={auction.title}
-                currentPrice={auction.current_price}
+                currentPrice={liveCurrentPrice}
                 bidderCount={bidderCount}
                 watcherCount={watcherCount}
                 showBidders={!hasEnded && !isScheduled}
