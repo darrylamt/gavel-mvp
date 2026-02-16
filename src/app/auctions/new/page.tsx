@@ -88,7 +88,7 @@ export default function NewAuction() {
 
       const computedReserve =
         saleSource === 'seller'
-          ? Math.round((sellerAmountValue as number) * 1.1 * 100) / 100
+          ? Math.ceil((sellerAmountValue as number) * 1.1)
           : reservePrice
           ? Number(reservePrice)
           : null
@@ -204,7 +204,7 @@ export default function NewAuction() {
                 value={sellerNetAmount}
                 onChange={(e) => setSellerNetAmount(e.target.value)}
                 isRequired
-                hint={`Reserve auto-calculated: GHS ${((Number(sellerNetAmount || 0) * 1.1) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                hint={`Reserve auto-calculated: GHS ${Math.ceil((Number(sellerNetAmount || 0) * 1.1) || 0).toLocaleString()}`}
                 tooltip="Gavel adds 10% on top of the seller's expected amount and uses that as reserve price."
               />
             )}
@@ -301,7 +301,7 @@ export default function NewAuction() {
               label={saleSource === 'seller' ? 'Reserve Price (Auto)' : 'Reserve Price (GHS)'}
               type="number"
               placeholder={saleSource === 'seller' ? 'Auto-calculated from seller amount + 10%' : '0.00 (optional)'}
-              value={saleSource === 'seller' ? ((Number(sellerNetAmount || 0) * 1.1) || 0).toString() : reservePrice}
+              value={saleSource === 'seller' ? Math.ceil((Number(sellerNetAmount || 0) * 1.1) || 0).toString() : reservePrice}
               onChange={(e) => setReservePrice(e.target.value)}
               tooltip={saleSource === 'seller'
                 ? "Auto-calculated as Seller Expected Amount + 10% Gavel fee."

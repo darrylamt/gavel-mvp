@@ -118,7 +118,7 @@ export default function AdminEditAuctionPage() {
 
       const computedReserve =
         saleSource === 'seller'
-          ? Math.round((sellerAmountValue as number) * 1.1 * 100) / 100
+          ? Math.ceil((sellerAmountValue as number) * 1.1)
           : reservePrice
           ? Number(reservePrice)
           : null
@@ -199,7 +199,7 @@ export default function AdminEditAuctionPage() {
                 value={sellerNetAmount}
                 onChange={(event) => setSellerNetAmount(event.target.value)}
                 isRequired
-                hint={`Reserve auto-calculated: GHS ${((Number(sellerNetAmount || 0) * 1.1) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                hint={`Reserve auto-calculated: GHS ${Math.ceil((Number(sellerNetAmount || 0) * 1.1) || 0).toLocaleString()}`}
               />
             )}
           </div>
@@ -232,7 +232,7 @@ export default function AdminEditAuctionPage() {
           <Input
             label={saleSource === 'seller' ? 'Reserve Price (Auto)' : 'Reserve Price (GHS)'}
             type="number"
-            value={saleSource === 'seller' ? ((Number(sellerNetAmount || 0) * 1.1) || 0).toString() : reservePrice}
+            value={saleSource === 'seller' ? Math.ceil((Number(sellerNetAmount || 0) * 1.1) || 0).toString() : reservePrice}
             onChange={(event) => setReservePrice(event.target.value)}
             disabled={saleSource === 'seller'}
           />
