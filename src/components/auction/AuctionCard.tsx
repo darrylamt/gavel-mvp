@@ -22,6 +22,7 @@ type AuctionCardProps = {
   maxIncrement?: number | null
   bidderCount?: number
   watcherCount?: number
+  compactMobile?: boolean
 }
 
 export default function AuctionCard({
@@ -40,6 +41,7 @@ export default function AuctionCard({
   maxIncrement,
   bidderCount,
   watcherCount,
+  compactMobile = false,
 }: AuctionCardProps) {
   const { isStarred, toggleStarred } = useStarredAuctions()
   const starred = isStarred(id)
@@ -91,10 +93,12 @@ export default function AuctionCard({
   return (
     <Link
       href={buildAuctionPath(id, title)}
-      className="group block rounded-2xl border bg-white overflow-hidden hover:shadow-lg transition"
+      className={`group block overflow-hidden border bg-white transition hover:shadow-lg ${
+        compactMobile ? 'rounded-xl sm:rounded-2xl' : 'rounded-2xl'
+      }`}
     >
       {/* IMAGE */}
-      <div className="h-48 bg-gray-100 overflow-hidden relative">
+      <div className={`bg-gray-100 overflow-hidden relative ${compactMobile ? 'h-28 sm:h-48' : 'h-48'}`}>
         {!isEnded && (
           <button
             type="button"
@@ -145,14 +149,14 @@ export default function AuctionCard({
       </div>
 
       {/* CONTENT */}
-      <div className="p-4">
-        <h3 className="font-semibold text-lg leading-tight mb-2 group-hover:underline">
+      <div className={compactMobile ? 'p-2.5 sm:p-4' : 'p-4'}>
+        <h3 className={`font-semibold leading-tight mb-1.5 group-hover:underline ${compactMobile ? 'text-xs sm:text-lg' : 'text-lg'}`}>
           {title}
         </h3>
 
-        <p className="text-sm text-gray-500 mb-1">Current bid</p>
+        <p className={`text-gray-500 mb-1 ${compactMobile ? 'hidden sm:block sm:text-sm' : 'text-sm'}`}>Current bid</p>
 
-        <p className="text-2xl font-bold mb-1">GHS {currentPrice.toLocaleString()}</p>
+        <p className={`font-bold mb-1 ${compactMobile ? 'text-sm sm:text-2xl' : 'text-2xl'}`}>GHS {currentPrice.toLocaleString()}</p>
 
         {startingPrice != null && (
           <p className="text-sm text-gray-500 mb-1">Starting: GHS {startingPrice.toLocaleString()}</p>
@@ -186,7 +190,7 @@ export default function AuctionCard({
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500">
+        <div className={`flex flex-wrap gap-3 text-xs text-gray-500 ${compactMobile ? 'mt-2' : 'mt-3'}`}>
           {minIncrement != null && (
             <div className="relative flex items-center gap-1">
               <span>Min +{minIncrement}</span>

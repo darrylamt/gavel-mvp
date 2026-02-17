@@ -103,7 +103,7 @@ export default async function HomePage() {
             <Link href="/auctions" className="text-sm font-semibold underline">View all</Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {endingSoon.map((a: any) => (
               (() => {
                 const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
@@ -119,6 +119,7 @@ export default async function HomePage() {
                 imageUrl={a.image_url}
                 bidderCount={counts.bidderCount}
                 watcherCount={counts.watcherCount}
+                compactMobile
               />
                 )
               })()
@@ -135,7 +136,7 @@ export default async function HomePage() {
             <Link href="/auctions" className="text-sm font-semibold underline">View all</Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {startingSoon.map((a: any) => (
               (() => {
                 const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
@@ -151,6 +152,7 @@ export default async function HomePage() {
                 imageUrl={a.image_url}
                 bidderCount={counts.bidderCount}
                 watcherCount={counts.watcherCount}
+                compactMobile
               />
                 )
               })()
@@ -180,7 +182,7 @@ export default async function HomePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
           {auctions?.map((a) => (
             (() => {
               const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
@@ -196,6 +198,7 @@ export default async function HomePage() {
               imageUrl={a.image_url}
               bidderCount={counts.bidderCount}
               watcherCount={counts.watcherCount}
+              compactMobile
             />
               )
             })()
