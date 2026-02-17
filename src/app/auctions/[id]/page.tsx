@@ -405,8 +405,6 @@ export default function AuctionDetailPage() {
 
   const { description: publicDescription, meta } = parseAuctionMeta(auction.description)
   const saleSource = auction.sale_source ?? meta?.saleSource ?? 'gavel'
-  const sellerName = auction.seller_name ?? meta?.sellerName ?? null
-  const sellerPhone = auction.seller_phone ?? meta?.sellerPhone ?? null
 
   const formattedDescription = (publicDescription ?? '')
     .replace(/\s*•\s*/g, '\n• ')
@@ -501,16 +499,6 @@ export default function AuctionDetailPage() {
                 <div className="font-medium">Sale Source</div>
                 <div>{saleSource === 'seller' ? 'External seller' : 'Gavel'}</div>
               </div>
-              {saleSource === 'seller' && (
-                <>
-                  {sellerPhone && (
-                    <div>
-                      <div className="font-medium">Seller Phone</div>
-                      <div>{sellerPhone}</div>
-                    </div>
-                  )}
-                </>
-              )}
               {auction.starts_at && (
                 <div>
                   <div className="font-medium">Starts</div>
