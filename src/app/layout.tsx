@@ -5,7 +5,7 @@ import WelcomeTourModal from '@/components/layout/WelcomeTourModal'
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from 'next'
-import gavelTabIcon from './Gavel Logo.jpeg'
+import gavelTabIcon from '@/assets/branding/gavel-logo.jpeg'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 

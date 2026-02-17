@@ -24,6 +24,15 @@ export default async function HomePage() {
     .order('created_at', { ascending: false })
     .limit(6)
 
+  const { data: endingSoon } = await supabase
+    .from('auctions')
+    .select('id, title, current_price, ends_at, starts_at, status, image_url')
+    .eq('status', 'active')
+    .gt('ends_at', nowIso)
+    .lt('ends_at', next24HoursIso)
+    .order('ends_at', { ascending: true })
+    .limit(6)
+
   const { data: startingSoon } = await supabase
     .from('auctions')
     .select('id, title, current_price, ends_at, starts_at, status, image_url')
@@ -34,7 +43,11 @@ export default async function HomePage() {
     .limit(6)
 
   const allAuctionIds = Array.from(
-    new Set([...(auctions ?? []).map((auction) => auction.id), ...(startingSoon ?? []).map((auction) => auction.id)])
+    new Set([
+      ...(auctions ?? []).map((auction) => auction.id),
+      ...(startingSoon ?? []).map((auction) => auction.id),
+      ...(endingSoon ?? []).map((auction) => auction.id),
+    ])
   )
 
   const engagementCounts = await getAuctionEngagementCounts(allAuctionIds)
@@ -81,6 +94,38 @@ export default async function HomePage() {
           />
         </div>
       </section>
+
+      {/* ENDING SOON */}
+      {endingSoon && endingSoon.length > 0 && (
+        <section className="mt-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Ending Soon</h2>
+            <Link href="/auctions" className="text-sm font-semibold underline">View all</Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {endingSoon.map((a: any) => (
+              (() => {
+                const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
+                return (
+              <AuctionCard
+                key={a.id}
+                id={a.id}
+                title={a.title}
+                currentPrice={a.current_price}
+                endsAt={a.ends_at}
+                startsAt={a.starts_at}
+                status={a.status}
+                imageUrl={a.image_url}
+                bidderCount={counts.bidderCount}
+                watcherCount={counts.watcherCount}
+              />
+                )
+              })()
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* STARTING SOON */}
       {startingSoon && startingSoon.length > 0 && (
