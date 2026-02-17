@@ -66,6 +66,7 @@ export default function AuctionDetailPage() {
   const [timeLeft, setTimeLeft] = useState('Calculating...')
   const [countdownPhase, setCountdownPhase] = useState<'starts' | 'ends' | 'ended'>('ends')
   const [watcherCount, setWatcherCount] = useState(0)
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false)
 
   const now = Date.now()
 
@@ -412,6 +413,9 @@ export default function AuctionDetailPage() {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
+  const shouldShowReadMore =
+    formattedDescription.length > 220 || formattedDescription.split('\n').length > 3
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
   const productUrl = `${siteUrl}${buildAuctionPath(auction.id, auction.title)}`
   const imageUrl = auction.images?.[0] || auction.image_url || `${siteUrl}/share/auction/${auction.id}/opengraph-image`
@@ -466,9 +470,31 @@ export default function AuctionDetailPage() {
               />
             )}
 
-            <p className="whitespace-pre-line text-gray-700 leading-relaxed">
+            <p
+              className="text-gray-700 leading-relaxed whitespace-pre-line"
+              style={
+                !descriptionExpanded && shouldShowReadMore
+                  ? {
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }
+                  : undefined
+              }
+            >
               {formattedDescription || 'No description provided.'}
             </p>
+
+            {shouldShowReadMore && (
+              <button
+                type="button"
+                onClick={() => setDescriptionExpanded((previous) => !previous)}
+                className="text-sm font-medium text-black underline underline-offset-2"
+              >
+                {descriptionExpanded ? 'Read less' : 'Read more'}
+              </button>
+            )}
 
             <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 sm:grid-cols-2">
               <div>

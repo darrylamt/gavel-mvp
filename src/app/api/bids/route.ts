@@ -130,6 +130,21 @@ export async function POST(req: Request) {
     )
   }
 
+  const { data: latestBid } = await supabase
+    .from('bids')
+    .select('user_id')
+    .eq('auction_id', auction_id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (latestBid?.user_id === user_id) {
+    return NextResponse.json(
+      { error: 'You cannot bid twice in a row. Wait for another bidder.' },
+      { status: 400 }
+    )
+  }
+
   /* ---------------- INSERT BID ---------------- */
 
   const { error: bidError } = await supabase
