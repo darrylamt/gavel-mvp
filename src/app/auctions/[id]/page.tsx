@@ -468,48 +468,45 @@ export default function AuctionDetailPage() {
               />
             )}
 
-            <p
-              className="text-gray-700 leading-relaxed whitespace-pre-line"
-              style={
-                !descriptionExpanded && shouldShowReadMore
-                  ? {
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }
-                  : undefined
-              }
-            >
-              {formattedDescription || 'No description provided.'}
-            </p>
-
-            {shouldShowReadMore && (
-              <button
-                type="button"
-                onClick={() => setDescriptionExpanded((previous) => !previous)}
-                className="text-sm font-medium text-black underline underline-offset-2"
-              >
-                {descriptionExpanded ? 'Read less' : 'Read more'}
-              </button>
-            )}
-
-            <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 rounded-xl border bg-gray-50/60 p-4 text-sm text-gray-700 sm:grid-cols-2">
               <div>
-                <div className="font-medium">Sale Source</div>
+                <div className="font-medium text-gray-900">Sale Source</div>
                 <div>{saleSource === 'seller' ? 'External seller' : 'Gavel'}</div>
               </div>
-              {auction.starts_at && (
-                <div>
-                  <div className="font-medium">Starts</div>
-                  <div>{new Date(auction.starts_at).toLocaleString()}</div>
-                </div>
-              )}
               {auction.ends_at && (
                 <div>
-                  <div className="font-medium">Ends</div>
+                  <div className="font-medium text-gray-900">Ends</div>
                   <div>{new Date(auction.ends_at).toLocaleString()}</div>
                 </div>
+              )}
+            </div>
+
+            <div>
+              <h2 className="mb-2 text-base font-semibold text-gray-900">Description</h2>
+              <p
+                className="text-gray-700 leading-relaxed whitespace-pre-line"
+                style={
+                  !descriptionExpanded && shouldShowReadMore
+                    ? {
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }
+                    : undefined
+                }
+              >
+                {formattedDescription || 'No description provided.'}
+              </p>
+
+              {shouldShowReadMore && (
+                <button
+                  type="button"
+                  onClick={() => setDescriptionExpanded((previous) => !previous)}
+                  className="mt-2 text-sm font-medium text-black underline underline-offset-2"
+                >
+                  {descriptionExpanded ? 'Read less' : 'Read more'}
+                </button>
               )}
             </div>
           </div>
