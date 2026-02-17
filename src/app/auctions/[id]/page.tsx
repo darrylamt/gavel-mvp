@@ -477,12 +477,6 @@ export default function AuctionDetailPage() {
               </div>
               {saleSource === 'seller' && (
                 <>
-                  {sellerName && (
-                    <div>
-                      <div className="font-medium">Seller Name</div>
-                      <div>{sellerName}</div>
-                    </div>
-                  )}
                   {sellerPhone && (
                     <div>
                       <div className="font-medium">Seller Phone</div>
