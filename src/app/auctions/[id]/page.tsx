@@ -32,6 +32,8 @@ type AuctionRecord = {
   ends_at: string | null
   status: string | null
   paid: boolean
+  winning_bid_id: string | null
+  auction_payment_due_at: string | null
   image_url: string | null
   images: string[] | null
 }
@@ -85,9 +87,12 @@ export default function AuctionDetailPage() {
     auction?.status === 'ended' ||
     (endsAtMs != null && endsAtMs <= now)
 
-  const reserveMet =
-    auction?.reserve_price == null ||
-    ((bids[0]?.amount ?? 0) >= auction.reserve_price)
+  const activeWinningBid = useMemo(() => {
+    if (!auction?.winning_bid_id) return null
+    return bids.find((bid) => bid.id === auction.winning_bid_id) ?? null
+  }, [auction?.winning_bid_id, bids])
+
+  const reserveMet = auction?.reserve_price == null || !!activeWinningBid
 
   const liveCurrentPrice = useMemo(() => {
     const auctionPrice = auction?.current_price ?? 0
@@ -96,7 +101,10 @@ export default function AuctionDetailPage() {
   }, [auction?.current_price, bids])
 
   const isWinner =
-    hasEnded && reserveMet && bids.length > 0 && bids[0]?.user_id === userId
+    hasEnded &&
+    reserveMet &&
+    !!activeWinningBid &&
+    activeWinningBid.user_id === userId
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -111,7 +119,7 @@ export default function AuctionDetailPage() {
       const { data: auctionData } = await supabasePublic
         .from('auctions')
         .select(
-          'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, image_url, images, starts_at'
+          'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, auction_payment_due_at, image_url, images, starts_at'
         )
         .eq('id', id)
         .maybeSingle()
@@ -526,7 +534,7 @@ export default function AuctionDetailPage() {
           {hasEnded && !reserveMet && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
               <p className="font-semibold">Sorry, the final bid did not hit the reserve price.</p>
-              <p className="mt-1">This item was not sold, and your bid tokens will be refunded.</p>
+              <p className="mt-1">This item was not sold and the auction is closed.</p>
               <Link href="/faq#reserve-price" className="mt-2 inline-block font-medium underline underline-offset-2">
                 What does reserve price mean?
               </Link>
@@ -549,6 +557,7 @@ export default function AuctionDetailPage() {
             hasEnded={hasEnded}
             isWinner={isWinner}
             paid={auction.paid}
+            paymentDueAt={auction.auction_payment_due_at}
             onPay={payNow}
           />
         </aside>

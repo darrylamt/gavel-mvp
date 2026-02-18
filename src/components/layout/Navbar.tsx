@@ -119,6 +119,18 @@ export default function Navbar() {
               >
                 Shop
               </button>
+              <button
+                onClick={() => router.push('/faq')}
+                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+              >
+                FAQ
+              </button>
+              <button
+                onClick={() => router.push('/terms')}
+                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+              >
+                Policies
+              </button>
             </nav>
           </div>
 
@@ -262,6 +274,42 @@ export default function Navbar() {
               className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Shop
+            </button>
+            <button
+              onClick={() => {
+                router.push('/faq')
+                setMobileMenuOpen(false)
+              }}
+              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              FAQ
+            </button>
+            <button
+              onClick={() => {
+                router.push('/terms')
+                setMobileMenuOpen(false)
+              }}
+              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Terms & Policies
+            </button>
+            <button
+              onClick={() => {
+                router.push('/privacy')
+                setMobileMenuOpen(false)
+              }}
+              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Privacy Policy
+            </button>
+            <button
+              onClick={() => {
+                router.push('/contact')
+                setMobileMenuOpen(false)
+              }}
+              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Contact Support
             </button>
             {user && (
               <button

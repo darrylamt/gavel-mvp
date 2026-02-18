@@ -1,65 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
-
-const BID_TOKEN_COST = 1
-
-async function refundLosingBidders(auctionId: string, winnerUserId: string) {
-  const { data: allBids, error: bidsError } = await supabase
-    .from('bids')
-    .select('user_id')
-    .eq('auction_id', auctionId)
-
-  if (bidsError) {
-    throw new Error('Failed to load bids for refund')
-  }
-
-  const loserBidCounts = new Map<string, number>()
-
-  for (const bid of allBids ?? []) {
-    if (!bid.user_id) continue
-    if (bid.user_id === winnerUserId) continue
-    loserBidCounts.set(bid.user_id, (loserBidCounts.get(bid.user_id) ?? 0) + 1)
-  }
-
-  for (const [userId, bidCount] of loserBidCounts.entries()) {
-    const refundAmount = bidCount * BID_TOKEN_COST
-    const refundReference = `refund:${auctionId}:${userId}`
-
-    const { data: existingRefund } = await supabase
-      .from('token_transactions')
-      .select('id')
-      .eq('reference', refundReference)
-      .maybeSingle()
-
-    if (existingRefund) continue
-
-    const { error: incrementError } = await supabase.rpc('increment_tokens', {
-      uid: userId,
-      amount: refundAmount,
-    })
-
-    if (incrementError) {
-      throw new Error('Failed to credit loser refund')
-    }
-
-    const { error: refundLogError } = await supabase.from('token_transactions').insert({
-      user_id: userId,
-      amount: refundAmount,
-      type: 'bid',
-      reference: refundReference,
-    })
-
-    if (refundLogError) {
-      throw new Error('Failed to log loser refund')
-    }
-  }
-}
 
 export async function POST(req: Request) {
   const { reference } = await req.json()
@@ -91,6 +38,13 @@ export async function POST(req: Request) {
     )
   }
 
+  if (json.data?.status !== 'success') {
+    return NextResponse.json(
+      { error: 'Payment was not successful' },
+      { status: 400 }
+    )
+  }
+
   const { metadata } = json.data
 
   if (metadata?.type !== 'auction_payment') {
@@ -101,39 +55,40 @@ export async function POST(req: Request) {
     )
   }
 
-  const { auction_id } = metadata
+  const { auction_id, bid_id, user_id } = metadata
 
-  // 2️⃣ Prevent double payment
-  const { data: auction } = await supabase
-    .from('auctions')
-    .select('paid, reserve_price')
-    .eq('id', auction_id)
-    .single()
-
-  const { data: topBid } = await supabase
-    .from('bids')
-    .select('id, amount, user_id')
-    .eq('auction_id', auction_id)
-    .order('amount', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (!topBid) {
-    return NextResponse.json({ error: 'No bids found for this auction' }, { status: 400 })
-  }
-
-  const reservePrice = auction?.reserve_price as number | null
-  if (reservePrice != null && topBid.amount < reservePrice) {
+  if (!auction_id || !bid_id || !user_id) {
     return NextResponse.json(
-      { error: 'Reserve price not met. This item cannot be sold.' },
+      { error: 'Invalid auction payment metadata' },
       { status: 400 }
     )
   }
 
-  if (auction?.paid) {
-    await refundLosingBidders(auction_id, topBid.user_id)
-    console.log('Auction already paid:', auction_id)
+  const resolution = await resolveAuctionPaymentCandidate(supabase, String(auction_id))
+
+  if (resolution.reason === 'auction_not_ended') {
+    return NextResponse.json({ error: 'Auction not ended' }, { status: 400 })
+  }
+
+  if (resolution.reason === 'already_paid') {
     return NextResponse.json({ success: true })
+  }
+
+  if (!resolution.activeCandidate) {
+    return NextResponse.json(
+      { error: 'No eligible winner above reserve price. Auction closed without sale.' },
+      { status: 400 }
+    )
+  }
+
+  if (
+    resolution.activeCandidate.bidId !== String(bid_id) ||
+    resolution.activeCandidate.userId !== String(user_id)
+  ) {
+    return NextResponse.json(
+      { error: 'Payment window expired or bidder is no longer current winner' },
+      { status: 403 }
+    )
   }
 
   // 3️⃣ Mark auction as paid
@@ -142,10 +97,11 @@ export async function POST(req: Request) {
     .update({
       status: 'ended',
       paid: true,
-      winner_id: topBid.user_id,
-      winning_bid_id: topBid.id,
+      winner_id: resolution.activeCandidate.userId,
+      winning_bid_id: resolution.activeCandidate.bidId,
+      auction_payment_due_at: null,
     })
-    .eq('id', auction_id)
+    .eq('id', String(auction_id))
 
   if (updateError) {
     console.error('Failed to update auction:', updateError)
@@ -155,12 +111,10 @@ export async function POST(req: Request) {
     )
   }
 
-  await refundLosingBidders(auction_id, topBid.user_id)
-
   // 4️⃣ Log payment
   const paymentPayloadBase = {
-    user_id: topBid.user_id,
-    auction_id,
+    user_id: resolution.activeCandidate.userId,
+    auction_id: String(auction_id),
     amount: json.data.amount / 100,
     status: 'success',
   }
@@ -170,7 +124,8 @@ export async function POST(req: Request) {
     paystack_reference: reference,
   })
 
-  if (paymentLogError?.message?.toLowerCase().includes('column "paystack_reference" does not exist')) {
+  const paymentLogErrorMessage = String(paymentLogError?.message || '').toLowerCase()
+  if (paymentLogErrorMessage.includes('paystack_reference') && paymentLogErrorMessage.includes('does not exist')) {
     const fallback = await supabase.from('payments').insert({
       ...paymentPayloadBase,
       reference,

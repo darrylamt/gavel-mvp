@@ -60,9 +60,32 @@ export async function POST(req: Request) {
 
     if (processError) {
       const message = String(processError.message || '')
-      if (message.toLowerCase().includes('process_shop_payment')) {
+      const lowerMessage = message.toLowerCase()
+
+      if (lowerMessage.includes('process_shop_payment')) {
         return NextResponse.json(
           { error: 'Shop checkout migration missing. Run the latest SQL migration, then retry verification.' },
+          { status: 500 }
+        )
+      }
+
+      if (lowerMessage.includes('paystack_reference') && lowerMessage.includes('does not exist')) {
+        return NextResponse.json(
+          { error: 'Database schema mismatch: paystack_reference missing on payments/shop_orders. Run the SQL fix script and retry.' },
+          { status: 500 }
+        )
+      }
+
+      if (lowerMessage.includes('null value in column "email"') && lowerMessage.includes('shop_orders')) {
+        return NextResponse.json(
+          { error: 'Database schema mismatch: shop_orders.email is required. Run the shop_orders SQL patch and retry.' },
+          { status: 500 }
+        )
+      }
+
+      if (lowerMessage.includes('title_snapshot') && lowerMessage.includes('shop_order_items') && lowerMessage.includes('does not exist')) {
+        return NextResponse.json(
+          { error: 'Database schema mismatch: shop_order_items.title_snapshot missing. Run the shop_order_items SQL patch and retry.' },
           { status: 500 }
         )
       }
@@ -80,7 +103,8 @@ export async function POST(req: Request) {
       .eq('paystack_reference', paymentReference)
       .maybeSingle()
 
-    if (existingByPaystackRefError?.message?.toLowerCase().includes('column "paystack_reference" does not exist')) {
+    const selectErrorMessage = String(existingByPaystackRefError?.message || '').toLowerCase()
+    if (selectErrorMessage.includes('paystack_reference') && selectErrorMessage.includes('does not exist')) {
       const { data: existingByReference } = await supabase
         .from('payments')
         .select('id')
@@ -103,7 +127,8 @@ export async function POST(req: Request) {
         paystack_reference: paymentReference,
       })
 
-      if (paymentLogError?.message?.toLowerCase().includes('column "paystack_reference" does not exist')) {
+      const insertErrorMessage = String(paymentLogError?.message || '').toLowerCase()
+      if (insertErrorMessage.includes('paystack_reference') && insertErrorMessage.includes('does not exist')) {
         const fallback = await supabase.from('payments').insert({
           ...paymentPayloadBase,
           reference: paymentReference,

@@ -2,8 +2,8 @@ export default function TermsPage() {
   return (
     <main className="max-w-4xl mx-auto px-6 py-12 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-2">GAVEL – Terms and Conditions</h1>
-        <p className="text-sm text-gray-600">Last Updated: {new Date().toLocaleDateString()}</p>
+        <h1 className="text-3xl font-bold mb-2">Gavel Terms and Conditions</h1>
+        <p className="text-sm text-gray-600">Last Updated: February 18, 2026</p>
       </div>
 
       <section className="space-y-4 text-gray-700">
@@ -78,9 +78,9 @@ export default function TermsPage() {
 
         <h3 className="text-lg font-semibold">4.3 Token Deduction</h3>
         <ul className="list-disc pl-6 space-y-1">
-          <li>Tokens are deducted per bid attempt.</li>
+          <li>Tokens are deducted per successful bid placement.</li>
           <li>Token deduction does not guarantee winning an auction.</li>
-          <li>Failed bids may still consume tokens if processed.</li>
+          <li>Bid tokens are non-refundable, including when you do not win, miss payment, or an auction closes below reserve.</li>
         </ul>
       </section>
 
@@ -109,15 +109,21 @@ export default function TermsPage() {
           <li>Disqualify suspicious accounts</li>
           <li>Correct pricing errors</li>
         </ul>
+        <p>
+          Anti-sniping may extend the end time when valid bids are placed in the final seconds.
+        </p>
         <p>All platform decisions are final.</p>
       </section>
 
       <section className="space-y-4 text-gray-700">
-        <h2 className="text-xl font-semibold">6. Payments for Won Auctions</h2>
+        <h2 className="text-xl font-semibold">6. Winner Payment and Fallback</h2>
         <ul className="list-disc pl-6 space-y-1">
-          <li>Winning bidders must complete payment within the required timeframe.</li>
-          <li>Failure to pay may result in forfeiture of the item.</li>
-          <li>Gavel may re-list unpaid items.</li>
+          <li>The current winner has one (1) hour to complete payment after being assigned payment rights.</li>
+          <li>If the current winner does not pay in time, payment rights move to the next highest eligible bidder above reserve price.</li>
+          <li>This fallback process may continue to second, third, or later ranked eligible bidders while reserve conditions are met.</li>
+          <li>If no remaining bidder is at or above reserve price, the auction closes unsold.</li>
+          <li>Failure to pay within the allowed window may result in forfeiture of purchase rights and account penalties.</li>
+          <li>Gavel may relist unpaid or unsold items.</li>
           <li>Gavel is not liable for disputes between buyers and sellers after payment.</li>
         </ul>
       </section>
@@ -242,8 +248,8 @@ export default function TermsPage() {
 
       <section className="space-y-4 text-gray-700">
         <h2 className="text-xl font-semibold">16. Governing Law</h2>
-        <p>These Terms shall be governed by the laws of: [Insert Country / Jurisdiction]</p>
-        <p>All disputes shall be resolved exclusively in courts within that jurisdiction.</p>
+        <p>These Terms shall be governed by the applicable laws in the jurisdiction where Gavel operates.</p>
+        <p>Any disputes will be handled by competent courts in that jurisdiction, unless applicable law requires otherwise.</p>
       </section>
 
       <section className="space-y-4 text-gray-700">
@@ -258,7 +264,7 @@ export default function TermsPage() {
         <h2 className="text-xl font-semibold">18. Contact Information</h2>
         <p>For questions regarding these Terms:</p>
         <ul className="list-disc pl-6 space-y-1">
-          <li>Email: info@gavelgh.com</li>
+          <li>Email: support@gavelgh.com</li>
           <li>Platform: Gavel</li>
         </ul>
       </section>

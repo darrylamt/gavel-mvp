@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Facebook, Instagram, Github, Twitter } from 'lucide-react'
+import { Facebook, Instagram, Twitter } from 'lucide-react'
 import navLogo from '@/assets/branding/nav-logo.png'
 
 export default function Footer() {
@@ -82,12 +82,12 @@ export default function Footer() {
             <ul className="mt-6 space-y-4">
               <li>
                 <Link href="/faq" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  Customer Support
+                  FAQs
                 </Link>
               </li>
               <li>
                 <Link href="/contact" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  Delivery Details
+                  Contact Support
                 </Link>
               </li>
               <li>

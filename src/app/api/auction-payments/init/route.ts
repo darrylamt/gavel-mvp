@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,46 +18,39 @@ export async function POST(req: Request) {
     )
   }
 
-  // 1️⃣ Fetch auction
-  const { data: auction } = await supabase
-    .from('auctions')
-    .select('id, status, current_price, paid, reserve_price')
-    .eq('id', auction_id)
-    .single()
+  let resolution: Awaited<ReturnType<typeof resolveAuctionPaymentCandidate>>
 
-  if (!auction) {
-    return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
+  try {
+    resolution = await resolveAuctionPaymentCandidate(supabase, auction_id)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    if (message.includes('Auction not found')) {
+      return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
+    }
+
+    console.error('Failed to resolve auction payment candidate:', error)
+    return NextResponse.json({ error: 'Failed to initialize payment' }, { status: 500 })
   }
 
-  if (auction.status !== 'ended') {
+  if (resolution.reason === 'auction_not_ended') {
     return NextResponse.json({ error: 'Auction not ended' }, { status: 400 })
   }
 
-  if (auction.paid) {
+  if (resolution.reason === 'already_paid') {
     return NextResponse.json({ error: 'Auction already paid' }, { status: 400 })
   }
 
-  // 2️⃣ Confirm winner (highest bid)
-  const { data: topBid } = await supabase
-    .from('bids')
-    .select('id, amount, user_id')
-    .eq('auction_id', auction_id)
-    .order('amount', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (!topBid || topBid.user_id !== user_id) {
+  if (!resolution.activeCandidate) {
     return NextResponse.json(
-      { error: 'Not auction winner' },
-      { status: 403 }
+      { error: 'No eligible winner above reserve price. Auction closed without sale.' },
+      { status: 400 }
     )
   }
 
-  const reservePrice = auction.reserve_price as number | null
-  if (reservePrice != null && topBid.amount < reservePrice) {
+  if (resolution.activeCandidate.userId !== user_id) {
     return NextResponse.json(
-      { error: 'Reserve price not met. This item cannot be sold yet.' },
-      { status: 400 }
+      { error: 'You are not the current payment winner' },
+      { status: 403 }
     )
   }
 
@@ -71,14 +65,15 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         email,
-        amount: Math.round(Number(topBid.amount) * 100),
+        amount: Math.round(Number(resolution.activeCandidate.amount) * 100),
         metadata: {
           type: 'auction_payment',
           auction_id,
-          bid_id: topBid.id,
+          bid_id: resolution.activeCandidate.bidId,
           user_id,
+          winner_rank: resolution.activeCandidate.rank,
         },
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success`,
+        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?type=auction`,
       }),
     }
   )

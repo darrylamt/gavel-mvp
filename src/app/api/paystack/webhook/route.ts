@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -12,59 +13,6 @@ if (!supabaseUrl || !serviceRoleKey) {
 }
 
 const supabase = createClient(supabaseUrl, serviceRoleKey)
-const BID_TOKEN_COST = 1
-
-async function refundLosingBidders(auctionId: string, winnerUserId: string) {
-  const { data: allBids, error: bidsError } = await supabase
-    .from('bids')
-    .select('user_id')
-    .eq('auction_id', auctionId)
-
-  if (bidsError) {
-    throw new Error('Failed to load bids for refund')
-  }
-
-  const loserBidCounts = new Map<string, number>()
-
-  for (const bid of allBids ?? []) {
-    if (!bid.user_id) continue
-    if (bid.user_id === winnerUserId) continue
-    loserBidCounts.set(bid.user_id, (loserBidCounts.get(bid.user_id) ?? 0) + 1)
-  }
-
-  for (const [userId, bidCount] of loserBidCounts.entries()) {
-    const refundAmount = bidCount * BID_TOKEN_COST
-    const refundReference = `refund:${auctionId}:${userId}`
-
-    const { data: existingRefund } = await supabase
-      .from('token_transactions')
-      .select('id')
-      .eq('reference', refundReference)
-      .maybeSingle()
-
-    if (existingRefund) continue
-
-    const { error: incrementError } = await supabase.rpc('increment_tokens', {
-      uid: userId,
-      amount: refundAmount,
-    })
-
-    if (incrementError) {
-      throw new Error('Failed to credit loser refund')
-    }
-
-    const { error: refundLogError } = await supabase.from('token_transactions').insert({
-      user_id: userId,
-      amount: refundAmount,
-      type: 'bid',
-      reference: refundReference,
-    })
-
-    if (refundLogError) {
-      throw new Error('Failed to log loser refund')
-    }
-  }
-}
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -84,47 +32,37 @@ export async function POST(req: Request) {
   if (event.event === 'charge.success') {
     const metadata = event.data?.metadata
     const auction_id = metadata?.auction_id
+    const bid_id = metadata?.bid_id
+    const user_id = metadata?.user_id
 
-    if (metadata?.type === 'auction_payment' && auction_id) {
-      const { data: auction } = await supabase
-        .from('auctions')
-        .select('reserve_price')
-        .eq('id', auction_id)
-        .single()
+    if (metadata?.type === 'auction_payment' && auction_id && bid_id && user_id) {
+      const resolution = await resolveAuctionPaymentCandidate(supabase, String(auction_id))
 
-      const { data: topBid } = await supabase
-        .from('bids')
-        .select('id, amount, user_id')
-        .eq('auction_id', auction_id)
-        .order('amount', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (!topBid) {
+      if (resolution.reason === 'already_paid') {
         return NextResponse.json({ received: true })
       }
 
-      const reservePrice = auction?.reserve_price as number | null
-      if (reservePrice != null && topBid.amount < reservePrice) {
+      if (resolution.reason !== 'ok' || !resolution.activeCandidate) {
         return NextResponse.json({ received: true })
       }
 
-      const winnerUserId: string | null = topBid.user_id
-      const winningBidId: string | null = topBid.id
+      if (
+        resolution.activeCandidate.bidId !== String(bid_id) ||
+        resolution.activeCandidate.userId !== String(user_id)
+      ) {
+        return NextResponse.json({ received: true })
+      }
 
       await supabase
         .from('auctions')
         .update({
           status: 'ended',
           paid: true,
-          winner_id: winnerUserId,
-          winning_bid_id: winningBidId,
+          winner_id: resolution.activeCandidate.userId,
+          winning_bid_id: resolution.activeCandidate.bidId,
+          auction_payment_due_at: null,
         })
-        .eq('id', auction_id)
-
-      if (winnerUserId) {
-        await refundLosingBidders(auction_id, winnerUserId)
-      }
+        .eq('id', String(auction_id))
     }
   }
 
