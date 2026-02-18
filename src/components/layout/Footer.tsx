@@ -81,7 +81,7 @@ export default function Footer() {
 
             <ul className="mt-6 space-y-4">
               <li>
-                <Link href="/faq" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
+                <Link href="/contact" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
                   FAQs
                 </Link>
               </li>

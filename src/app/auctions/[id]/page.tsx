@@ -535,7 +535,7 @@ export default function AuctionDetailPage() {
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
               <p className="font-semibold">Sorry, the final bid did not hit the reserve price.</p>
               <p className="mt-1">This item was not sold and the auction is closed.</p>
-              <Link href="/faq#reserve-price" className="mt-2 inline-block font-medium underline underline-offset-2">
+              <Link href="/contact#reserve-price" className="mt-2 inline-block font-medium underline underline-offset-2">
                 What does reserve price mean?
               </Link>
             </div>
