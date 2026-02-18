@@ -9,9 +9,9 @@ export default function CartPage() {
   const total = subtotal
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-6 py-10">
+    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold">Shopping Cart</h1>
+        <h1 className="text-2xl font-extrabold sm:text-3xl">Shopping Cart</h1>
         {items.length > 0 && (
           <button
             onClick={clearCart}
@@ -45,7 +45,7 @@ export default function CartPage() {
 
             <div className="divide-y">
               {items.map((item) => (
-                <div key={item.productId} className="grid gap-3 py-4 md:grid-cols-[1.3fr_0.8fr_0.7fr_0.3fr] md:items-center">
+                <div key={item.productId} className="grid grid-cols-[1fr_auto] gap-3 py-4 md:grid-cols-[1.3fr_0.8fr_0.7fr_0.3fr] md:items-center">
                   <div className="flex items-center gap-3">
                     <div className="h-14 w-14 overflow-hidden rounded-lg bg-gray-100">
                       {item.imageUrl ? (
@@ -61,7 +61,7 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="flex items-center justify-end gap-2 md:justify-self-start md:flex-col md:items-start md:gap-3">
                     <div className="inline-flex items-center gap-3 rounded-full border px-3 py-1 text-sm">
                       <button
                         onClick={() => decrementItem(item.productId)}
@@ -80,13 +80,11 @@ export default function CartPage() {
                         +
                       </button>
                     </div>
-                  </div>
 
-                  <div className="text-sm font-semibold text-gray-900">
-                    GHS {(item.price * item.quantity).toLocaleString()}
-                  </div>
+                    <div className="text-sm font-semibold text-gray-900 md:text-left">
+                      GHS {(item.price * item.quantity).toLocaleString()}
+                    </div>
 
-                  <div className="md:text-right">
                     <button
                       onClick={() => removeFromCart(item.productId)}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
@@ -99,9 +97,6 @@ export default function CartPage() {
               ))}
             </div>
 
-            <button className="mt-4 rounded-full bg-black px-5 py-2 text-sm font-semibold text-white hover:bg-gray-800">
-              Update Cart
-            </button>
           </section>
 
           <aside className="h-fit rounded-2xl border bg-white p-4">
