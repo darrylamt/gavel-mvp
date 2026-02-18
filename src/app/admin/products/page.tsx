@@ -20,6 +20,9 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -63,6 +66,41 @@ export default function AdminProductsPage() {
     loadProducts()
   }, [])
 
+  const resetForm = () => {
+    setTitle('')
+    setDescription('')
+    setPrice('')
+    setStock('')
+    setStatus('active')
+    setImageUrl('')
+    setEditingId(null)
+    setFormMode('create')
+  }
+
+  const openCreateForm = () => {
+    setError(null)
+    resetForm()
+    setFormOpen(true)
+  }
+
+  const openEditForm = (product: ShopProduct) => {
+    setError(null)
+    setFormMode('edit')
+    setEditingId(product.id)
+    setTitle(product.title)
+    setDescription(product.description ?? '')
+    setPrice(String(product.price))
+    setStock(String(product.stock))
+    setStatus(product.status)
+    setImageUrl(product.image_url ?? '')
+    setFormOpen(true)
+  }
+
+  const closeForm = () => {
+    setFormOpen(false)
+    resetForm()
+  }
+
   const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -91,7 +129,7 @@ export default function AdminProductsPage() {
     }
   }
 
-  const createProduct = async () => {
+  const submitProduct = async () => {
     setSaving(true)
     setError(null)
 
@@ -103,34 +141,39 @@ export default function AdminProductsPage() {
       const token = session?.access_token
       if (!token) throw new Error('Unauthorized')
 
+      const payload = {
+        id: editingId,
+        title,
+        description,
+        price: Number(price),
+        stock: Number(stock),
+        status,
+        image_url: imageUrl,
+      }
+
       const res = await fetch('/api/admin/products', {
-        method: 'POST',
+        method: formMode === 'edit' ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          title,
-          description,
-          price: Number(price),
-          stock: Number(stock),
-          status,
-          image_url: imageUrl,
-        }),
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create product')
+      if (!res.ok) throw new Error(data.error || `Failed to ${formMode === 'edit' ? 'update' : 'create'} product`)
 
-      setProducts((previous) => [data.product as ShopProduct, ...previous])
-      setTitle('')
-      setDescription('')
-      setPrice('')
-      setStock('')
-      setStatus('active')
-      setImageUrl('')
+      if (formMode === 'edit') {
+        setProducts((previous) =>
+          previous.map((product) => (product.id === data.product.id ? (data.product as ShopProduct) : product))
+        )
+      } else {
+        setProducts((previous) => [data.product as ShopProduct, ...previous])
+      }
+
+      closeForm()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create product')
+      setError(err instanceof Error ? err.message : `Failed to ${formMode === 'edit' ? 'update' : 'create'} product`)
     } finally {
       setSaving(false)
     }
@@ -139,67 +182,24 @@ export default function AdminProductsPage() {
   return (
     <AdminShell>
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-        <h2 className="mb-4 text-xl font-semibold">Add Shop Product</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Shop Products</h2>
+          <button
+            onClick={openCreateForm}
+            className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+          >
+            New Product
+          </button>
+        </div>
 
         {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Title</label>
-            <input value={title} onChange={(event) => setTitle(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Product Image</label>
-            <input type="file" accept="image/*" onChange={handleImageSelect} className="w-full rounded-lg border px-3 py-2" />
-            <p className="mt-1 text-xs text-gray-500">Select an image from your device.</p>
-            {uploadingImage && <p className="mt-1 text-xs text-gray-600">Uploading image…</p>}
-            {imageUrl && <p className="mt-1 truncate text-xs text-gray-500">Uploaded: {imageUrl}</p>}
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Price (GHS)</label>
-            <input type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Stock</label>
-            <input type="number" value={stock} onChange={(event) => setStock(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
-            <select value={status} onChange={(event) => setStatus(event.target.value as ShopProduct['status'])} className="w-full rounded-lg border px-3 py-2">
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="sold_out">Sold out</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
-            <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className="w-full rounded-lg border px-3 py-2" />
-          </div>
-          {imageUrl && (
-            <div className="md:col-span-2">
-              <img src={imageUrl} alt="Product preview" className="h-28 w-28 rounded-lg border object-cover" />
-            </div>
-          )}
-        </div>
-
-        <button
-          onClick={createProduct}
-          disabled={saving}
-          className="mt-4 rounded-lg bg-black px-4 py-2 font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
-        >
-          {saving ? 'Saving…' : 'Create Product'}
-        </button>
-      </div>
-
-      <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-        <h2 className="mb-4 text-xl font-semibold">Shop Products</h2>
         {loading ? (
           <p className="text-sm text-gray-500">Loading products…</p>
         ) : products.length === 0 ? (
           <p className="text-sm text-gray-500">No products yet.</p>
         ) : (
-          <div className="max-h-[28rem] overflow-auto">
+          <div className="max-h-[30rem] overflow-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-gray-500">
                 <tr>
@@ -207,15 +207,31 @@ export default function AdminProductsPage() {
                   <th className="py-2">Price</th>
                   <th className="py-2">Stock</th>
                   <th className="py-2">Status</th>
+                  <th className="py-2 text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map((product) => (
                   <tr key={product.id} className="border-t">
-                    <td className="py-2">{product.title}</td>
+                    <td className="py-2">
+                      <div className="flex items-center gap-2">
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.title} className="h-8 w-8 rounded border object-cover" />
+                        ) : null}
+                        <span>{product.title}</span>
+                      </div>
+                    </td>
                     <td className="py-2">GHS {Number(product.price).toLocaleString()}</td>
                     <td className="py-2">{product.stock}</td>
                     <td className="py-2 capitalize">{product.status.replace('_', ' ')}</td>
+                    <td className="py-2 text-right">
+                      <button
+                        onClick={() => openEditForm(product)}
+                        className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium hover:bg-gray-50"
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -223,6 +239,67 @@ export default function AdminProductsPage() {
           </div>
         )}
       </div>
+
+      {formOpen && (
+        <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold">{formMode === 'edit' ? 'Edit Product' : 'New Product'}</h2>
+            <button onClick={closeForm} className="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">
+              Close
+            </button>
+          </div>
+
+          {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Title</label>
+              <input value={title} onChange={(event) => setTitle(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Product Image</label>
+              <input type="file" accept="image/*" onChange={handleImageSelect} className="w-full rounded-lg border px-3 py-2" />
+              <p className="mt-1 text-xs text-gray-500">Select an image from your device.</p>
+              {uploadingImage && <p className="mt-1 text-xs text-gray-600">Uploading image…</p>}
+              {imageUrl && <p className="mt-1 truncate text-xs text-gray-500">Uploaded: {imageUrl}</p>}
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Price (GHS)</label>
+              <input type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Stock</label>
+              <input type="number" value={stock} onChange={(event) => setStock(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
+              <select value={status} onChange={(event) => setStatus(event.target.value as ShopProduct['status'])} className="w-full rounded-lg border px-3 py-2">
+                <option value="draft">Draft</option>
+                <option value="active">Active</option>
+                <option value="sold_out">Sold out</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
+              <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className="w-full rounded-lg border px-3 py-2" />
+            </div>
+            {imageUrl && (
+              <div className="md:col-span-2">
+                <img src={imageUrl} alt="Product preview" className="h-28 w-28 rounded-lg border object-cover" />
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={submitProduct}
+            disabled={saving}
+            className="mt-4 rounded-lg bg-black px-4 py-2 font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : formMode === 'edit' ? 'Save Changes' : 'Create Product'}
+          </button>
+        </div>
+      )}
     </AdminShell>
   )
 }

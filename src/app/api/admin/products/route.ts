@@ -109,3 +109,62 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
+
+export async function PATCH(request: Request) {
+  const auth = await requireAdmin(request)
+  if ('error' in auth) return auth.error
+
+  try {
+    const body = await request.json()
+    const id = typeof body.id === 'string' ? body.id.trim() : ''
+    const title = typeof body.title === 'string' ? body.title.trim() : ''
+    const description = typeof body.description === 'string' ? body.description.trim() : ''
+    const status = typeof body.status === 'string' ? body.status : 'active'
+    const imageUrl = typeof body.image_url === 'string' ? body.image_url.trim() : ''
+    const price = Number(body.price)
+    const stock = Number(body.stock)
+
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
+    }
+
+    if (!title) {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+    }
+
+    if (!Number.isFinite(price) || price < 0) {
+      return NextResponse.json({ error: 'Price must be 0 or greater' }, { status: 400 })
+    }
+
+    if (!Number.isFinite(stock) || stock < 0) {
+      return NextResponse.json({ error: 'Stock must be 0 or greater' }, { status: 400 })
+    }
+
+    if (!['draft', 'active', 'sold_out', 'archived'].includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+    }
+
+    const { data, error } = await service
+      .from('shop_products')
+      .update({
+        title,
+        description: description || null,
+        price,
+        stock,
+        status,
+        image_url: imageUrl || null,
+      })
+      .eq('id', id)
+      .select('id, title, description, price, stock, status, image_url, created_at')
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ product: data })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to update product'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}

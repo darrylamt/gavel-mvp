@@ -158,14 +158,17 @@ export async function POST(req: Request) {
   await refundLosingBidders(auction_id, topBid.user_id)
 
   // 4️⃣ Log payment
-  await supabase.from('payments').insert({
+  const { error: paymentLogError } = await supabase.from('payments').insert({
     user_id: topBid.user_id,
     auction_id,
     amount: json.data.amount / 100,
-    reference,
+    paystack_reference: reference,
     status: 'success',
-    type: 'auction',
   })
+
+  if (paymentLogError) {
+    console.error('Failed to log auction payment:', paymentLogError)
+  }
 
   console.log('Payment successful for auction:', auction_id)
   return NextResponse.json({ success: true })

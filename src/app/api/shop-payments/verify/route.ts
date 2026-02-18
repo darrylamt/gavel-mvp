@@ -67,17 +67,20 @@ export async function POST(req: Request) {
     const { data: existingPayment } = await supabase
       .from('payments')
       .select('id')
-      .eq('reference', paymentReference)
+      .eq('paystack_reference', paymentReference)
       .maybeSingle()
 
     if (!existingPayment) {
-      await supabase.from('payments').insert({
+      const { error: paymentLogError } = await supabase.from('payments').insert({
         user_id: metadata.user_id,
         amount: paidAmount,
-        reference: paymentReference,
+        paystack_reference: paymentReference,
         status: 'success',
-        type: 'shop',
       })
+
+      if (paymentLogError) {
+        return NextResponse.json({ error: paymentLogError.message }, { status: 500 })
+      }
     }
 
     return NextResponse.json({ success: true })
