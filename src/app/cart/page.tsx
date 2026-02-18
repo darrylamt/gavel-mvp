@@ -1,12 +1,56 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function CartPage() {
   const { items, subtotal, removeFromCart, clearCart, incrementItem, decrementItem } = useCart()
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
   const total = subtotal
+
+  const handleCheckout = async () => {
+    if (items.length === 0 || isCheckingOut) return
+
+    setIsCheckingOut(true)
+
+    try {
+      const { data: auth } = await supabase.auth.getUser()
+
+      if (!auth.user || !auth.user.email) {
+        alert('Please sign in to continue checkout.')
+        return
+      }
+
+      const res = await fetch('/api/shop-payments/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: auth.user.id,
+          email: auth.user.email,
+          items: items.map((item) => ({
+            product_id: item.productId,
+            quantity: item.quantity,
+          })),
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error || 'Failed to start checkout')
+        return
+      }
+
+      window.location.href = data.authorization_url
+    } catch {
+      alert('Failed to start checkout')
+    } finally {
+      setIsCheckingOut(false)
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
@@ -118,8 +162,12 @@ export default function CartPage() {
 
             <p className="mt-4 text-xs text-gray-500">90 day limited warranty against manufacturer defects.</p>
 
-            <button className="mt-4 w-full rounded-full bg-black px-4 py-3 text-sm font-semibold text-white hover:bg-gray-800">
-              Checkout Now
+            <button
+              onClick={handleCheckout}
+              disabled={isCheckingOut || items.length === 0}
+              className="mt-4 w-full rounded-full bg-black px-4 py-3 text-sm font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+            >
+              {isCheckingOut ? 'Redirecting…' : 'Checkout Now'}
             </button>
           </aside>
         </div>

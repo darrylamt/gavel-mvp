@@ -8,6 +8,7 @@ export default function PaymentSuccessClient() {
   const params = useSearchParams()
   const router = useRouter()
   const reference = params.get('reference')
+  const paymentType = params.get('type')
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
     reference ? 'loading' : 'error'
@@ -17,7 +18,9 @@ export default function PaymentSuccessClient() {
     if (!reference) return
 
     const verifyPayment = async () => {
-      const res = await fetch('/api/auction-payments/verify', {
+      const verifyEndpoint = paymentType === 'shop' ? '/api/shop-payments/verify' : '/api/auction-payments/verify'
+
+      const res = await fetch(verifyEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reference }),
@@ -26,6 +29,12 @@ export default function PaymentSuccessClient() {
       if (res.ok) {
         /* Refresh auth session to prevent logout */
         await supabase.auth.refreshSession()
+
+        if (paymentType === 'shop' && typeof window !== 'undefined') {
+          window.localStorage.setItem('gavel:cart-items', JSON.stringify([]))
+          window.dispatchEvent(new CustomEvent('gavel:cart-items-changed'))
+        }
+
         setStatus('success')
       } else {
         setStatus('error')
@@ -33,7 +42,7 @@ export default function PaymentSuccessClient() {
     }
 
     verifyPayment()
-  }, [reference])
+  }, [reference, paymentType])
 
   if (status === 'loading') {
     return <p className="p-6 text-center">Verifying payment…</p>
@@ -56,14 +65,16 @@ export default function PaymentSuccessClient() {
 
         <h1 className="text-3xl font-bold text-gray-900">Payment successful!</h1>
         <p className="mt-3 text-gray-600">
-          Your auction payment has been confirmed successfully.
+          {paymentType === 'shop'
+            ? 'Your shop payment has been confirmed successfully.'
+            : 'Your auction payment has been confirmed successfully.'}
         </p>
 
         <button
           className="mt-8 inline-flex rounded-lg bg-black px-5 py-3 font-semibold text-white hover:bg-gray-800"
-          onClick={() => router.push('/auctions')}
+          onClick={() => router.push(paymentType === 'shop' ? '/shop' : '/auctions')}
         >
-          Continue to Auctions
+          {paymentType === 'shop' ? 'Continue Shopping' : 'Continue to Auctions'}
         </button>
       </div>
     </main>
