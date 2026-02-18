@@ -158,13 +158,25 @@ export async function POST(req: Request) {
   await refundLosingBidders(auction_id, topBid.user_id)
 
   // 4️⃣ Log payment
-  const { error: paymentLogError } = await supabase.from('payments').insert({
+  const paymentPayloadBase = {
     user_id: topBid.user_id,
     auction_id,
     amount: json.data.amount / 100,
-    paystack_reference: reference,
     status: 'success',
+  }
+
+  let { error: paymentLogError } = await supabase.from('payments').insert({
+    ...paymentPayloadBase,
+    paystack_reference: reference,
   })
+
+  if (paymentLogError?.message?.toLowerCase().includes('column "paystack_reference" does not exist')) {
+    const fallback = await supabase.from('payments').insert({
+      ...paymentPayloadBase,
+      reference,
+    })
+    paymentLogError = fallback.error
+  }
 
   if (paymentLogError) {
     console.error('Failed to log auction payment:', paymentLogError)

@@ -72,19 +72,44 @@ export async function POST(req: Request) {
 
     const paymentReference = String(json.data.reference)
 
-    const { data: existingPayment } = await supabase
+    let existingPayment: { id: string } | null = null
+
+    const { data: existingByPaystackRef, error: existingByPaystackRefError } = await supabase
       .from('payments')
       .select('id')
       .eq('paystack_reference', paymentReference)
       .maybeSingle()
 
+    if (existingByPaystackRefError?.message?.toLowerCase().includes('column "paystack_reference" does not exist')) {
+      const { data: existingByReference } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('reference', paymentReference)
+        .maybeSingle()
+      existingPayment = (existingByReference as { id: string } | null) ?? null
+    } else {
+      existingPayment = (existingByPaystackRef as { id: string } | null) ?? null
+    }
+
     if (!existingPayment) {
-      const { error: paymentLogError } = await supabase.from('payments').insert({
+      const paymentPayloadBase = {
         user_id: metadata.user_id,
         amount: paidAmount,
-        paystack_reference: paymentReference,
         status: 'success',
+      }
+
+      let { error: paymentLogError } = await supabase.from('payments').insert({
+        ...paymentPayloadBase,
+        paystack_reference: paymentReference,
       })
+
+      if (paymentLogError?.message?.toLowerCase().includes('column "paystack_reference" does not exist')) {
+        const fallback = await supabase.from('payments').insert({
+          ...paymentPayloadBase,
+          reference: paymentReference,
+        })
+        paymentLogError = fallback.error
+      }
 
       if (paymentLogError) {
         return NextResponse.json({ error: paymentLogError.message }, { status: 500 })
