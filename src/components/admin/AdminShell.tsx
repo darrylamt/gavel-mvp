@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Gavel, LayoutDashboard, Store, Users } from 'lucide-react'
+import { Gavel, LayoutDashboard, Package, Store, Users } from 'lucide-react'
 
 type Props = {
   children: React.ReactNode
@@ -12,6 +12,7 @@ const tabs = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/auctions', label: 'Auctions', icon: Gavel },
+  { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/sellers', label: 'Sellers', icon: Store },
 ]
 

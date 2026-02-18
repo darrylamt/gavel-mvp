@@ -8,9 +8,9 @@ const supabase = createClient(
 )
 
 const PACKS: Record<string, { tokens: number; amount: number }> = {
-  small: { tokens: 10, amount: 10 },
-  medium: { tokens: 50, amount: 45 },
-  large: { tokens: 100, amount: 80 },
+  small: { tokens: 35, amount: 10 },
+  medium: { tokens: 120, amount: 30 },
+  large: { tokens: 250, amount: 55 },
 }
 
 export async function POST(req: Request) {

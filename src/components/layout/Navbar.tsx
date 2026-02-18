@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, LogOut, Heart } from 'lucide-react'
+import { Menu, LogOut, Heart, ShoppingCart } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -9,6 +9,7 @@ import { useAuthUser } from '@/hooks/useAuthUser'
 import AvatarLabelGroup from '@/components/base/avatar/avatar-label-group'
 import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
+import { useCart } from '@/hooks/useCart'
 import navLogo from '@/assets/branding/nav-logo.png'
 
 type ProfileData = {
@@ -26,6 +27,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isAdmin = useIsAdmin()
   const { starredCount } = useStarredAuctions()
+  const { itemCount } = useCart()
 
   useEffect(() => {
     if (!user) {
@@ -112,16 +114,10 @@ export default function Navbar() {
                 Tokens
               </button>
               <button
-                onClick={() => router.push('/faq')}
+                onClick={() => router.push('/shop')}
                 className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
               >
-                FAQ
-              </button>
-              <button
-                onClick={() => router.push('/contact')}
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
-              >
-                Contact
+                Shop
               </button>
             </nav>
           </div>
@@ -137,6 +133,19 @@ export default function Navbar() {
               {starredCount > 0 && (
                 <span className="absolute -top-1 -right-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
                   {starredCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => router.push('/cart')}
+              className="relative p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              aria-label="Cart"
+            >
+              <ShoppingCart className="h-5 w-5 text-gray-700" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                  {itemCount}
                 </span>
               )}
             </button>
@@ -238,21 +247,21 @@ export default function Navbar() {
             </button>
             <button
               onClick={() => {
-                router.push('/faq')
+                router.push('/cart')
                 setMobileMenuOpen(false)
               }}
               className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              FAQ
+              Cart
             </button>
             <button
               onClick={() => {
-                router.push('/contact')
+                router.push('/shop')
                 setMobileMenuOpen(false)
               }}
               className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              Contact
+              Shop
             </button>
             {user && (
               <button

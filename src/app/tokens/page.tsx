@@ -8,8 +8,9 @@ import TokenPricingCard from '@/components/tokens/TokenPricingCard'
 const PACKS = [
   {
     id: 'small',
-    tokens: 10,
+    tokens: 35,
     price: 10,
+    oldPrice: 18,
     label: 'Starter',
     highlight: false,
     features: [
@@ -21,12 +22,13 @@ const PACKS = [
   },
   {
     id: 'medium',
-    tokens: 50,
-    price: 45,
+    tokens: 120,
+    price: 30,
+    oldPrice: 45,
     label: 'Most Popular',
     highlight: true,
     features: [
-      '50 tokens included',
+      '120 tokens included',
       'Buy with Paystack',
       'Instant delivery',
       'Use for bidding',
@@ -34,8 +36,9 @@ const PACKS = [
   },
   {
     id: 'large',
-    tokens: 100,
-    price: 80,
+    tokens: 250,
+    price: 55,
+    oldPrice: 80,
     label: 'Best Value',
     highlight: false,
     features: [
@@ -91,6 +94,9 @@ export default function BuyTokensPage() {
           Tokens are used to place bids on auctions.
           More tokens means more chances to win.
         </p>
+        <p className="mt-3 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+          Limited-time reduced pricing
+        </p>
       </div>
 
       {/* PACKS */}
@@ -101,6 +107,7 @@ export default function BuyTokensPage() {
             label={pack.label}
             tokens={pack.tokens}
             price={pack.price}
+            oldPrice={pack.oldPrice}
             highlight={pack.highlight}
             isLoading={loading === pack.id}
             features={pack.features}

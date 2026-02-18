@@ -4,6 +4,7 @@ interface TokenPricingCardProps {
   label: string
   tokens: number
   price: number
+  oldPrice?: number
   highlight?: boolean
   isLoading?: boolean
   features?: string[]
@@ -14,6 +15,7 @@ const TokenPricingCard: React.FC<TokenPricingCardProps> = ({
   label,
   tokens,
   price,
+  oldPrice,
   highlight = false,
   isLoading = false,
   features = [
@@ -23,20 +25,35 @@ const TokenPricingCard: React.FC<TokenPricingCardProps> = ({
   ],
   onBuy,
 }) => {
+  const hasDiscount = typeof oldPrice === 'number' && oldPrice > price
+  const savingsPercent = hasDiscount ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0
+
   return (
-    <div className="mb-4 overflow-hidden rounded-lg shadow-lg">
+    <div className={`mb-4 overflow-hidden rounded-lg shadow-lg ${highlight ? 'ring-2 ring-black/10' : ''}`}>
       <div className="px-6 py-8 bg-white dark:bg-gray-800 sm:p-10 sm:pb-6">
         <div className="flex justify-center">
-          <span className="inline-flex px-4 py-1 text-sm font-semibold leading-5 tracking-wide uppercase rounded-full dark:text-white">
+          <span className={`inline-flex px-4 py-1 text-sm font-semibold leading-5 tracking-wide uppercase rounded-full ${highlight ? 'bg-black text-white' : 'bg-gray-100 text-gray-800'} dark:text-white`}>
             {label}
           </span>
         </div>
+        {hasDiscount && (
+          <div className="mt-3 flex justify-center">
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              Save {savingsPercent}%
+            </span>
+          </div>
+        )}
         <div className="flex justify-center mt-4 text-4xl font-extrabold leading-none dark:text-white">
           ₵{price}
           <span className="ml-2 text-lg font-medium leading-8 text-gray-500 dark:text-gray-400">
             for {tokens} tokens
           </span>
         </div>
+        {hasDiscount && (
+          <p className="mt-2 text-center text-sm text-gray-500">
+            Was <span className="line-through">₵{oldPrice}</span>
+          </p>
+        )}
       </div>
       <div className="px-6 pt-6 pb-8 bg-white dark:bg-gray-800 sm:p-10 sm:pt-6">
         <ul>
