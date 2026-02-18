@@ -168,3 +168,28 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
+
+export async function DELETE(request: Request) {
+  const auth = await requireAdmin(request)
+  if ('error' in auth) return auth.error
+
+  try {
+    const body = await request.json()
+    const id = typeof body.id === 'string' ? body.id.trim() : ''
+
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
+    }
+
+    const { error } = await service.from('shop_products').delete().eq('id', id)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to delete product'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}

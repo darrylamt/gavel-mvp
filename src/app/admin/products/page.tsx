@@ -19,6 +19,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<ShopProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
@@ -179,6 +180,45 @@ export default function AdminProductsPage() {
     }
   }
 
+  const deleteProduct = async (product: ShopProduct) => {
+    const confirmed = window.confirm(`Delete "${product.title}"?`)
+    if (!confirmed) return
+
+    setDeletingId(product.id)
+    setError(null)
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      const token = session?.access_token
+      if (!token) throw new Error('Unauthorized')
+
+      const res = await fetch('/api/admin/products', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id: product.id }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to delete product')
+
+      setProducts((previous) => previous.filter((item) => item.id !== product.id))
+
+      if (editingId === product.id) {
+        closeForm()
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete product')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <AdminShell>
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
@@ -225,12 +265,21 @@ export default function AdminProductsPage() {
                     <td className="py-2">{product.stock}</td>
                     <td className="py-2 capitalize">{product.status.replace('_', ' ')}</td>
                     <td className="py-2 text-right">
-                      <button
-                        onClick={() => openEditForm(product)}
-                        className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium hover:bg-gray-50"
-                      >
-                        Edit
-                      </button>
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => openEditForm(product)}
+                          className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium hover:bg-gray-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteProduct(product)}
+                          disabled={deletingId === product.id}
+                          className="rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {deletingId === product.id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

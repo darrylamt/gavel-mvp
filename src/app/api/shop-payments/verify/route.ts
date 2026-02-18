@@ -59,7 +59,15 @@ export async function POST(req: Request) {
     })
 
     if (processError) {
-      return NextResponse.json({ error: processError.message }, { status: 500 })
+      const message = String(processError.message || '')
+      if (message.toLowerCase().includes('process_shop_payment')) {
+        return NextResponse.json(
+          { error: 'Shop checkout migration missing. Run the latest SQL migration, then retry verification.' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({ error: message || 'Failed to process shop payment' }, { status: 500 })
     }
 
     const paymentReference = String(json.data.reference)

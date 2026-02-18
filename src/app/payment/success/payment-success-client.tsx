@@ -13,30 +13,60 @@ export default function PaymentSuccessClient() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
     reference ? 'loading' : 'error'
   )
+  const [errorMessage, setErrorMessage] = useState('Payment verification failed')
 
   useEffect(() => {
     if (!reference) return
 
-    const verifyPayment = async () => {
-      const verifyEndpoint = paymentType === 'shop' ? '/api/shop-payments/verify' : '/api/auction-payments/verify'
-
-      const res = await fetch(verifyEndpoint, {
+    const postVerify = async (endpoint: string) => {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reference }),
       })
 
-      if (res.ok) {
+      const json = await res.json().catch(() => ({}))
+      return { ok: res.ok, error: typeof json?.error === 'string' ? json.error : null }
+    }
+
+    const verifyPayment = async () => {
+      let resolvedType: 'shop' | 'auction' | null = null
+      let lastError = 'Payment verification failed'
+
+      if (paymentType === 'shop') {
+        const result = await postVerify('/api/shop-payments/verify')
+        if (result.ok) resolvedType = 'shop'
+        else lastError = result.error ?? lastError
+      } else if (paymentType === 'auction') {
+        const result = await postVerify('/api/auction-payments/verify')
+        if (result.ok) resolvedType = 'auction'
+        else lastError = result.error ?? lastError
+      } else {
+        const shopResult = await postVerify('/api/shop-payments/verify')
+        if (shopResult.ok) {
+          resolvedType = 'shop'
+        } else {
+          const auctionResult = await postVerify('/api/auction-payments/verify')
+          if (auctionResult.ok) {
+            resolvedType = 'auction'
+          } else {
+            lastError = auctionResult.error ?? shopResult.error ?? lastError
+          }
+        }
+      }
+
+      if (resolvedType) {
         /* Refresh auth session to prevent logout */
         await supabase.auth.refreshSession()
 
-        if (paymentType === 'shop' && typeof window !== 'undefined') {
+        if (resolvedType === 'shop' && typeof window !== 'undefined') {
           window.localStorage.setItem('gavel:cart-items', JSON.stringify([]))
           window.dispatchEvent(new CustomEvent('gavel:cart-items-changed'))
         }
 
         setStatus('success')
       } else {
+        setErrorMessage(lastError)
         setStatus('error')
       }
     }
@@ -49,7 +79,7 @@ export default function PaymentSuccessClient() {
   }
 
   if (status === 'error') {
-    return <p className="p-6 text-center text-red-600">Payment verification failed</p>
+    return <p className="p-6 text-center text-red-600">{errorMessage}</p>
   }
 
   return (
