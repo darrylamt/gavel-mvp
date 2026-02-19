@@ -55,7 +55,18 @@ type RawBidRecord = {
 }
 
 export default function AuctionDetailPage() {
-  const { id } = useParams()
+  const params = useParams<{ id?: string | string[] }>()
+  const auctionId = useMemo(() => {
+    const rawId = params?.id
+    const idValue = Array.isArray(rawId) ? rawId[0] : rawId
+    if (!idValue) return null
+
+    const decoded = decodeURIComponent(String(idValue)).trim()
+    if (!decoded) return null
+
+    const cleaned = decoded.split(',')[0].split('/')[0].trim()
+    return cleaned || null
+  }, [params])
 
   const [auction, setAuction] = useState<AuctionRecord | null>(null)
   const [bids, setBids] = useState<BidRecord[]>([])
@@ -113,14 +124,27 @@ export default function AuctionDetailPage() {
   }, [])
 
   useEffect(() => {
-    if (!id) return
+    if (!auctionId) return
 
     const loadAuction = async () => {
       const selectFields =
-        'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, auction_payment_due_at, image_url, images, starts_at'
+        'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at'
 
-      const auctionId = String(id)
       let auctionData: AuctionRecord | null = null
+
+      const apiRes = await fetch(`/api/auctions/${encodeURIComponent(auctionId)}`, {
+        method: 'GET',
+        cache: 'no-store',
+      })
+
+      if (apiRes.ok) {
+        const payload = (await apiRes.json()) as { auction?: AuctionRecord }
+        if (payload.auction) {
+          setAuction(payload.auction)
+          setLoading(false)
+          return
+        }
+      }
 
       for (let attempt = 0; attempt < 3; attempt += 1) {
         const { data } = await supabasePublic
@@ -130,7 +154,11 @@ export default function AuctionDetailPage() {
           .maybeSingle()
 
         if (data) {
-          auctionData = data as AuctionRecord
+          const normalized = data as AuctionRecord & { auction_payment_due_at?: string | null }
+          auctionData = {
+            ...normalized,
+            auction_payment_due_at: normalized.auction_payment_due_at ?? null,
+          }
           break
         }
 
@@ -146,7 +174,11 @@ export default function AuctionDetailPage() {
             .maybeSingle()
 
           if (ownerVisible) {
-            auctionData = ownerVisible as AuctionRecord
+            const normalized = ownerVisible as AuctionRecord & { auction_payment_due_at?: string | null }
+            auctionData = {
+              ...normalized,
+              auction_payment_due_at: normalized.auction_payment_due_at ?? null,
+            }
             break
           }
         }
@@ -161,17 +193,17 @@ export default function AuctionDetailPage() {
     }
 
     loadAuction()
-  }, [id])
+  }, [auctionId])
 
   const loadBids = useCallback(async () => {
-    if (!id) return
+    if (!auctionId) return
 
     const { data: bidsData, error } = await supabasePublic
       .from('bids')
       .select(
         'id, amount, user_id, profiles (username)'
       )
-      .eq('auction_id', id)
+      .eq('auction_id', auctionId)
       .order('amount', { ascending: false })
 
     if (!error && bidsData) {
@@ -184,22 +216,22 @@ export default function AuctionDetailPage() {
 
       setBids(normalized)
     }
-  }, [id])
+  }, [auctionId])
 
   useEffect(() => {
-    if (!id) return
+    if (!auctionId) return
 
     loadBids()
 
     const subscription = supabasePublic
-      .channel(`bids:${id}`)
+      .channel(`bids:${auctionId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'bids',
-          filter: `auction_id=eq.${id}`,
+          filter: `auction_id=eq.${auctionId}`,
         },
         () => {
           loadBids()
@@ -210,7 +242,7 @@ export default function AuctionDetailPage() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [id, loadBids])
+  }, [auctionId, loadBids])
 
   useEffect(() => {
     if (!auction?.id) return
@@ -354,23 +386,23 @@ export default function AuctionDetailPage() {
   }, [bids])
 
   const loadEngagement = useCallback(async () => {
-    if (!id) return
+    if (!auctionId) return
 
-    const res = await fetch(`/api/auctions/engagement?auctionIds=${id}`)
+    const res = await fetch(`/api/auctions/engagement?auctionIds=${encodeURIComponent(auctionId)}`)
     if (!res.ok) return
 
     const data = (await res.json()) as {
       counts?: Record<string, { bidderCount: number; watcherCount: number }>
     }
 
-    const counts = data.counts?.[String(id)]
+    const counts = data.counts?.[auctionId]
     if (counts) {
       setWatcherCount(counts.watcherCount ?? 0)
     }
-  }, [id])
+  }, [auctionId])
 
   useEffect(() => {
-    if (!id) return
+    if (!auctionId) return
 
     const viewerKey = getOrCreateViewerKey()
 
@@ -384,7 +416,7 @@ export default function AuctionDetailPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            auction_id: id,
+            auction_id: auctionId,
             viewer_key: viewerKey,
             user_id: user?.id ?? null,
             action: 'view',
@@ -396,7 +428,7 @@ export default function AuctionDetailPage() {
     }
 
     trackView()
-  }, [id, loadEngagement])
+  }, [auctionId, loadEngagement])
 
   useEffect(() => {
     if (!isScheduled) return

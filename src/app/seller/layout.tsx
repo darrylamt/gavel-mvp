@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const pathname = usePathname()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -21,11 +20,6 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
         return
       }
 
-      if (pathname === '/seller/apply') {
-        setLoading(false)
-        return
-      }
-
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -33,7 +27,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
         .single()
 
       if (profile?.role !== 'seller') {
-        router.replace('/seller/apply')
+        router.replace('/contact')
         return
       }
 
@@ -41,7 +35,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
     }
 
     checkAccess()
-  }, [pathname, router])
+  }, [router])
 
   if (loading) {
     return <p className="p-6">Checking seller access…</p>

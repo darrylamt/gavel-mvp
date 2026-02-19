@@ -210,10 +210,10 @@ export default function AdminNewAuction() {
           <h1 className="text-2xl font-bold">Seller approval required</h1>
           <p className="mt-2 text-sm text-gray-600">Only approved sellers can create auctions.</p>
           <button
-            onClick={() => router.push('/seller/apply')}
+            onClick={() => router.push('/contact')}
             className="mt-4 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
           >
-            Become a Seller
+            Contact Support
           </button>
         </div>
       </main>

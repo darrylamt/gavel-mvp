@@ -1,96 +1,178 @@
-import Link from 'next/link'
-import { Faq1 } from '@/components/faq1'
+import { Facebook, Instagram, Mail, MapPin, Phone, Twitter, Youtube } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 export default function ContactPage() {
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-12 space-y-8">
-      <header className="space-y-3">
-        <h1 className="text-3xl font-bold">Contact Gavel</h1>
-        <p className="text-gray-600">
-          Reach out for auction support, payment help, account access issues, or policy questions.
+    <main className="mx-auto w-full max-w-6xl px-6 py-12 space-y-16">
+      <section className="text-center space-y-3">
+        <h1 className="text-4xl font-bold tracking-tight">Connect with Our Team</h1>
+        <p className="mx-auto max-w-2xl text-sm text-gray-500">
+          Reach out for auction support, buy-now questions, payments, or account help.
         </p>
-      </header>
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        <article className="rounded-2xl border bg-white p-5 shadow-sm space-y-2">
-          <h2 className="text-base font-semibold text-gray-900">Support Email</h2>
-          <p className="text-sm text-gray-700">support@gavelgh.com</p>
-          <p className="text-sm text-gray-600">Please include your auction ID or payment reference for faster help.</p>
-        </article>
-
-        <article className="rounded-2xl border bg-white p-5 shadow-sm space-y-2">
-          <h2 className="text-base font-semibold text-gray-900">Support Hours</h2>
-          <p className="text-sm text-gray-700">Monday - Friday, 9:00 AM - 5:00 PM (GMT)</p>
-          <p className="text-sm text-gray-600">Most requests are answered within 24 hours.</p>
-        </article>
       </section>
 
-      <section className="rounded-2xl border bg-gray-50 p-5 space-y-3">
-        <h2 className="text-lg font-semibold text-gray-900">What to include in your message</h2>
-        <ul className="list-disc pl-6 text-sm text-gray-700 space-y-1">
-          <li>Your account email</li>
-          <li>Auction ID or product name</li>
-          <li>Payment reference (if payment-related)</li>
-          <li>Brief description of the issue</li>
-        </ul>
+      <section className="grid gap-6 rounded-2xl bg-gray-50 p-6 md:grid-cols-2">
+        <div className="rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="text-2xl font-semibold text-gray-900">Get in Touch with Us</h2>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <input
+              placeholder="Your full name"
+              className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+            />
+            <input
+              type="email"
+              placeholder="Type your email"
+              className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+            />
+          </div>
+
+          <input
+            placeholder="Subject"
+            className="mt-3 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+          />
+
+          <textarea
+            rows={5}
+            placeholder="Send your message request"
+            className="mt-3 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+          />
+
+          <button className="mt-4 rounded-md bg-black px-5 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+            Send message
+          </button>
+        </div>
+
+        <div className="rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="text-2xl font-semibold text-gray-900">Contact Details</h2>
+          <p className="mt-2 text-sm text-gray-500">Support channels available for all users.</p>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <InfoCard icon={<MapPin className="h-4 w-4" />} label="Address" value="Greater Accra, Ghana" />
+            <InfoCard icon={<Phone className="h-4 w-4" />} label="Mobile" value="(+233) 055 697 9993" />
+            <InfoCard icon={<Youtube className="h-4 w-4" />} label="Availability" value="Daily 9:00 AM - 5:00 PM" />
+            <InfoCard icon={<Mail className="h-4 w-4" />} label="Email" value="support@gavelgh.com" />
+          </div>
+
+          <div className="mt-6">
+            <p className="text-sm font-medium text-gray-700">Social Media</p>
+            <ul className="mt-2 flex items-center space-x-3">
+              <li>
+                <a
+                  href="https://x.com/gavelgh"
+                  aria-label="Twitter"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-white transition-all duration-200 hover:bg-blue-600 focus:bg-blue-600"
+                >
+                  <Twitter className="h-4 w-4" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.facebook.com/share/1XVgK95jJh/"
+                  aria-label="Facebook"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-white transition-all duration-200 hover:bg-blue-600 focus:bg-blue-600"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.instagram.com/gavel.gh/"
+                  aria-label="Instagram"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-white transition-all duration-200 hover:bg-blue-600 focus:bg-blue-600"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
       </section>
 
-      <section className="rounded-2xl border bg-white p-5 shadow-sm">
-        <Faq1
-          heading="Frequently asked questions"
-          className="w-full py-0"
-          items={[
-            {
-              id: 'reserve-price',
-              question: 'What is a reserve price?',
-              answer:
-                'A reserve price is the minimum bid required for a valid sale. Only bidders at or above reserve can be offered payment. If no eligible bidder remains above reserve, the auction closes unsold.',
-            },
-            {
-              id: 'refund-tokens',
-              question: 'Do bid tokens get refunded?',
-              answer:
-                'No. Bid tokens are consumed when bids are placed and are non-refundable, including non-winning bids, reserve-not-met outcomes, and missed payment windows.',
-            },
-            {
-              id: 'anti-sniping',
-              question: 'What happens if someone bids in the final seconds?',
-              answer:
-                'Anti-sniping is active. If a bid is placed in the last 30 seconds, the auction end time is extended by 30 seconds.',
-            },
-            {
-              id: 'winner-window',
-              question: 'How long does the winner have to pay?',
-              answer:
-                'The current winner has 1 hour to complete payment. A countdown appears on the auction winner card during this payment window.',
-            },
-            {
-              id: 'winner-fallback',
-              question: 'What if the winner does not pay in time?',
-              answer:
-                'If the winner misses the 1-hour deadline, payment rights move to the next highest eligible bidder above reserve (2nd, then 3rd, and so on).',
-            },
-            {
-              id: 'below-reserve-fallback',
-              question: 'What if the next bidder is below reserve?',
-              answer:
-                'If the next bidder is below reserve, they are not eligible for fallback payment. If no remaining bidder meets reserve, the auction closes unsold.',
-            },
-          ]}
-        />
-      </section>
+      <section className="rounded-2xl bg-gray-50 p-6">
+        <div className="text-center">
+          <h2 className="text-3xl font-semibold text-gray-900">Your Common Queries Answered with Additional FAQs</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-gray-500">
+            Quick answers to frequently asked questions about auctions and payments.
+          </p>
+        </div>
 
-      <section className="rounded-2xl border bg-white p-5 shadow-sm space-y-3">
-        <h2 className="text-lg font-semibold text-gray-900">Need policy details?</h2>
-        <div className="flex flex-wrap gap-3 text-sm font-medium">
-          <Link href="/terms" className="rounded-lg border px-3 py-2 hover:bg-gray-50">
-            Terms & Conditions
-          </Link>
-          <Link href="/privacy" className="rounded-lg border px-3 py-2 hover:bg-gray-50">
-            Privacy Policy
-          </Link>
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+          <div className="space-y-2">
+            <FaqRow
+              question="What are tokens used for on Gavel?"
+              answer="Tokens are used to place bids on auctions. Every bid deducts tokens from your balance."
+            />
+            <FaqRow
+              question="Do my tokens expire?"
+              answer="No. Tokens do not expire and remain in your account until they are used for bidding."
+            />
+            <FaqRow
+              question="Can I get a refund for tokens?"
+              answer="Token purchases are generally non-refundable once credited. Contact support if you were charged without receiving tokens."
+            />
+            <FaqRow
+              question="How do I contact support quickly?"
+              answer="Use the form on this page or email support@gavelgh.com. For urgent help, call (+233) 055 697 9993 during support hours."
+            />
+            <FaqRow
+              question="Are payments secure?"
+              answer="Yes. Payments are processed securely through trusted gateways and we do not store card details directly on Gavel."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <FaqRow
+              question="What does reserve price mean?"
+              answer="Reserve price is the minimum amount the seller is willing to accept. If bidding ends below it, the item is not sold."
+            />
+            <FaqRow
+              question="What is starting price?"
+              answer="Starting price is the opening amount for the auction. Bids begin from this value."
+            />
+            <FaqRow
+              question="What is current bid?"
+              answer="Current bid is the highest valid bid placed so far in that auction."
+            />
+            <FaqRow
+              question="What is minimum increment?"
+              answer="Minimum increment is the smallest amount your next bid must increase above the current bid."
+            />
+            <FaqRow
+              question="What is maximum increment?"
+              answer="Maximum increment is the largest amount your next bid can increase above the current bid."
+            />
+            <FaqRow
+              question="What do Scheduled, Live, and Ended mean?"
+              answer="Scheduled means bidding has not started yet, Live means bidding is open, and Ended means the auction has closed."
+            />
+          </div>
         </div>
       </section>
     </main>
+  )
+}
+
+function InfoCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+      <div className="rounded bg-black p-1.5 text-white">{icon}</div>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+        <p className="text-sm text-gray-700">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function FaqRow({ question, answer }: { question: string; answer: string }) {
+  return (
+    <details className="rounded-md border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700">
+      <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
+        <span>{question}</span>
+        <span className="text-gray-500">+</span>
+      </summary>
+      <p className="pt-2 text-sm text-gray-600">{answer}</p>
+    </details>
   )
 }

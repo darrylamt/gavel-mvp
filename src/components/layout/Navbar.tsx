@@ -195,12 +195,14 @@ export default function Navbar() {
                   >
                     My Profile
                   </button>
-                  <button
-                    onClick={() => router.push(profileRole === 'seller' ? '/seller' : '/seller/apply')}
-                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
-                  >
-                    {profileRole === 'seller' ? 'Seller Dashboard' : 'Become a Seller'}
-                  </button>
+                  {profileRole === 'seller' && (
+                    <button
+                      onClick={() => router.push('/seller')}
+                      className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
+                    >
+                      Seller Dashboard
+                    </button>
+                  )}
                   <button
                     onClick={() => router.push('/tokens')}
                     className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
@@ -281,15 +283,15 @@ export default function Navbar() {
             >
               CONTACT SUPPORT
             </button>
-            {user && (
+            {user && profileRole === 'seller' && (
               <button
                 onClick={() => {
-                  router.push(profileRole === 'seller' ? '/seller' : '/seller/apply')
+                  router.push('/seller')
                   setMobileMenuOpen(false)
                 }}
                 className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                {profileRole === 'seller' ? 'Seller Dashboard' : 'Become a Seller'}
+                Seller Dashboard
               </button>
             )}
             {user && (
