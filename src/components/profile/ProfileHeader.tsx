@@ -13,6 +13,14 @@ export default function ProfileHeader({
   avatarUrl,
   onEdit,
 }: Props) {
+  const displayName = username ?? 'Anonymous'
+  const mobileNameSizeClass =
+    displayName.length > 18
+      ? 'text-base'
+      : displayName.length > 12
+        ? 'text-lg'
+        : 'text-xl'
+
   return (
     <section className="rounded-xl border bg-white p-4 sm:p-6">
       <div className="flex items-start justify-between gap-4">
@@ -32,15 +40,15 @@ export default function ProfileHeader({
         )}
           </div>
 
-          <div>
-            <h1 className="truncate text-2xl font-bold leading-tight">
-              {username ?? 'Anonymous'}
+          <div className="min-w-0">
+            <h1 className={`max-w-[10.5rem] truncate font-bold leading-tight ${mobileNameSizeClass} sm:max-w-none sm:text-2xl`}>
+              {displayName}
             </h1>
             <p className="text-sm text-gray-600 mt-1">Member</p>
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-shrink-0 flex-col items-end gap-2">
           <div className="flex items-center gap-2 rounded bg-amber-50 px-3 py-1">
             <span className="text-lg">🪙</span>
             <span className="font-semibold text-amber-700">{tokens}</span>
