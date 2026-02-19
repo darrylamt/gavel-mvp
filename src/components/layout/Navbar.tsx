@@ -1,7 +1,7 @@
 'use client'
 
 import { Menu, LogOut, Heart, ShoppingCart, X } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
@@ -30,17 +30,34 @@ export default function Navbar() {
   const isAdmin = useIsAdmin()
   const { starredCount } = useStarredAuctions()
   const { itemCount } = useCart()
+  const lockedScrollYRef = useRef(0)
 
   useEffect(() => {
     if (!mobileMenuOpen) {
       return
     }
 
-    const previousOverflow = document.body.style.overflow
+    lockedScrollYRef.current = window.scrollY
+
+    const previousBodyOverflow = document.body.style.overflow
+    const previousBodyPosition = document.body.style.position
+    const previousBodyTop = document.body.style.top
+    const previousBodyWidth = document.body.style.width
+    const previousHtmlOverflow = document.documentElement.style.overflow
+
+    document.documentElement.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${lockedScrollYRef.current}px`
+    document.body.style.width = '100%'
 
     return () => {
-      document.body.style.overflow = previousOverflow
+      document.documentElement.style.overflow = previousHtmlOverflow
+      document.body.style.overflow = previousBodyOverflow
+      document.body.style.position = previousBodyPosition
+      document.body.style.top = previousBodyTop
+      document.body.style.width = previousBodyWidth
+      window.scrollTo(0, lockedScrollYRef.current)
     }
   }, [mobileMenuOpen])
 
@@ -247,7 +264,7 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-[70] bg-white md:hidden">
-            <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4">
+            <div className="flex h-16 items-center justify-between bg-white px-4">
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100"
@@ -269,7 +286,7 @@ export default function Navbar() {
                     router.push('/starred')
                     setMobileMenuOpen(false)
                   }}
-                  className="relative rounded-lg border border-gray-200 bg-white p-2"
+                  className="relative rounded-lg bg-white p-2"
                   aria-label="Starred auctions"
                 >
                   <Heart className="h-5 w-5 text-gray-700" />
@@ -285,7 +302,7 @@ export default function Navbar() {
                     router.push('/cart')
                     setMobileMenuOpen(false)
                   }}
-                  className="relative rounded-lg border border-gray-200 bg-white p-2"
+                  className="relative rounded-lg bg-white p-2"
                   aria-label="Cart"
                 >
                   <ShoppingCart className="h-5 w-5 text-gray-700" />
@@ -298,8 +315,7 @@ export default function Navbar() {
               </div>
             </div>
 
-            <div className="px-4 pb-4 pt-3">
-              <div className="flex h-[calc(100dvh-5.75rem)] flex-col items-center rounded-3xl border border-gray-200 bg-white px-8 pt-6 text-center shadow-sm">
+            <div className="flex h-[calc(100dvh-4rem)] flex-col items-center bg-white px-8 pt-6 text-center">
               {user && (
                 <button
                   onClick={() => {
@@ -425,7 +441,6 @@ export default function Navbar() {
                     </button>
                   </>
                 )}
-              </div>
               </div>
             </div>
           </div>
