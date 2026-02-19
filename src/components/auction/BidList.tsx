@@ -6,6 +6,7 @@ type Bid = {
   id: string
   amount: number
   user_id: string
+  masked_email?: string | null
   profiles?: {
     username: string | null
   }
@@ -14,13 +15,6 @@ type Bid = {
 type Props = {
   bids: Bid[]
   currentUserId: string | null
-}
-
-function anonId(userId: string) {
-  return (
-    'Anonymous #' + 
-    userId.replace(/-/g, '').slice(0, 6)
-  )
 }
 
 export default function BidList({ bids, currentUserId }: Props) {
@@ -42,11 +36,13 @@ export default function BidList({ bids, currentUserId }: Props) {
             {visibleBids.map((bid, index) => {
               const isTop = index === 0
               const isYou = bid.user_id === currentUserId
+              const maskedBidderEmail = bid.masked_email
 
               const displayName = isYou
                 ? 'You'
-                : bid.profiles?.username ??
-                  anonId(bid.user_id)
+                : maskedBidderEmail ??
+                  bid.profiles?.username ??
+                  'Anonymous'
 
               return (
                 <li

@@ -45,7 +45,7 @@ export async function getAuctionEngagementCounts(auctionIds: string[]) {
 
   const { data: watchersData, error: watchersError } = await admin
     .from('auction_watchers')
-    .select('auction_id, viewer_key')
+    .select('auction_id, viewer_key, user_id')
     .in('auction_id', uniqueIds)
     .or('starred.eq.true,viewed.eq.true')
 
@@ -55,10 +55,19 @@ export async function getAuctionEngagementCounts(auctionIds: string[]) {
     for (const row of watchersData ?? []) {
       const auctionId = row.auction_id as string | null
       const viewerKey = row.viewer_key as string | null
-      if (!auctionId || !viewerKey) continue
+      const userId = row.user_id as string | null
+      if (!auctionId) continue
+
+      const uniqueWatcherKey = userId
+        ? `user:${userId}`
+        : viewerKey
+          ? `viewer:${viewerKey}`
+          : null
+
+      if (!uniqueWatcherKey) continue
 
       const set = watcherSets.get(auctionId) ?? new Set<string>()
-      set.add(viewerKey)
+      set.add(uniqueWatcherKey)
       watcherSets.set(auctionId, set)
     }
 

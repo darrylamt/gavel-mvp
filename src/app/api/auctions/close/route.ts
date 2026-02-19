@@ -13,8 +13,16 @@ if (!supabaseUrl || !serviceRoleKey) {
 
 const supabase = createClient(supabaseUrl, serviceRoleKey)
 
+function normalizeAuctionId(raw: unknown) {
+  if (typeof raw !== 'string') return ''
+  const decoded = decodeURIComponent(raw).trim()
+  if (!decoded) return ''
+  return decoded.split(',')[0].split('/')[0].trim()
+}
+
 export async function POST(req: Request) {
-  const { auction_id } = await req.json()
+  const payload = await req.json()
+  const auction_id = normalizeAuctionId(payload.auction_id)
 
   if (!auction_id) {
     return NextResponse.json({ error: 'Missing auction_id' }, { status: 400 })
@@ -40,6 +48,10 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error('Failed to close auction:', error)
-    return NextResponse.json({ error: 'Failed to close auction' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Failed to close auction'
+    return NextResponse.json(
+      { error: process.env.NODE_ENV === 'development' ? message : 'Failed to close auction' },
+      { status: 500 }
+    )
   }
 }

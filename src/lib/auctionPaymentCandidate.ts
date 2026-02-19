@@ -39,6 +39,15 @@ export type CandidateResolution = {
     | 'no_eligible_bids'
 }
 
+function isMissingColumnError(message: string) {
+  const normalized = message.toLowerCase()
+  return (
+    (normalized.includes('column') && normalized.includes('does not exist')) ||
+    (normalized.includes('could not find') && normalized.includes('column')) ||
+    normalized.includes('in the schema cache')
+  )
+}
+
 async function loadAuction(
   supabase: SupabaseClient,
   auctionId: string
@@ -51,7 +60,29 @@ async function loadAuction(
     .eq('id', auctionId)
     .single()
 
-  if (error || !data) {
+  if (error && isMissingColumnError(error.message)) {
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('auctions')
+      .select('id, status, ends_at, paid, reserve_price, winning_bid_id')
+      .eq('id', auctionId)
+      .single()
+
+    if (fallbackError || !fallbackData) {
+      throw new Error('Auction not found')
+    }
+
+    return {
+      ...(fallbackData as Omit<AuctionSettlementRow, 'winner_id' | 'auction_payment_due_at'>),
+      winner_id: null,
+      auction_payment_due_at: null,
+    }
+  }
+
+  if (error) {
+    throw new Error(`Failed to load auction: ${error.message}`)
+  }
+
+  if (!data) {
     throw new Error('Auction not found')
   }
 
@@ -76,10 +107,20 @@ async function listEligibleBids(
 
   const seenUsers = new Set<string>()
   const eligible: BidRow[] = []
+  const reserveThreshold = reservePrice == null ? null : Number(reservePrice)
 
   for (const bid of (data ?? []) as BidRow[]) {
+    const bidAmount = Number(bid.amount)
+
     if (!bid.user_id || seenUsers.has(bid.user_id)) continue
-    if (reservePrice != null && Number(bid.amount) < Number(reservePrice)) continue
+    if (!Number.isFinite(bidAmount)) continue
+    if (
+      reserveThreshold != null &&
+      Number.isFinite(reserveThreshold) &&
+      bidAmount + Number.EPSILON < reserveThreshold
+    ) {
+      continue
+    }
 
     seenUsers.add(bid.user_id)
     eligible.push(bid)
@@ -104,8 +145,24 @@ async function persistActiveCandidate(
     })
     .eq('id', auctionId)
 
+  if (error && isMissingColumnError(error.message)) {
+    const { error: fallbackError } = await supabase
+      .from('auctions')
+      .update({
+        status: 'ended',
+        winning_bid_id: candidateBidId,
+      })
+      .eq('id', auctionId)
+
+    if (fallbackError) {
+      throw new Error(`Failed to persist active candidate: ${fallbackError.message}`)
+    }
+
+    return
+  }
+
   if (error) {
-    throw new Error('Failed to persist active candidate')
+    throw new Error(`Failed to persist active candidate: ${error.message}`)
   }
 }
 
@@ -123,8 +180,24 @@ async function clearCandidate(
     })
     .eq('id', auctionId)
 
+  if (error && isMissingColumnError(error.message)) {
+    const { error: fallbackError } = await supabase
+      .from('auctions')
+      .update({
+        status: 'ended',
+        winning_bid_id: null,
+      })
+      .eq('id', auctionId)
+
+    if (fallbackError) {
+      throw new Error(`Failed to clear candidate: ${fallbackError.message}`)
+    }
+
+    return
+  }
+
   if (error) {
-    throw new Error('Failed to clear candidate')
+    throw new Error(`Failed to clear candidate: ${error.message}`)
   }
 }
 

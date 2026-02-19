@@ -43,19 +43,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'auction_id, viewer_key and action are required' }, { status: 400 })
     }
 
-    const { data: existing } = await admin
+    const { data: existingByViewer } = await admin
       .from('auction_watchers')
       .select('starred, viewed')
       .eq('auction_id', auctionId)
       .eq('viewer_key', viewerKey)
       .maybeSingle()
 
+    let existingByUser:
+      | { viewer_key: string; starred: boolean; viewed: boolean }
+      | null
+      = null
+
+    if (userId) {
+      const { data } = await admin
+        .from('auction_watchers')
+        .select('viewer_key, starred, viewed')
+        .eq('auction_id', auctionId)
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      existingByUser = data
+    }
+
+    const current = existingByUser ?? existingByViewer
+
     const payload = {
       auction_id: auctionId,
-      viewer_key: viewerKey,
+      viewer_key: existingByUser?.viewer_key ?? viewerKey,
       user_id: userId,
-      starred: action === 'star' ? (starred ?? false) : (existing?.starred ?? false),
-      viewed: action === 'view' ? true : (existing?.viewed ?? false),
+      starred: action === 'star' ? (starred ?? false) : (current?.starred ?? false),
+      viewed: action === 'view' ? true : (current?.viewed ?? false),
       updated_at: new Date().toISOString(),
     }
 

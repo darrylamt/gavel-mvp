@@ -76,7 +76,7 @@ export async function POST(req: Request) {
 
   if (!resolution.activeCandidate) {
     return NextResponse.json(
-      { error: 'No eligible winner above reserve price. Auction closed without sale.' },
+      { error: 'No eligible winner at or above reserve price. Auction closed without sale.' },
       { status: 400 }
     )
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { maskBidderEmail } from '@/lib/maskBidderEmail'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,65 @@ const supabase = createClient(
 )
 
 const BID_TOKEN_COST = 1
+
+type BidRow = {
+  id: string
+  amount: number
+  user_id: string
+  profiles?: { username: string | null } | { username: string | null }[] | null
+}
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const auctionId = searchParams.get('auction_id')
+
+  if (!auctionId) {
+    return NextResponse.json({ error: 'Missing auction_id' }, { status: 400 })
+  }
+
+  const { data, error } = await supabase
+    .from('bids')
+    .select('id, amount, user_id, profiles (username)')
+    .eq('auction_id', auctionId)
+    .order('amount', { ascending: false })
+
+  if (error) {
+    return NextResponse.json({ error: 'Failed to load bids' }, { status: 500 })
+  }
+
+  const rows = (data ?? []) as BidRow[]
+  const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter(Boolean)))
+
+  const maskedEmailByUserId = new Map<string, string>()
+
+  await Promise.all(
+    userIds.map(async (userId) => {
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId)
+      const masked = maskBidderEmail(authUser.user?.email)
+      if (masked) {
+        maskedEmailByUserId.set(userId, masked)
+      }
+    })
+  )
+
+  const bids = rows.map((row) => {
+    const profile = Array.isArray(row.profiles)
+      ? row.profiles[0] ?? undefined
+      : row.profiles ?? undefined
+
+    return {
+      id: row.id,
+      amount: row.amount,
+      user_id: row.user_id,
+      profiles: {
+        username: profile?.username ?? null,
+      },
+      masked_email: maskedEmailByUserId.get(row.user_id) ?? null,
+    }
+  })
+
+  return NextResponse.json({ bids })
+}
 
 export async function POST(req: Request) {
   const { auction_id, user_id, amount } = await req.json()
@@ -167,7 +227,7 @@ export async function POST(req: Request) {
 
   const endsAtMs = auction.ends_at ? new Date(auction.ends_at).getTime() : null
   const remainingMs = endsAtMs != null ? endsAtMs - now : null
-  const shouldExtendBy30s = remainingMs != null && remainingMs > 0 && remainingMs <= 30_000
+  const shouldExtendBy30s = remainingMs != null && remainingMs > 0 && remainingMs <= 60_000
 
   const nextAuctionUpdate: { current_price: number; ends_at?: string } = {
     current_price: bidAmount,

@@ -42,16 +42,10 @@ type BidRecord = {
   id: string
   amount: number
   user_id: string
+  masked_email?: string | null
   profiles?: {
     username: string | null
   }
-}
-
-type RawBidRecord = {
-  id: string
-  amount: number
-  user_id: string
-  profiles: { username: string | null } | { username: string | null }[] | null
 }
 
 export default function AuctionDetailPage() {
@@ -103,7 +97,23 @@ export default function AuctionDetailPage() {
     return bids.find((bid) => bid.id === auction.winning_bid_id) ?? null
   }, [auction?.winning_bid_id, bids])
 
-  const reserveMet = auction?.reserve_price == null || !!activeWinningBid
+  const fallbackWinningBid = useMemo(() => {
+    if (!hasEnded) return null
+    if (activeWinningBid) return activeWinningBid
+    return bids[0] ?? null
+  }, [activeWinningBid, bids, hasEnded])
+
+  const reserveMet = useMemo(() => {
+    if (!auction) return false
+    if (auction.reserve_price == null) return true
+    if (activeWinningBid) return true
+
+    const reservePrice = Number(auction.reserve_price)
+    const highestBidAmount = Number(bids[0]?.amount ?? 0)
+    if (!Number.isFinite(reservePrice) || !Number.isFinite(highestBidAmount)) return false
+
+    return highestBidAmount + Number.EPSILON >= reservePrice
+  }, [activeWinningBid, auction, bids])
 
   const liveCurrentPrice = useMemo(() => {
     const auctionPrice = auction?.current_price ?? 0
@@ -114,8 +124,8 @@ export default function AuctionDetailPage() {
   const isWinner =
     hasEnded &&
     reserveMet &&
-    !!activeWinningBid &&
-    activeWinningBid.user_id === userId
+    !!fallbackWinningBid &&
+    fallbackWinningBid.user_id === userId
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -123,98 +133,91 @@ export default function AuctionDetailPage() {
     })
   }, [])
 
-  useEffect(() => {
+  const loadAuction = useCallback(async () => {
     if (!auctionId) return
 
-    const loadAuction = async () => {
-      const selectFields =
-        'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at'
+    const selectFields =
+      'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at'
 
-      let auctionData: AuctionRecord | null = null
+    let auctionData: AuctionRecord | null = null
 
-      const apiRes = await fetch(`/api/auctions/${encodeURIComponent(auctionId)}`, {
-        method: 'GET',
-        cache: 'no-store',
-      })
+    const apiRes = await fetch(`/api/auctions/${encodeURIComponent(auctionId)}`, {
+      method: 'GET',
+      cache: 'no-store',
+    })
 
-      if (apiRes.ok) {
-        const payload = (await apiRes.json()) as { auction?: AuctionRecord }
-        if (payload.auction) {
-          setAuction(payload.auction)
-          setLoading(false)
-          return
+    if (apiRes.ok) {
+      const payload = (await apiRes.json()) as { auction?: AuctionRecord }
+      if (payload.auction) {
+        setAuction(payload.auction)
+        setLoading(false)
+        return
+      }
+    }
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const { data } = await supabasePublic
+        .from('auctions')
+        .select(selectFields)
+        .eq('id', auctionId)
+        .maybeSingle()
+
+      if (data) {
+        const normalized = data as AuctionRecord & { auction_payment_due_at?: string | null }
+        auctionData = {
+          ...normalized,
+          auction_payment_due_at: normalized.auction_payment_due_at ?? null,
         }
+        break
       }
 
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        const { data } = await supabasePublic
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (session?.user) {
+        const { data: ownerVisible } = await supabase
           .from('auctions')
           .select(selectFields)
           .eq('id', auctionId)
           .maybeSingle()
 
-        if (data) {
-          const normalized = data as AuctionRecord & { auction_payment_due_at?: string | null }
+        if (ownerVisible) {
+          const normalized = ownerVisible as AuctionRecord & { auction_payment_due_at?: string | null }
           auctionData = {
             ...normalized,
             auction_payment_due_at: normalized.auction_payment_due_at ?? null,
           }
           break
         }
-
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
-        if (session?.user) {
-          const { data: ownerVisible } = await supabase
-            .from('auctions')
-            .select(selectFields)
-            .eq('id', auctionId)
-            .maybeSingle()
-
-          if (ownerVisible) {
-            const normalized = ownerVisible as AuctionRecord & { auction_payment_due_at?: string | null }
-            auctionData = {
-              ...normalized,
-              auction_payment_due_at: normalized.auction_payment_due_at ?? null,
-            }
-            break
-          }
-        }
-
-        if (attempt < 2) {
-          await new Promise((resolve) => setTimeout(resolve, 450))
-        }
       }
 
-      setAuction(auctionData)
-      setLoading(false)
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 450))
+      }
     }
 
-    loadAuction()
+    setAuction(auctionData)
+    setLoading(false)
   }, [auctionId])
+
+  useEffect(() => {
+    loadAuction()
+  }, [loadAuction])
 
   const loadBids = useCallback(async () => {
     if (!auctionId) return
 
-    const { data: bidsData, error } = await supabasePublic
-      .from('bids')
-      .select(
-        'id, amount, user_id, profiles (username)'
-      )
-      .eq('auction_id', auctionId)
-      .order('amount', { ascending: false })
+    const res = await fetch(`/api/bids?auction_id=${encodeURIComponent(auctionId)}`, {
+      method: 'GET',
+      cache: 'no-store',
+    })
 
-    if (!error && bidsData) {
-      const normalized = (bidsData as RawBidRecord[]).map((bid) => ({
-        ...bid,
-        profiles: Array.isArray(bid.profiles)
-          ? bid.profiles[0] ?? undefined
-          : bid.profiles ?? undefined,
-      }))
+    if (!res.ok) return
 
-      setBids(normalized)
+    const payload = (await res.json()) as { bids?: BidRecord[] }
+    if (payload.bids) {
+      setBids(payload.bids)
     }
   }, [auctionId])
 
@@ -222,8 +225,9 @@ export default function AuctionDetailPage() {
     if (!auctionId) return
 
     loadBids()
+    loadAuction()
 
-    const subscription = supabasePublic
+    const bidsSubscription = supabasePublic
       .channel(`bids:${auctionId}`)
       .on(
         'postgres_changes',
@@ -235,14 +239,32 @@ export default function AuctionDetailPage() {
         },
         () => {
           loadBids()
+          loadAuction()
+        }
+      )
+      .subscribe()
+
+    const auctionSubscription = supabasePublic
+      .channel(`auction:${auctionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'auctions',
+          filter: `id=eq.${auctionId}`,
+        },
+        () => {
+          loadAuction()
         }
       )
       .subscribe()
 
     return () => {
-      subscription.unsubscribe()
+      bidsSubscription.unsubscribe()
+      auctionSubscription.unsubscribe()
     }
-  }, [auctionId, loadBids])
+  }, [auctionId, loadAuction, loadBids])
 
   useEffect(() => {
     if (!auction?.id) return
@@ -254,13 +276,30 @@ export default function AuctionDetailPage() {
 
     const settleAuction = async () => {
       try {
-        await fetch('/api/auctions/close', {
+        const res = await fetch('/api/auctions/close', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ auction_id: auction.id }),
         })
 
-        setAuction((prev) => (prev ? { ...prev, status: 'ended' } : prev))
+        if (!res.ok) return
+
+        const result = (await res.json()) as {
+          winningBidId?: string | null
+          paymentDueAt?: string | null
+        }
+
+        setAuction((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: 'ended',
+                winning_bid_id: result.winningBidId ?? prev.winning_bid_id,
+                auction_payment_due_at: result.paymentDueAt ?? prev.auction_payment_due_at,
+              }
+            : prev
+        )
+        await loadAuction()
         await loadBids()
       } catch {
         // No-op: settlement can be retried on refresh if network fails
@@ -268,7 +307,7 @@ export default function AuctionDetailPage() {
     }
 
     settleAuction()
-  }, [auction?.id, auction?.status, hasEnded, hasRequestedSettlement, loadBids])
+  }, [auction?.id, auction?.status, hasEnded, hasRequestedSettlement, loadAuction, loadBids])
 
   useEffect(() => {
     const startsAt = auction?.starts_at
@@ -375,6 +414,7 @@ export default function AuctionDetailPage() {
 
       setBidAmount('')
       await loadBids()
+      await loadAuction()
     } finally {
       setIsPlacingBid(false)
     }
@@ -532,14 +572,6 @@ export default function AuctionDetailPage() {
               <ShareAuctionButton auctionId={auction.id} />
             </div>
 
-            {(auction.starts_at || auction.ends_at) && (
-              <AuctionCountdown
-                targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
-                phase={countdownPhase}
-                timeLeft={timeLeft}
-              />
-            )}
-
             <div className="grid grid-cols-1 gap-3 rounded-xl border bg-gray-50/60 p-4 text-sm text-gray-700 sm:grid-cols-2">
               <div>
                 <div className="font-medium text-gray-900">Sale Source</div>
@@ -585,6 +617,13 @@ export default function AuctionDetailPage() {
         </section>
 
         <aside className="space-y-4">
+          {(auction.starts_at || auction.ends_at) && (
+            <AuctionCountdown
+              targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
+              phase={countdownPhase}
+              timeLeft={timeLeft}
+            />
+          )}
           {isScheduled && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
               This auction has not started yet.

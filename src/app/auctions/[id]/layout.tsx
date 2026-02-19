@@ -27,11 +27,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const { data } = await supabase
     .from('auctions')
-    .select('id, title, description, current_price, images, image_url')
+    .select('id, title, description, current_price, images, image_url, status, is_hidden')
     .eq('id', id)
     .maybeSingle()
 
-  if (!data) {
+  if (!data || (data.status === 'scheduled' && data.is_hidden)) {
     return {
       title: 'Auction not found',
       description: 'This auction is not available.',

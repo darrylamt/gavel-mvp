@@ -8,8 +8,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+function normalizeAuctionId(raw: unknown) {
+  if (typeof raw !== 'string') return ''
+  const decoded = decodeURIComponent(raw).trim()
+  if (!decoded) return ''
+  return decoded.split(',')[0].split('/')[0].trim()
+}
+
 export async function POST(req: Request) {
-  const { auction_id, user_id, email } = await req.json()
+  const payload = await req.json()
+  const auction_id = normalizeAuctionId(payload.auction_id)
+  const user_id = payload.user_id
+  const email = payload.email
 
   if (!auction_id || !user_id || !email) {
     return NextResponse.json(
@@ -29,7 +39,15 @@ export async function POST(req: Request) {
     }
 
     console.error('Failed to resolve auction payment candidate:', error)
-    return NextResponse.json({ error: 'Failed to initialize payment' }, { status: 500 })
+    return NextResponse.json(
+      {
+        error:
+          process.env.NODE_ENV === 'development'
+            ? message || 'Failed to initialize payment'
+            : 'Failed to initialize payment',
+      },
+      { status: 500 }
+    )
   }
 
   if (resolution.reason === 'auction_not_ended') {
@@ -42,7 +60,7 @@ export async function POST(req: Request) {
 
   if (!resolution.activeCandidate) {
     return NextResponse.json(
-      { error: 'No eligible winner above reserve price. Auction closed without sale.' },
+      { error: 'No eligible winner at or above reserve price. Auction closed without sale.' },
       { status: 400 }
     )
   }

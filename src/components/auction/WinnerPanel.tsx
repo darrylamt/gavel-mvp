@@ -78,12 +78,12 @@ export default function WinnerPanel({
 
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
-      <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3">
+      <div className="bg-green-500 px-4 py-3">
         <p className="text-sm font-semibold uppercase tracking-wide text-white/90">Winning Bid</p>
       </div>
 
       <div className="p-4">
-        <p className="text-lg font-bold text-amber-700">🎉 You won this auction</p>
+        <p className="text-lg font-bold text-amber-700">You won this auction</p>
         <p className="mt-1 text-sm text-gray-600">You have 1 hour to complete payment before the item is offered to the next eligible bidder.</p>
         {paymentDueAt && (
           <p className="mt-1 text-xs text-gray-500">Payment deadline: {new Date(paymentDueAt).toLocaleString()}</p>
