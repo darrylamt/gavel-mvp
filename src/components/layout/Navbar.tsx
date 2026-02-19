@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, LogOut, Heart, ShoppingCart } from 'lucide-react'
+import { Menu, LogOut, Heart, ShoppingCart, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -30,6 +30,19 @@ export default function Navbar() {
   const isAdmin = useIsAdmin()
   const { starredCount } = useStarredAuctions()
   const { itemCount } = useCart()
+
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      return
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [mobileMenuOpen])
 
   useEffect(() => {
     if (!user) {
@@ -130,7 +143,7 @@ export default function Navbar() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push('/starred')}
-              className="relative p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              className="relative hidden rounded-lg border border-gray-200 p-2 transition-colors hover:bg-gray-50 md:inline-flex"
               aria-label="Starred auctions"
             >
               <Heart className="h-5 w-5 text-gray-700" />
@@ -143,7 +156,7 @@ export default function Navbar() {
 
             <button
               onClick={() => router.push('/cart')}
-              className="relative p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              className="relative hidden rounded-lg border border-gray-200 p-2 transition-colors hover:bg-gray-50 md:inline-flex"
               aria-label="Cart"
             >
               <ShoppingCart className="h-5 w-5 text-gray-700" />
@@ -169,7 +182,7 @@ export default function Navbar() {
 
             {/* User Profile / Auth */}
             {!loading && !user ? (
-              <div className="flex items-center gap-2">
+              <div className="hidden items-center gap-2 md:flex">
                 <button
                   onClick={() => router.push('/login')}
                   className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
@@ -178,7 +191,7 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <div className="relative group">
+              <div className="relative hidden md:block group">
                 <AvatarLabelGroup
                   size="md"
                   src={profileAvatarUrl || null}
@@ -233,91 +246,189 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <nav className="md:hidden pb-4 flex flex-col gap-2">
-            {user && (
-              <div className="mx-1 mb-1 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                <span className="font-medium">Tokens:</span> {tokens ?? 0}
+          <div className="fixed inset-0 z-[70] bg-white md:hidden">
+            <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4">
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <button onClick={() => {
+                router.push('/')
+                setMobileMenuOpen(false)
+              }} className="rounded p-1">
+                <Image src={navLogo} alt="Gavel" className="h-7 w-auto" priority />
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    router.push('/starred')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="relative rounded-lg border border-gray-200 bg-white p-2"
+                  aria-label="Starred auctions"
+                >
+                  <Heart className="h-5 w-5 text-gray-700" />
+                  {starredCount > 0 && (
+                    <span className="absolute -top-1 -right-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
+                      {starredCount}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    router.push('/cart')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="relative rounded-lg border border-gray-200 bg-white p-2"
+                  aria-label="Cart"
+                >
+                  <ShoppingCart className="h-5 w-5 text-gray-700" />
+                  {itemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                      {itemCount}
+                    </span>
+                  )}
+                </button>
               </div>
-            )}
-            <button
-              onClick={() => {
-                router.push('/auctions')
-                setMobileMenuOpen(false)
-              }}
-              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              AUCTIONS
-            </button>
-            <button
-              onClick={() => {
-                router.push('/tokens')
-                setMobileMenuOpen(false)
-              }}
-              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              TOKENS
-            </button>
-            <button
-              onClick={() => {
-                router.push('/cart')
-                setMobileMenuOpen(false)
-              }}
-              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              CART
-            </button>
-            <button
-              onClick={() => {
-                router.push('/shop')
-                setMobileMenuOpen(false)
-              }}
-              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              SHOP
-            </button>
-            <button
-              onClick={() => {
-                router.push('/contact')
-                setMobileMenuOpen(false)
-              }}
-              className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              CONTACT SUPPORT
-            </button>
-            {user && profileRole === 'seller' && (
-              <button
-                onClick={() => {
-                  router.push('/seller')
-                  setMobileMenuOpen(false)
-                }}
-                className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Seller Dashboard
-              </button>
-            )}
-            {user && (
-              <button
-                onClick={() => {
-                  router.push('/profile')
-                  setMobileMenuOpen(false)
-                }}
-                className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border-t border-gray-200 mt-2 pt-4"
-              >
-                My Profile
-              </button>
-            )}
-            {!user && (
-              <button
-                onClick={() => {
-                  router.push('/login')
-                  setMobileMenuOpen(false)
-                }}
-                className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border-t border-gray-200 mt-2 pt-4"
-              >
-                Sign In
-              </button>
-            )}
-          </nav>
+            </div>
+
+            <div className="px-4 pb-4 pt-3">
+              <div className="flex h-[calc(100dvh-5.75rem)] flex-col items-center rounded-3xl border border-gray-200 bg-white px-8 pt-6 text-center shadow-sm">
+              {user && (
+                <button
+                  onClick={() => {
+                    router.push('/profile')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="mb-8 flex flex-col items-center gap-2"
+                >
+                  {profileAvatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profileAvatarUrl}
+                      alt={profileUsername || user.email || 'User'}
+                      className="h-16 w-16 rounded-full border border-gray-200 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-lg font-semibold text-gray-700">
+                      {(profileUsername || user.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <p className="max-w-[12rem] truncate text-base font-semibold text-gray-900">
+                    {profileUsername || user.email || 'User'}
+                  </p>
+                  <p className="rounded-md bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                    Tokens: {tokens ?? 0}
+                  </p>
+                </button>
+              )}
+
+              <nav className="flex flex-col items-center gap-5">
+                <button
+                  onClick={() => {
+                    router.push('/auctions')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
+                >
+                  Auctions
+                </button>
+                <button
+                  onClick={() => {
+                    router.push('/tokens')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
+                >
+                  Tokens
+                </button>
+                <button
+                  onClick={() => {
+                    router.push('/shop')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
+                >
+                  Shop
+                </button>
+                <button
+                  onClick={() => {
+                    router.push('/contact')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
+                >
+                  Contact
+                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      router.push('/admin')
+                      setMobileMenuOpen(false)
+                    }}
+                    className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
+                  >
+                    Admin
+                  </button>
+                )}
+                {user && profileRole === 'seller' && (
+                  <button
+                    onClick={() => {
+                      router.push('/seller')
+                      setMobileMenuOpen(false)
+                    }}
+                    className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
+                  >
+                    Seller Dashboard
+                  </button>
+                )}
+              </nav>
+
+              <div className="mt-10 flex flex-col items-center gap-3 text-sm text-gray-700">
+                {user ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleLogout()
+                        setMobileMenuOpen(false)
+                      }}
+                      className="font-medium text-red-600 transition hover:text-red-700"
+                    >
+                      Log Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        router.push('/login')
+                        setMobileMenuOpen(false)
+                      }}
+                      className="font-medium transition hover:text-black"
+                    >
+                      Log in
+                    </button>
+                    <button
+                      onClick={() => {
+                        router.push('/signup')
+                        setMobileMenuOpen(false)
+                      }}
+                      className="font-medium transition hover:text-black"
+                    >
+                      Create account
+                    </button>
+                  </>
+                )}
+              </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </header>
