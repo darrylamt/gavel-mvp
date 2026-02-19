@@ -1,5 +1,6 @@
 import { Facebook, Instagram, Mail, MapPin, Phone, Twitter, Youtube } from 'lucide-react'
 import type { ReactNode } from 'react'
+import ContactFormCard from '@/components/contact/ContactFormCard'
 
 export default function ContactPage() {
   return (
@@ -12,36 +13,7 @@ export default function ContactPage() {
       </section>
 
       <section className="grid gap-6 rounded-2xl bg-gray-50 p-6 md:grid-cols-2">
-        <div className="rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="text-2xl font-semibold text-gray-900">Get in Touch with Us</h2>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <input
-              placeholder="Your full name"
-              className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
-            />
-            <input
-              type="email"
-              placeholder="Type your email"
-              className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
-            />
-          </div>
-
-          <input
-            placeholder="Subject"
-            className="mt-3 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
-          />
-
-          <textarea
-            rows={5}
-            placeholder="Send your message request"
-            className="mt-3 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
-          />
-
-          <button className="mt-4 rounded-md bg-black px-5 py-2 text-sm font-semibold text-white hover:bg-gray-800">
-            Send message
-          </button>
-        </div>
+        <ContactFormCard />
 
         <div className="rounded-2xl bg-white p-5 shadow-sm">
           <h2 className="text-2xl font-semibold text-gray-900">Contact Details</h2>
