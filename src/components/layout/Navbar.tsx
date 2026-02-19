@@ -16,6 +16,7 @@ type ProfileData = {
   username: string | null
   token_balance: number | null
   avatar_url: string | null
+  role: string | null
 }
 
 export default function Navbar() {
@@ -24,6 +25,7 @@ export default function Navbar() {
   const [tokens, setTokens] = useState<number | null>(null)
   const [profileUsername, setProfileUsername] = useState<string | null>(null)
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
+  const [profileRole, setProfileRole] = useState<string>('user')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isAdmin = useIsAdmin()
   const { starredCount } = useStarredAuctions()
@@ -37,7 +39,7 @@ export default function Navbar() {
     const loadProfile = async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('username, token_balance, avatar_url')
+        .select('username, token_balance, avatar_url, role')
         .eq('id', user.id)
         .single()
 
@@ -45,6 +47,7 @@ export default function Navbar() {
       setProfileUsername(profile?.username ?? null)
       setTokens(profile?.token_balance ?? 0)
       setProfileAvatarUrl(profile?.avatar_url ?? null)
+      setProfileRole(profile?.role ?? 'user')
     }
 
     loadProfile()
@@ -95,29 +98,29 @@ export default function Navbar() {
             <nav className="hidden md:flex items-center gap-6">
               <button
                 onClick={() => router.push('/auctions')}
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
               >
-                Auctions
+                AUCTIONS
               </button>
                 {isAdmin && (
                   <button
                     onClick={() => router.push('/admin')}
-                    className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                    className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
                   >
-                    Admin
+                    ADMIN
                   </button>
                 )}
               <button
                 onClick={() => router.push('/tokens')}
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
               >
-                Tokens
+                TOKENS
               </button>
               <button
                 onClick={() => router.push('/shop')}
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
               >
-                Shop
+                SHOP
               </button>
             </nav>
           </div>
@@ -193,6 +196,12 @@ export default function Navbar() {
                     My Profile
                   </button>
                   <button
+                    onClick={() => router.push(profileRole === 'seller' ? '/seller' : '/seller/apply')}
+                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
+                  >
+                    {profileRole === 'seller' ? 'Seller Dashboard' : 'Become a Seller'}
+                  </button>
+                  <button
                     onClick={() => router.push('/tokens')}
                     className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
                   >
@@ -234,7 +243,7 @@ export default function Navbar() {
               }}
               className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              Auctions
+              AUCTIONS
             </button>
             <button
               onClick={() => {
@@ -243,7 +252,7 @@ export default function Navbar() {
               }}
               className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              Tokens
+              TOKENS
             </button>
             <button
               onClick={() => {
@@ -252,7 +261,7 @@ export default function Navbar() {
               }}
               className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              Cart
+              CART
             </button>
             <button
               onClick={() => {
@@ -261,7 +270,7 @@ export default function Navbar() {
               }}
               className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              Shop
+              SHOP
             </button>
             <button
               onClick={() => {
@@ -270,8 +279,19 @@ export default function Navbar() {
               }}
               className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              Contact Support
+              CONTACT SUPPORT
             </button>
+            {user && (
+              <button
+                onClick={() => {
+                  router.push(profileRole === 'seller' ? '/seller' : '/seller/apply')
+                  setMobileMenuOpen(false)
+                }}
+                className="px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                {profileRole === 'seller' ? 'Seller Dashboard' : 'Become a Seller'}
+              </button>
+            )}
             {user && (
               <button
                 onClick={() => {

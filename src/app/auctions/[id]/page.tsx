@@ -116,13 +116,45 @@ export default function AuctionDetailPage() {
     if (!id) return
 
     const loadAuction = async () => {
-      const { data: auctionData } = await supabasePublic
-        .from('auctions')
-        .select(
-          'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, auction_payment_due_at, image_url, images, starts_at'
-        )
-        .eq('id', id)
-        .maybeSingle()
+      const selectFields =
+        'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, auction_payment_due_at, image_url, images, starts_at'
+
+      const auctionId = String(id)
+      let auctionData: AuctionRecord | null = null
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const { data } = await supabasePublic
+          .from('auctions')
+          .select(selectFields)
+          .eq('id', auctionId)
+          .maybeSingle()
+
+        if (data) {
+          auctionData = data as AuctionRecord
+          break
+        }
+
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (session?.user) {
+          const { data: ownerVisible } = await supabase
+            .from('auctions')
+            .select(selectFields)
+            .eq('id', auctionId)
+            .maybeSingle()
+
+          if (ownerVisible) {
+            auctionData = ownerVisible as AuctionRecord
+            break
+          }
+        }
+
+        if (attempt < 2) {
+          await new Promise((resolve) => setTimeout(resolve, 450))
+        }
+      }
 
       setAuction(auctionData)
       setLoading(false)
@@ -479,7 +511,7 @@ export default function AuctionDetailPage() {
             <div className="grid grid-cols-1 gap-3 rounded-xl border bg-gray-50/60 p-4 text-sm text-gray-700 sm:grid-cols-2">
               <div>
                 <div className="font-medium text-gray-900">Sale Source</div>
-                <div>{saleSource === 'seller' ? 'External seller' : 'Gavel'}</div>
+                <div>{saleSource === 'seller' ? 'External Seller' : 'Gavel Products'}</div>
               </div>
               {auction.ends_at && (
                 <div>

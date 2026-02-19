@@ -77,10 +77,10 @@ export default async function HomePage() {
             </Link>
 
             <Link
-              href="/tokens"
+              href="/shop"
               className="border border-black px-7 py-3 rounded-lg font-semibold hover:bg-black hover:text-white transition"
             >
-              Buy Tokens
+              Shop
             </Link>
           </div>
         </div>

@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Gavel, LayoutDashboard, Package, Store, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Gavel, LayoutDashboard, Package, Store, Users } from 'lucide-react'
 
 type Props = {
   children: React.ReactNode
@@ -18,12 +19,24 @@ const tabs = [
 
 export default function AdminShell({ children }: Props) {
   const pathname = usePathname()
+  const [collapsed, setCollapsed] = useState(false)
 
   return (
     <main className="min-h-[calc(100vh-64px)] bg-gray-100 p-4 md:p-6">
-      <div className="mx-auto grid w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
+      <div className={`mx-auto grid w-full max-w-7xl gap-4 ${collapsed ? 'lg:grid-cols-[84px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
         <aside className="rounded-2xl bg-white p-4 shadow-sm">
-          <h1 className="mb-4 text-2xl font-bold">Admin</h1>
+          <div className="mb-4 flex items-center justify-between">
+            {!collapsed && <h1 className="text-2xl font-bold">Admin</h1>}
+            <button
+              type="button"
+              onClick={() => setCollapsed((previous) => !previous)}
+              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
+          </div>
+
           <nav className="space-y-2 text-sm">
             {tabs.map((tab) => {
               const active = pathname === tab.href
@@ -33,12 +46,13 @@ export default function AdminShell({ children }: Props) {
                 <Link
                   key={tab.href}
                   href={tab.href}
+                  title={tab.label}
                   className={`flex items-center gap-2 rounded-lg px-3 py-2 font-medium transition ${
                     active ? 'bg-gray-100 text-black' : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  {tab.label}
+                  {!collapsed && tab.label}
                 </Link>
               )
             })}
@@ -46,9 +60,10 @@ export default function AdminShell({ children }: Props) {
 
           <Link
             href="/admin/new"
+            title="New Auction"
             className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
           >
-            New Auction
+            {collapsed ? 'New' : 'New Auction'}
           </Link>
         </aside>
 

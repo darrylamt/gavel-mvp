@@ -163,7 +163,7 @@ export default function AdminPage() {
                     <td className="py-2">{auction.status || '-'}</td>
                     <td className="py-2">GHS {(auction.current_price ?? 0).toLocaleString()}</td>
                     <td className="py-2">{auction.reserve_price != null ? `GHS ${auction.reserve_price.toLocaleString()}` : '-'}</td>
-                    <td className="py-2">{auction.sale_source === 'seller' ? 'Seller' : 'Gavel'}</td>
+                    <td className="py-2">{auction.sale_source === 'seller' ? 'External Seller' : 'Gavel Products'}</td>
                     <td className="py-2">{auction.seller_name || '-'}</td>
                   </tr>
                 ))}

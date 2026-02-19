@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize } from '@/components/base/file-upload/file-upload'
 import { type SaleSource } from '@/lib/auctionMeta'
+import { buildAuctionPath } from '@/lib/seo'
 
 type UploadedFileItem = {
   id: string
@@ -19,11 +20,15 @@ type UploadedFileItem = {
 export default function AdminNewAuction() {
   const router = useRouter()
 
+  const [accessLoading, setAccessLoading] = useState(true)
+  const [isSeller, setIsSeller] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [saleSource, setSaleSource] = useState<SaleSource>('gavel')
-  const [sellerName, setSellerName] = useState('')
-  const [sellerPhone, setSellerPhone] = useState('')
+  const [sellerDisplayName, setSellerDisplayName] = useState('')
+  const [sellerContactPhone, setSellerContactPhone] = useState('')
   const [sellerNetAmount, setSellerNetAmount] = useState('')
   const [startingPrice, setStartingPrice] = useState('')
   const [reservePrice, setReservePrice] = useState('')
@@ -34,6 +39,47 @@ export default function AdminNewAuction() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFileItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      const user = session?.user
+      if (!user) {
+        router.replace('/login')
+        return
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, username, phone')
+        .eq('id', user.id)
+        .single()
+
+      const { data: approvedApplication } = await supabase
+        .from('seller_applications')
+        .select('business_name, phone')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      const role = profile?.role ?? 'user'
+      setIsSeller(role === 'seller' || role === 'admin')
+      setIsAdmin(role === 'admin')
+      setSellerDisplayName(approvedApplication?.business_name ?? profile?.username ?? user.email ?? '')
+      setSellerContactPhone(approvedApplication?.phone ?? profile?.phone ?? '')
+      if (role !== 'admin') {
+        setSaleSource('seller')
+      }
+      setAccessLoading(false)
+    }
+
+    checkAccess()
+  }, [router])
 
   const handleDropFiles = (files: FileList) => {
     const newFiles = Array.from(files).map((f) => ({
@@ -56,21 +102,32 @@ export default function AdminNewAuction() {
     setError(null)
 
     try {
+      if (!isSeller) throw new Error('Only approved sellers can create auctions')
+
       if (!title.trim()) throw new Error('Title required')
       if (!description.trim()) throw new Error('Description required')
       if (!startingPrice) throw new Error('Starting price required')
       if (!startsAt) throw new Error('Start time required')
       if (!endsAt) throw new Error('End time required')
 
+      const startTime = new Date(startsAt).getTime()
+      const endTime = new Date(endsAt).getTime()
+
+      if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) {
+        throw new Error('Start and end time are invalid')
+      }
+      if (startTime < Date.now()) throw new Error('Start time must be in the future')
+      if (endTime <= startTime) throw new Error('End time must be after start time')
+
       if (saleSource === 'seller') {
-        if (!sellerName.trim()) throw new Error('Seller name required')
-        if (!sellerPhone.trim()) throw new Error('Seller phone required')
-        if (!sellerNetAmount) throw new Error('Seller expected amount required')
+        if (!sellerDisplayName.trim()) throw new Error('Seller profile details are missing. Please update your profile/application.')
+        if (!sellerContactPhone.trim()) throw new Error('Seller phone is missing. Please update your profile/application.')
+        if (!sellerNetAmount) throw new Error('Least expected amount required')
       }
 
       const sellerAmountValue = saleSource === 'seller' ? Number(sellerNetAmount) : null
       if (saleSource === 'seller' && (!sellerAmountValue || sellerAmountValue <= 0)) {
-        throw new Error('Seller expected amount must be greater than 0')
+        throw new Error('Least expected amount must be greater than 0')
       }
 
       const { data: authData } = await supabase.auth.getUser()
@@ -90,8 +147,8 @@ export default function AdminNewAuction() {
         current_price: Number(startingPrice),
         reserve_price: computedReserve,
         sale_source: saleSource,
-        seller_name: saleSource === 'seller' ? sellerName.trim() : null,
-        seller_phone: saleSource === 'seller' ? sellerPhone.trim() : null,
+        seller_name: saleSource === 'seller' ? sellerDisplayName.trim() : null,
+        seller_phone: saleSource === 'seller' ? sellerContactPhone.trim() : null,
         seller_expected_amount: saleSource === 'seller' ? (sellerAmountValue as number) : null,
         min_increment: minIncrement ? Number(minIncrement) : 1,
         max_increment: maxIncrement ? Number(maxIncrement) : null,
@@ -131,7 +188,7 @@ export default function AdminNewAuction() {
         if (updateErr) throw new Error(updateErr.message)
       }
 
-      router.push('/admin')
+      router.push(buildAuctionPath(auction.id, auction.title ?? title))
     } catch (err: unknown) {
       console.error('Create auction error:', err)
       const message = err instanceof Error ? err.message : 'Failed to create auction'
@@ -140,6 +197,27 @@ export default function AdminNewAuction() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (accessLoading) {
+    return <p className="p-6">Checking seller access…</p>
+  }
+
+  if (!isSeller) {
+    return (
+      <main className="max-w-3xl mx-auto p-6">
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <h1 className="text-2xl font-bold">Seller approval required</h1>
+          <p className="mt-2 text-sm text-gray-600">Only approved sellers can create auctions.</p>
+          <button
+            onClick={() => router.push('/seller/apply')}
+            className="mt-4 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+          >
+            Become a Seller
+          </button>
+        </div>
+      </main>
+    )
   }
 
   return (
@@ -153,23 +231,25 @@ export default function AdminNewAuction() {
 
       <div className="bg-white border rounded-lg p-8 space-y-6">
         <div className="space-y-4 rounded-lg border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold">Sale Source</h2>
+          <h2 className="text-lg font-semibold">{isAdmin ? 'Sale Source' : 'Seller Details'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Who owns this item?</label>
-              <select
-                value={saleSource}
-                onChange={(e) => setSaleSource(e.target.value as SaleSource)}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                <option value="gavel">Gavel</option>
-                <option value="seller">External seller</option>
-              </select>
-            </div>
+            {isAdmin ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Who owns this item?</label>
+                <select
+                  value={saleSource}
+                  onChange={(e) => setSaleSource(e.target.value as SaleSource)}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="gavel">Gavel Products</option>
+                  <option value="seller">External Seller</option>
+                </select>
+              </div>
+            ) : null}
 
             {saleSource === 'seller' && (
               <Input
-                label="Seller Expected Amount (GHS)"
+                label="Least Expected Amount (GHS)"
                 type="number"
                 placeholder="0.00"
                 value={sellerNetAmount}
@@ -179,25 +259,6 @@ export default function AdminNewAuction() {
               />
             )}
           </div>
-
-          {saleSource === 'seller' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Seller Name"
-                placeholder="Full name"
-                value={sellerName}
-                onChange={(e) => setSellerName(e.target.value)}
-                isRequired
-              />
-              <Input
-                label="Seller Phone"
-                placeholder="e.g. 0240000000"
-                value={sellerPhone}
-                onChange={(e) => setSellerPhone(e.target.value)}
-                isRequired
-              />
-            </div>
-          )}
         </div>
 
         <div>
@@ -252,7 +313,7 @@ export default function AdminNewAuction() {
               value={saleSource === 'seller' ? Math.ceil((Number(sellerNetAmount || 0) * 1.1) || 0).toString() : reservePrice}
               onChange={(e) => setReservePrice(e.target.value)}
               disabled={saleSource === 'seller'}
-              hint={saleSource === 'seller' ? 'Auto-calculated as seller expected amount + 10%.' : undefined}
+              hint={saleSource === 'seller' ? 'Auto-calculated as least expected amount + 10%.' : undefined}
             />
           </div>
         </div>

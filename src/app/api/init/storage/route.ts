@@ -8,34 +8,38 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const buckets = ['avatars', 'auction-images']
+    const buckets = [
+      { name: 'avatars', isPublic: true },
+      { name: 'auction-images', isPublic: true },
+      { name: 'seller-documents', isPublic: false },
+    ]
 
-    for (const bucketName of buckets) {
-      // Check if bucket exists
-      const { data: existingBuckets } = await supabase.storage.listBuckets()
-      const bucketExists = existingBuckets?.some((b) => b.name === bucketName)
+    const { data: existingBuckets } = await supabase.storage.listBuckets()
+
+    for (const bucket of buckets) {
+      const bucketExists = existingBuckets?.some((b) => b.name === bucket.name)
 
       if (!bucketExists) {
-        console.log(`Creating bucket: ${bucketName}`)
-        const { error: createErr } = await supabase.storage.createBucket(bucketName, {
-          public: true,
+        console.log(`Creating bucket: ${bucket.name}`)
+        const { error: createErr } = await supabase.storage.createBucket(bucket.name, {
+          public: bucket.isPublic,
         })
 
         if (createErr) {
-          console.error(`Error creating bucket ${bucketName}:`, createErr)
+          console.error(`Error creating bucket ${bucket.name}:`, createErr)
           return NextResponse.json(
-            { error: `Failed to create ${bucketName} bucket`, details: createErr.message },
+            { error: `Failed to create ${bucket.name} bucket`, details: createErr.message },
             { status: 500 }
           )
         }
       } else {
-        console.log(`Bucket ${bucketName} already exists`)
+        console.log(`Bucket ${bucket.name} already exists`)
       }
     }
 
     return NextResponse.json({
       message: 'Storage buckets initialized successfully',
-      buckets,
+      buckets: buckets.map((bucket) => bucket.name),
     })
   } catch (err: any) {
     console.error('Bucket initialization error:', err)

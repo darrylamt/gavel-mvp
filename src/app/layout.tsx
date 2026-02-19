@@ -6,6 +6,13 @@ import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from 'next'
 import gavelTabIcon from '@/assets/branding/gavel-logo.jpeg'
+import { Poppins } from 'next/font/google'
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+})
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
@@ -48,7 +55,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={poppins.className}>
         <Navbar />
         <WelcomeTourModal />
         {children}

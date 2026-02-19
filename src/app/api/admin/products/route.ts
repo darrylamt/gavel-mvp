@@ -9,7 +9,12 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const anon = createClient(supabaseUrl, supabaseAnonKey)
 const service = createClient(supabaseUrl, serviceRoleKey)
 
-async function requireAdmin(request: Request) {
+type AccessContext = {
+  user: { id: string }
+  role: 'admin' | 'seller'
+}
+
+async function requireProductManager(request: Request): Promise<{ error: NextResponse } | AccessContext> {
   const authHeader = request.headers.get('authorization') || ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
 
@@ -32,22 +37,31 @@ async function requireAdmin(request: Request) {
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  if (profile?.role !== 'admin' && profile?.role !== 'seller') {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
-  return { user }
+  return {
+    user: { id: user.id },
+    role: profile.role,
+  }
 }
 
 export async function GET(request: Request) {
-  const auth = await requireAdmin(request)
+  const auth = await requireProductManager(request)
   if ('error' in auth) return auth.error
 
-  const { data, error } = await service
+  const query = service
     .from('shop_products')
-    .select('id, title, description, price, stock, status, image_url, created_at')
+    .select('id, title, description, price, stock, status, image_url, created_at, created_by')
     .order('created_at', { ascending: false })
     .limit(300)
+
+  if (auth.role === 'seller') {
+    query.eq('created_by', auth.user.id)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -57,7 +71,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin(request)
+  const auth = await requireProductManager(request)
   if ('error' in auth) return auth.error
 
   try {
@@ -111,7 +125,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const auth = await requireAdmin(request)
+  const auth = await requireProductManager(request)
   if ('error' in auth) return auth.error
 
   try {
@@ -144,7 +158,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    const { data, error } = await service
+    const updateQuery = service
       .from('shop_products')
       .update({
         title,
@@ -155,7 +169,13 @@ export async function PATCH(request: Request) {
         image_url: imageUrl || null,
       })
       .eq('id', id)
-      .select('id, title, description, price, stock, status, image_url, created_at')
+
+    if (auth.role === 'seller') {
+      updateQuery.eq('created_by', auth.user.id)
+    }
+
+    const { data, error } = await updateQuery
+      .select('id, title, description, price, stock, status, image_url, created_at, created_by')
       .single()
 
     if (error) {
@@ -170,7 +190,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const auth = await requireAdmin(request)
+  const auth = await requireProductManager(request)
   if ('error' in auth) return auth.error
 
   try {
@@ -181,7 +201,13 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
 
-    const { error } = await service.from('shop_products').delete().eq('id', id)
+    const deleteQuery = service.from('shop_products').delete().eq('id', id)
+
+    if (auth.role === 'seller') {
+      deleteQuery.eq('created_by', auth.user.id)
+    }
+
+    const { error } = await deleteQuery
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

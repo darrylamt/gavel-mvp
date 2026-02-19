@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useCart } from '@/hooks/useCart'
 
@@ -43,6 +44,13 @@ export default function ShopProductCard({ id, title, description, price, imageUr
         <p className="line-clamp-2 text-sm font-semibold text-gray-900">{title}</p>
         {description && <p className="mt-1 line-clamp-2 text-xs text-gray-500">{description}</p>}
         <p className="mt-2 text-base font-bold text-black">GHS {Number(price).toLocaleString()}</p>
+
+        <Link
+          href={`/shop/${id}`}
+          className="mt-2 inline-flex text-xs font-semibold underline underline-offset-2"
+        >
+          View details
+        </Link>
 
         <button
           onClick={() => {

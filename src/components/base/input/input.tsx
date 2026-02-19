@@ -14,9 +14,19 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full space-y-2">
         {label && (
-          <label className="block text-sm font-medium text-gray-700">
-            {label}
-            {isRequired && <span className="text-red-500 ml-1">*</span>}
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <span>
+              {label}
+              {isRequired && <span className="text-red-500 ml-1">*</span>}
+            </span>
+            {tooltip && (
+              <span
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-black text-[11px] font-semibold text-white cursor-help"
+                title={tooltip}
+              >
+                ?
+              </span>
+            )}
           </label>
         )}
 
@@ -29,11 +39,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             } ${error ? 'border-red-500' : 'border-gray-300'} ${className}`}
             {...props}
           />
-          {tooltip && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs cursor-help" title={tooltip}>
-              ?
-            </span>
-          )}
         </div>
 
         {hint && <p className="text-xs text-gray-500">{hint}</p>}
