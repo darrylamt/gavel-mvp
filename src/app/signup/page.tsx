@@ -41,7 +41,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main>
+    <>
       <AuthForm
         isSignUp={true}
         email={email}
@@ -86,6 +86,6 @@ export default function SignupPage() {
           </div>
         </div>
       )}
-    </main>
+    </>
   )
 }

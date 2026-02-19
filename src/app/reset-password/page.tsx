@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import AuthForm from '@/components/auth/AuthForm'
-import styled from 'styled-components'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -32,259 +30,70 @@ export default function ResetPasswordPage() {
 
   if (sent) {
     return (
-      <StyledWrapper>
-        <div className="success-container">
-          <h1>Check Your Email</h1>
-          <p>We've sent a password reset link to <strong>{email}</strong></p>
-          <p>Follow the link to reset your password. If you don't see the email, check your spam folder.</p>
-          <button onClick={() => router.push('/login')} className="back-button">
-            Back to Login
+      <main className="min-h-[calc(100dvh-64px)] bg-gray-100 px-4 py-8 md:py-12">
+        <div className="mx-auto w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+          <h1 className="text-2xl font-semibold text-gray-900">Check your email</h1>
+          <p className="mt-3 text-sm text-gray-600">
+            We sent a password reset link to <span className="font-semibold text-gray-900">{email}</span>.
+          </p>
+          <p className="mt-2 text-sm text-gray-600">If you don’t see it, check your spam or junk folder.</p>
+
+          <button
+            onClick={() => router.push('/login')}
+            className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-black px-4 text-sm font-semibold text-white transition hover:bg-gray-800"
+          >
+            Back to Sign in
           </button>
         </div>
-      </StyledWrapper>
+      </main>
     )
   }
 
   return (
-    <StyledWrapper>
-      <form className="form" onSubmit={(e) => {
-        e.preventDefault()
-        sendResetLink()
-      }}>
-        <h2>Reset Password</h2>
-        <p className="description">Enter your email address and we'll send you a link to reset your password.</p>
-        
-        {error && <div className="error-message">{error}</div>}
+    <main className="min-h-[calc(100dvh-64px)] bg-gray-100 px-4 py-8 md:py-12">
+      <div className="mx-auto w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+        <h1 className="text-2xl font-semibold text-gray-900">Forgot password</h1>
+        <p className="mt-1 text-sm text-gray-500">Enter your email and we’ll send a secure reset link.</p>
 
-        <div className="flex-column">
-          <label>Email</label>
-        </div>
-        <div className="inputForm">
-          <svg
-            height={20}
-            viewBox="0 0 32 32"
-            width={20}
-            xmlns="http://www.w3.org/2000/svg"
+        <form
+          className="mt-5 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            sendResetLink()
+          }}
+        >
+          {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
+              placeholder="name@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              required
+            />
+          </div>
+
+          <button
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-black text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+            type="submit"
+            disabled={loading || !email}
           >
-            <g id="Layer_3" data-name="Layer 3">
-              <path d="m30.853 13.87a15 15 0 0 0 -29.729 4.082 15.1 15.1 0 0 0 12.876 12.918 15.6 15.6 0 0 0 2.016.13 14.85 14.85 0 0 0 7.715-2.145 1 1 0 1 0 -1.031-1.711 13.007 13.007 0 1 1 5.458-6.529 2.149 2.149 0 0 1 -4.158-.759v-10.856a1 1 0 0 0 -2 0v1.726a8 8 0 1 0 .2 10.325 4.135 4.135 0 0 0 7.83.274 15.2 15.2 0 0 0 .823-7.455zm-14.853 8.13a6 6 0 1 1 6-6 6.006 6.006 0 0 1 -6 6z" />
-            </g>
-          </svg>
-          <input
-            type="email"
-            className="input"
-            placeholder="Enter your Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-            required
-          />
-        </div>
+            {loading ? 'Sending…' : 'Send reset link'}
+          </button>
+        </form>
 
         <button
-          className="button-submit"
-          type="submit"
-          disabled={loading || !email}
+          type="button"
+          onClick={() => router.push('/login')}
+          className="mt-5 w-full text-center text-sm font-medium text-gray-700 hover:text-black"
         >
-          {loading ? 'Sending…' : 'Send Reset Link'}
+          Remember your password? Back to Sign in
         </button>
-
-        <p className="p">
-          Remember your password?{' '}
-          <span className="span" onClick={() => router.push('/login')}>
-            Back to Login
-          </span>
-        </p>
-      </form>
-    </StyledWrapper>
+      </div>
+    </main>
   )
 }
-
-const StyledWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: #f5f5f5;
-
-  .form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    background-color: #ffffff;
-    padding: 30px;
-    width: 450px;
-    border-radius: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
-    @media (max-width: 600px) {
-      width: 100%;
-      max-width: 400px;
-      padding: 20px;
-    }
-  }
-
-  h2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #151717;
-    margin: 0 0 0.5rem 0;
-  }
-
-  .description {
-    color: #666666;
-    font-size: 0.95rem;
-    margin: 0 0 1.5rem 0;
-  }
-
-  .error-message {
-    background-color: #fee;
-    color: #c33;
-    padding: 10px;
-    border-radius: 5px;
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-
-  .flex-column {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .flex-column > label {
-    color: #151717;
-    font-weight: 600;
-  }
-
-  .inputForm {
-    border: 1.5px solid #ecedec;
-    border-radius: 10px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    padding-left: 10px;
-    transition: 0.2s ease-in-out;
-  }
-
-  .input {
-    margin-left: 10px;
-    border-radius: 10px;
-    border: none;
-    width: 85%;
-    height: 100%;
-    font-size: 14px;
-    font-family: inherit;
-
-    &:disabled {
-      background-color: #f5f5f5;
-      cursor: not-allowed;
-    }
-  }
-
-  .input:focus {
-    outline: none;
-  }
-
-  .inputForm:focus-within {
-    border: 1.5px solid #2d79f3;
-  }
-
-  .button-submit {
-    margin: 20px 0 10px 0;
-    background-color: #151717;
-    border: none;
-    color: white;
-    font-size: 15px;
-    font-weight: 500;
-    border-radius: 10px;
-    height: 50px;
-    width: 100%;
-    cursor: pointer;
-    font-family: inherit;
-    transition: 0.2s ease-in-out;
-
-    &:hover:not(:disabled) {
-      background-color: #252727;
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  }
-
-  .p {
-    text-align: center;
-    color: black;
-    font-size: 14px;
-    margin: 5px 0;
-  }
-
-  .span {
-    font-size: 14px;
-    color: #2d79f3;
-    font-weight: 500;
-    cursor: pointer;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  .success-container {
-    background-color: #ffffff;
-    padding: 40px;
-    border-radius: 20px;
-    width: 450px;
-    text-align: center;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
-    @media (max-width: 600px) {
-      width: 100%;
-      max-width: 400px;
-      padding: 30px 20px;
-    }
-  }
-
-  .success-container h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #151717;
-    margin: 0 0 1rem 0;
-  }
-
-  .success-container p {
-    color: #666666;
-    font-size: 0.95rem;
-    margin: 0.75rem 0;
-    line-height: 1.6;
-  }
-
-  .success-container p strong {
-    color: #2d79f3;
-    font-weight: 600;
-  }
-
-  .back-button {
-    margin-top: 2rem;
-    background-color: #151717;
-    border: none;
-    color: white;
-    font-size: 15px;
-    font-weight: 500;
-    border-radius: 10px;
-    padding: 0.875rem 2rem;
-    cursor: pointer;
-    font-family: inherit;
-    transition: 0.2s ease-in-out;
-
-    &:hover {
-      background-color: #252727;
-    }
-  }
-`

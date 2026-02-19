@@ -41,19 +41,17 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
-      <AuthForm
-        email={email}
-        password={password}
-        error={error}
-        loading={loading}
-        onEmailChange={setEmail}
-        onPasswordChange={setPassword}
-        onSubmit={signInWithEmail}
-        onGoogleClick={signInWithGoogle}
-        onSignUpClick={() => router.push('/signup')}
-        onForgotPasswordClick={() => router.push('/reset-password')}
-      />
-    </main>
+    <AuthForm
+      email={email}
+      password={password}
+      error={error}
+      loading={loading}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
+      onSubmit={signInWithEmail}
+      onGoogleClick={signInWithGoogle}
+      onSignUpClick={() => router.push('/signup')}
+      onForgotPasswordClick={() => router.push('/reset-password')}
+    />
   )
 }
