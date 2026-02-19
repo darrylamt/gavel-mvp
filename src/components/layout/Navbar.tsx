@@ -199,10 +199,10 @@ export default function Navbar() {
 
             {/* User Profile / Auth */}
             {!loading && !user ? (
-              <div className="hidden items-center gap-2 md:flex">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => router.push('/login')}
-                  className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
+                  className="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 md:px-4"
                 >
                   Sign In
                 </button>

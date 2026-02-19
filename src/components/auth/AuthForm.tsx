@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
+import loginBg from '@/app/login-bg.jpeg'
 
 interface AuthFormProps {
   isSignUp?: boolean
@@ -51,14 +53,22 @@ const AuthForm: React.FC<AuthFormProps> = ({
   return (
     <main className="min-h-[calc(100dvh-64px)] bg-gray-100 px-4 py-8 md:py-12">
       <div className="mx-auto grid w-full max-w-5xl gap-5 lg:grid-cols-[1.1fr_1fr]">
-        <section className="hidden rounded-3xl bg-black p-8 text-white shadow-sm lg:flex lg:flex-col lg:justify-between">
+        <section className="relative hidden overflow-hidden rounded-3xl p-8 text-white shadow-sm lg:flex lg:flex-col lg:justify-between">
+          <Image
+            src={loginBg}
+            alt="Gavel authentication background"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-black/55" />
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">Gavel Ghana</p>
-            <h1 className="mt-3 text-3xl font-semibold leading-tight">
+            <p className="relative z-10 text-xs font-semibold uppercase tracking-[0.24em] text-white/80">Gavel Ghana</p>
+            <h1 className="relative z-10 mt-3 text-3xl font-semibold leading-tight">
               {isSignUp ? 'Create your account and start bidding.' : 'Welcome back to your auction dashboard.'}
             </h1>
           </div>
-          <p className="text-sm text-white/70">Secure access to auctions, tokens, starred listings, and checkout.</p>
+          <p className="relative z-10 text-sm text-white/85">Secure access to auctions, tokens, starred listings, and checkout.</p>
         </section>
 
         <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">

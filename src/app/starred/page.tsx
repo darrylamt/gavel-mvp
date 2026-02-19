@@ -43,8 +43,8 @@ export default async function StarredAuctionsPage() {
   return (
     <main className="max-w-7xl mx-auto px-6 py-12">
       <div className="mb-10">
-        <h1 className="text-4xl font-extrabold mb-2">Starred Auctions</h1>
-        <p className="text-gray-600">Items you have starred to bid on.</p>
+        <h1 className="text-4xl font-extrabold mb-2">Favorites</h1>
+        <p className="text-gray-600">Items you have liked to bid on.</p>
       </div>
 
       <AuctionsGridClient auctions={typedAuctions} starredOnly engagementCounts={engagementCounts} />
