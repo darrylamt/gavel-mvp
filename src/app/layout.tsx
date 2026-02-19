@@ -7,6 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from 'next'
 import gavelTabIcon from '@/assets/branding/gavel-logo.jpeg'
 import { Poppins } from 'next/font/google'
+import Script from 'next/script'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -15,6 +16,7 @@ const poppins = Poppins({
 })
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+const googleAnalyticsId = 'G-DCB2M8019Q'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -56,6 +58,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={poppins.className}>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${googleAnalyticsId}');
+          `}
+        </Script>
         <Navbar />
         <WelcomeTourModal />
         {children}
