@@ -7,6 +7,8 @@ import AuthForm from '@/components/auth/AuthForm'
 
 export default function SignupPage() {
   const router = useRouter()
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -17,9 +19,21 @@ export default function SignupPage() {
     setLoading(true)
     setError(null)
 
+    const normalizedFirstName = firstName.trim()
+    const normalizedLastName = lastName.trim()
+    const fullName = `${normalizedFirstName} ${normalizedLastName}`.trim()
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          first_name: normalizedFirstName,
+          last_name: normalizedLastName,
+          full_name: fullName,
+          username: fullName,
+        },
+      },
     })
 
     setLoading(false)
@@ -44,10 +58,14 @@ export default function SignupPage() {
     <>
       <AuthForm
         isSignUp={true}
+        firstName={firstName}
+        lastName={lastName}
         email={email}
         password={password}
         error={error}
         loading={loading}
+        onFirstNameChange={setFirstName}
+        onLastNameChange={setLastName}
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
         onSubmit={signUpWithEmail}

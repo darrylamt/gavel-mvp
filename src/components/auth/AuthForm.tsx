@@ -4,10 +4,14 @@ import React, { useState } from 'react'
 
 interface AuthFormProps {
   isSignUp?: boolean
+  firstName?: string
+  lastName?: string
   email: string
   password: string
   error?: string | null
   loading?: boolean
+  onFirstNameChange?: (value: string) => void
+  onLastNameChange?: (value: string) => void
   onEmailChange: (email: string) => void
   onPasswordChange: (password: string) => void
   onSubmit: () => void
@@ -20,10 +24,14 @@ interface AuthFormProps {
 
 const AuthForm: React.FC<AuthFormProps> = ({
   isSignUp = false,
+  firstName = '',
+  lastName = '',
   email,
   password,
   error,
   loading = false,
+  onFirstNameChange,
+  onLastNameChange,
   onEmailChange,
   onPasswordChange,
   onSubmit,
@@ -87,6 +95,36 @@ const AuthForm: React.FC<AuthFormProps> = ({
           <form className="space-y-4" onSubmit={handleSubmit}>
             {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
+            {isSignUp && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">First name</label>
+                  <input
+                    type="text"
+                    className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(e) => onFirstNameChange?.(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Last name</label>
+                  <input
+                    type="text"
+                    className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(e) => onLastNameChange?.(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Email</label>
               <input
@@ -148,7 +186,7 @@ const AuthForm: React.FC<AuthFormProps> = ({
             <button
               className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-black text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
               type="submit"
-              disabled={loading}
+              disabled={loading || (isSignUp && (!firstName.trim() || !lastName.trim()))}
             >
               {loading ? 'Processing…' : isSignUp ? 'Create account' : 'Sign in'}
             </button>
