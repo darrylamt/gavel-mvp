@@ -5,15 +5,6 @@ import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import AuthForm from '@/components/auth/AuthForm'
 
-function isExistingAccountMessage(message: string) {
-  const normalized = message.toLowerCase()
-  return (
-    normalized.includes('already registered') ||
-    normalized.includes('already exists') ||
-    normalized.includes('user already')
-  )
-}
-
 export default function SignupPage() {
   const router = useRouter()
   const [firstName, setFirstName] = useState('')
@@ -22,47 +13,96 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
-  const [showExistingAccountModal, setShowExistingAccountModal] = useState(false)
+  const [showOtpModal, setShowOtpModal] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [otpError, setOtpError] = useState<string | null>(null)
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [otpSentMessage, setOtpSentMessage] = useState<string | null>(null)
 
   const signUpWithEmail = async () => {
     setLoading(true)
     setError(null)
 
-    const normalizedFirstName = firstName.trim()
-    const normalizedLastName = lastName.trim()
-    const fullName = `${normalizedFirstName} ${normalizedLastName}`.trim()
-
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
-        data: {
-          first_name: normalizedFirstName,
-          last_name: normalizedLastName,
-          full_name: fullName,
-          username: fullName,
-        },
+        shouldCreateUser: true,
       },
     })
 
     setLoading(false)
 
-    const alreadyExistsFromError = Boolean(error?.message && isExistingAccountMessage(error.message))
-    const identities = data?.user?.identities
-    const alreadyExistsFromObfuscatedUser = !error && Array.isArray(identities) && identities.length === 0
-
-    if (alreadyExistsFromError || alreadyExistsFromObfuscatedUser) {
-      setError(null)
-      setShowExistingAccountModal(true)
-      return
-    }
-
     if (error) {
       setError(error.message)
     } else {
-      setShowConfirmationModal(true)
+      setOtpCode('')
+      setOtpError(null)
+      setOtpSentMessage(`We sent a 6-digit verification code to ${email}.`)
+      setShowOtpModal(true)
     }
+  }
+
+  const verifyOtpAndFinishSignup = async () => {
+    const normalizedFirstName = firstName.trim()
+    const normalizedLastName = lastName.trim()
+    const fullName = `${normalizedFirstName} ${normalizedLastName}`.trim()
+
+    setOtpLoading(true)
+    setOtpError(null)
+
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: otpCode.trim(),
+      type: 'email',
+    })
+
+    if (verifyError) {
+      setOtpError(verifyError.message || 'Invalid verification code')
+      setOtpLoading(false)
+      return
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+      data: {
+        first_name: normalizedFirstName,
+        last_name: normalizedLastName,
+        full_name: fullName,
+        username: fullName,
+      },
+    })
+
+    setOtpLoading(false)
+
+    if (updateError) {
+      setOtpError(updateError.message || 'Failed to complete signup')
+      return
+    }
+
+    setShowOtpModal(false)
+    router.replace('/profile')
+    router.refresh()
+  }
+
+  const resendOtp = async () => {
+    setOtpLoading(true)
+    setOtpError(null)
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+      },
+    })
+
+    setOtpLoading(false)
+
+    if (error) {
+      setOtpError(error.message)
+      return
+    }
+
+    setOtpSentMessage(`A new verification code was sent to ${email}.`)
   }
 
   const signUpWithGoogle = async () => {
@@ -93,70 +133,51 @@ export default function SignupPage() {
         onSignUpClick={() => router.push('/login')}
       />
 
-      {showConfirmationModal && (
+      {showOtpModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-2xl">
-              ✉️
-            </div>
-            <h2 className="text-center text-2xl font-bold text-gray-900">Confirm your email</h2>
-            <p className="mt-3 text-center text-sm text-gray-600">
-              We sent a confirmation link to <span className="font-medium text-gray-900">{email}</span>.
-            </p>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              If you don&apos;t see it in your inbox, please check your spam or junk folder.
-            </p>
-
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setShowConfirmationModal(false)}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => router.push('/login')}
-                className="flex-1 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-              >
-                Go to Sign In
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showExistingAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-2xl">
               🔐
             </div>
-            <h2 className="text-center text-2xl font-bold text-gray-900">Account already exists</h2>
-            <p className="mt-3 text-center text-sm text-gray-600">
-              An account with <span className="font-medium text-gray-900">{email}</span> already exists.
-            </p>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Sign in directly, or reset your password if you can’t remember it.
-            </p>
+            <h2 className="text-center text-2xl font-bold text-gray-900">Verify your email</h2>
+            <p className="mt-3 text-center text-sm text-gray-600">Enter the 6-digit code sent to <span className="font-medium text-gray-900">{email}</span>.</p>
+
+            {otpSentMessage && <p className="mt-2 text-center text-xs text-gray-500">{otpSentMessage}</p>}
+
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Verification code</label>
+              <input
+                value={otpCode}
+                onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="Enter 6-digit code"
+                className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm text-gray-900 outline-none focus:border-gray-500"
+              />
+            </div>
+
+            {otpError && <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{otpError}</p>}
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <button
-                onClick={() => setShowExistingAccountModal(false)}
+                onClick={() => setShowOtpModal(false)}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
               >
                 Close
               </button>
               <button
-                onClick={() => router.push('/reset-password')}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
+                onClick={resendOtp}
+                disabled={otpLoading}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-60"
               >
-                Reset Password
+                Resend code
               </button>
               <button
-                onClick={() => router.push('/login')}
-                className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                onClick={verifyOtpAndFinishSignup}
+                disabled={otpLoading || otpCode.trim().length !== 6}
+                className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
               >
-                Go to Sign In
+                {otpLoading ? 'Verifying…' : 'Verify & Continue'}
               </button>
             </div>
           </div>
