@@ -85,6 +85,7 @@ export default function SignupPage() {
   }
 
   const resendOtp = async () => {
+    setOtpCode('')
     setOtpLoading(true)
     setOtpError(null)
 
