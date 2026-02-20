@@ -142,7 +142,7 @@ export default function ProfilePage() {
           .join(' ')
           .trim()
 
-      setUsername(profileData?.username ?? metadataFullName || null)
+      setUsername(profileData?.username ?? (metadataFullName || null))
       setTokens(profileData?.token_balance ?? 0)
       setPhone(profileData?.phone ?? '')
       setAddress(profileData?.address ?? '')
