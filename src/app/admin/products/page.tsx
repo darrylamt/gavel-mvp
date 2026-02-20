@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
+import { SHOP_CATEGORIES, type ShopCategory } from '@/lib/shopCategories'
 
 type ShopProduct = {
   id: string
@@ -11,6 +12,7 @@ type ShopProduct = {
   price: number
   stock: number
   status: 'draft' | 'active' | 'sold_out' | 'archived'
+  category: ShopCategory
   image_url: string | null
   created_at: string
 }
@@ -30,6 +32,7 @@ export default function AdminProductsPage() {
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
   const [status, setStatus] = useState<ShopProduct['status']>('active')
+  const [category, setCategory] = useState<ShopCategory>('Other')
   const [imageUrl, setImageUrl] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
 
@@ -73,6 +76,7 @@ export default function AdminProductsPage() {
     setPrice('')
     setStock('')
     setStatus('active')
+    setCategory('Other')
     setImageUrl('')
     setEditingId(null)
     setFormMode('create')
@@ -93,6 +97,7 @@ export default function AdminProductsPage() {
     setPrice(String(product.price))
     setStock(String(product.stock))
     setStatus(product.status)
+    setCategory(product.category || 'Other')
     setImageUrl(product.image_url ?? '')
     setFormOpen(true)
   }
@@ -149,6 +154,7 @@ export default function AdminProductsPage() {
         price: Number(price),
         stock: Number(stock),
         status,
+        category,
         image_url: imageUrl,
       }
 
@@ -246,6 +252,7 @@ export default function AdminProductsPage() {
                   <th className="py-2">Title</th>
                   <th className="py-2">Price</th>
                   <th className="py-2">Stock</th>
+                  <th className="py-2">Category</th>
                   <th className="py-2">Status</th>
                   <th className="py-2 text-right">Action</th>
                 </tr>
@@ -263,6 +270,7 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="py-2">GHS {Number(product.price).toLocaleString()}</td>
                     <td className="py-2">{product.stock}</td>
+                    <td className="py-2">{product.category}</td>
                     <td className="py-2 capitalize">{product.status.replace('_', ' ')}</td>
                     <td className="py-2 text-right">
                       <div className="inline-flex items-center gap-2">
@@ -319,6 +327,16 @@ export default function AdminProductsPage() {
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Stock</label>
               <input type="number" value={stock} onChange={(event) => setStock(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
+              <select value={category} onChange={(event) => setCategory(event.target.value as ShopCategory)} className="w-full rounded-lg border px-3 py-2">
+                {SHOP_CATEGORIES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { isShopCategory } from '@/lib/shopCategories'
 import 'server-only'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -53,7 +54,7 @@ export async function GET(request: Request) {
 
   const query = service
     .from('shop_products')
-    .select('id, title, description, price, stock, status, image_url, created_at, created_by')
+    .select('id, title, description, price, stock, status, category, image_url, created_at, created_by')
     .order('created_at', { ascending: false })
     .limit(300)
 
@@ -79,6 +80,7 @@ export async function POST(request: Request) {
     const title = typeof body.title === 'string' ? body.title.trim() : ''
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const status = typeof body.status === 'string' ? body.status : 'active'
+    const category = typeof body.category === 'string' ? body.category.trim() : 'Other'
     const imageUrl = typeof body.image_url === 'string' ? body.image_url.trim() : ''
     const price = Number(body.price)
     const stock = Number(body.stock)
@@ -99,6 +101,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
+    if (!isShopCategory(category)) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
+    }
+
     const { data, error } = await service
       .from('shop_products')
       .insert({
@@ -107,10 +113,11 @@ export async function POST(request: Request) {
         price,
         stock,
         status,
+        category,
         image_url: imageUrl || null,
         created_by: auth.user.id,
       })
-      .select('id, title, description, price, stock, status, image_url, created_at')
+      .select('id, title, description, price, stock, status, category, image_url, created_at')
       .single()
 
     if (error) {
@@ -134,6 +141,7 @@ export async function PATCH(request: Request) {
     const title = typeof body.title === 'string' ? body.title.trim() : ''
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const status = typeof body.status === 'string' ? body.status : 'active'
+    const category = typeof body.category === 'string' ? body.category.trim() : 'Other'
     const imageUrl = typeof body.image_url === 'string' ? body.image_url.trim() : ''
     const price = Number(body.price)
     const stock = Number(body.stock)
@@ -158,6 +166,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
+    if (!isShopCategory(category)) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
+    }
+
     const updateQuery = service
       .from('shop_products')
       .update({
@@ -166,6 +178,7 @@ export async function PATCH(request: Request) {
         price,
         stock,
         status,
+        category,
         image_url: imageUrl || null,
       })
       .eq('id', id)
@@ -175,7 +188,7 @@ export async function PATCH(request: Request) {
     }
 
     const { data, error } = await updateQuery
-      .select('id, title, description, price, stock, status, image_url, created_at, created_by')
+      .select('id, title, description, price, stock, status, category, image_url, created_at, created_by')
       .single()
 
     if (error) {

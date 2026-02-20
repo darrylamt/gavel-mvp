@@ -11,9 +11,10 @@ type Props = {
   price: number
   imageUrl: string | null
   stock: number
+  categoryLabel?: string
 }
 
-export default function ShopProductCard({ id, title, description, price, imageUrl, stock }: Props) {
+export default function ShopProductCard({ id, title, description, price, imageUrl, stock, categoryLabel }: Props) {
   const { addToCart } = useCart()
   const [showAdded, setShowAdded] = useState(false)
   const [showLimit, setShowLimit] = useState(false)
@@ -33,6 +34,11 @@ export default function ShopProductCard({ id, title, description, price, imageUr
   return (
     <article className="overflow-hidden rounded-xl border bg-white relative">
       <div className="relative h-32 bg-gray-100 sm:h-40">
+        {categoryLabel && (
+          <span className="absolute right-2 top-2 z-10 rounded-full border border-gray-200 bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-gray-700">
+            {categoryLabel}
+          </span>
+        )}
         {imageUrl ? (
           <img src={imageUrl} alt={title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
         ) : (
