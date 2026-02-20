@@ -49,11 +49,8 @@ export default function SignupPage() {
     setLoading(false)
 
     const alreadyExistsFromError = Boolean(error?.message && isExistingAccountMessage(error.message))
-    const alreadyExistsFromObfuscatedUser =
-      !error &&
-      Boolean(data?.user) &&
-      Array.isArray(data.user.identities) &&
-      data.user.identities.length === 0
+    const identities = data?.user?.identities
+    const alreadyExistsFromObfuscatedUser = !error && Array.isArray(identities) && identities.length === 0
 
     if (alreadyExistsFromError || alreadyExistsFromObfuscatedUser) {
       setError(null)
