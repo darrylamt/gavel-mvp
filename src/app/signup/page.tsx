@@ -79,6 +79,22 @@ export default function SignupPage() {
       return
     }
 
+    const {
+      data: { user: verifiedUser },
+    } = await supabase.auth.getUser()
+
+    if (verifiedUser?.id && fullName) {
+      await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: verifiedUser.id,
+            username: fullName,
+          },
+          { onConflict: 'id' }
+        )
+    }
+
     setShowOtpModal(false)
     router.replace('/profile')
     router.refresh()

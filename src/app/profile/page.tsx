@@ -135,7 +135,14 @@ export default function ProfilePage() {
 
       const profileData = (profile as ProfileData | null) ?? null
 
-      setUsername(profileData?.username ?? null)
+      const metadataFullName =
+        (typeof authUser.user_metadata?.full_name === 'string' && authUser.user_metadata.full_name.trim()) ||
+        [authUser.user_metadata?.first_name, authUser.user_metadata?.last_name]
+          .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+          .join(' ')
+          .trim()
+
+      setUsername(profileData?.username ?? metadataFullName || null)
       setTokens(profileData?.token_balance ?? 0)
       setPhone(profileData?.phone ?? '')
       setAddress(profileData?.address ?? '')
