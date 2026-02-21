@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import AuctionCard from '@/components/auction/AuctionCard'
 import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
+import HeroShowcaseCarousel from '@/components/home/HeroShowcaseCarousel'
 
 export const dynamic = 'force-dynamic'
 
@@ -87,61 +88,7 @@ export default async function HomePage() {
 
   return (
     <main className="max-w-7xl mx-auto px-6 py-14">
-      {/* HERO */}
-      <section className="mb-20 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.05fr_1fr] lg:items-center">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">Marketplace</p>
-            <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl">
-              Shop by Category and
-              <span className="block text-gray-500">Bid with confidence</span>
-            </h1>
-
-            <p className="mt-4 max-w-xl text-base text-gray-600 md:text-lg">
-              Discover trusted sellers across electronics, home appliances, vehicles, fashion, furniture and more.
-              Buy instantly or join live auctions.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/shop"
-                className="rounded-lg bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800"
-              >
-                Browse Buy Now
-              </Link>
-              <Link
-                href="/auctions"
-                className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-              >
-                Explore Auctions
-              </Link>
-              <Link
-                href="/shop/sellers"
-                className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-              >
-                View Shops
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {heroCategories.slice(0, 4).map((category) => (
-              <Link
-                key={category.name}
-                href={`/shop?category=${encodeURIComponent(category.name)}`}
-                className="group relative overflow-hidden rounded-2xl border border-gray-200"
-              >
-                <img src={category.image} alt={category.name} className="h-36 w-full object-cover transition duration-300 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                <div className="absolute bottom-2 left-2 right-2">
-                  <p className="text-sm font-semibold text-white">{category.name}</p>
-                  <p className="text-[11px] text-white/85">{category.tagline}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HeroShowcaseCarousel />
 
       <section className="mb-12">
         <div className="flex flex-wrap items-center justify-between gap-3">
