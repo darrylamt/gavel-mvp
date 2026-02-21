@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { isShopCategory } from '@/lib/shopCategories'
 import 'server-only'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -21,6 +20,12 @@ type ShopRow = {
   name: string
   slug: string
   status: string
+}
+
+type CategoryRow = {
+  name: string
+  slug: string
+  image_url: string | null
 }
 
 async function requireProductManager(request: Request): Promise<{ error: NextResponse } | AccessContext> {
@@ -143,13 +148,31 @@ async function getAccessibleShops(auth: AccessContext): Promise<ShopRow[]> {
   return (shops ?? []) as ShopRow[]
 }
 
+async function getActiveCategories(): Promise<CategoryRow[]> {
+  const { data, error } = await service
+    .from('shop_categories')
+    .select('name, slug, image_url')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true })
+    .limit(200)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data ?? []) as CategoryRow[]
+}
+
 export async function GET(request: Request) {
   const auth = await requireProductManager(request)
   if ('error' in auth) return auth.error
 
   let shops: ShopRow[] = []
+  let categories: CategoryRow[] = []
   try {
     shops = await getAccessibleShops(auth)
+    categories = await getActiveCategories()
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load shops'
     return NextResponse.json({ error: message }, { status: 500 })
@@ -177,7 +200,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ products: data ?? [], shops })
+  return NextResponse.json({ products: data ?? [], shops, categories })
 }
 
 export async function POST(request: Request) {
@@ -211,7 +234,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    if (!isShopCategory(category)) {
+    const categories = await getActiveCategories()
+    const categoryNames = new Set(categories.map((item) => item.name))
+
+    if (!categoryNames.has(category)) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
     }
 
@@ -289,7 +315,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    if (!isShopCategory(category)) {
+    const categories = await getActiveCategories()
+    const categoryNames = new Set(categories.map((item) => item.name))
+
+    if (!categoryNames.has(category)) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
     }
 

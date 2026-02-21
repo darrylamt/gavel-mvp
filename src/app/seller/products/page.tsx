@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { SHOP_CATEGORIES, type ShopCategory } from '@/lib/shopCategories'
 
 type ShopProduct = {
   id: string
@@ -11,7 +10,7 @@ type ShopProduct = {
   price: number
   stock: number
   status: 'draft' | 'active' | 'sold_out' | 'archived'
-  category: ShopCategory
+  category: string
   image_url: string | null
   created_at: string
   shop_id: string | null
@@ -23,9 +22,16 @@ type ShopOption = {
   status: string
 }
 
+type ShopCategoryOption = {
+  name: string
+  slug: string
+  image_url: string | null
+}
+
 export default function SellerProductsPage() {
   const [products, setProducts] = useState<ShopProduct[]>([])
   const [shops, setShops] = useState<ShopOption[]>([])
+  const [categories, setCategories] = useState<ShopCategoryOption[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -39,7 +45,7 @@ export default function SellerProductsPage() {
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
   const [status, setStatus] = useState<ShopProduct['status']>('active')
-  const [category, setCategory] = useState<ShopCategory>('Other')
+  const [category, setCategory] = useState('Other')
   const [shopId, setShopId] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -72,12 +78,18 @@ export default function SellerProductsPage() {
 
     const loadedProducts = (data.products ?? []) as ShopProduct[]
     const loadedShops = (data.shops ?? []) as ShopOption[]
+    const loadedCategories = (data.categories ?? []) as ShopCategoryOption[]
 
     setProducts(loadedProducts)
     setShops(loadedShops)
+    setCategories(loadedCategories)
     if (loadedShops.length > 0 && !shopId) {
       setShopId(loadedShops[0].id)
     }
+    setCategory((previous) => {
+      if (loadedCategories.length === 0) return previous
+      return loadedCategories.some((item) => item.name === previous) ? previous : loadedCategories[0].name
+    })
     setLoading(false)
   }
 
@@ -92,7 +104,7 @@ export default function SellerProductsPage() {
     setPrice('')
     setStock('')
     setStatus('active')
-    setCategory('Other')
+    setCategory(categories[0]?.name ?? 'Other')
     setShopId(shops[0]?.id ?? '')
     setImageUrl('')
     setEditingId(null)
@@ -114,7 +126,7 @@ export default function SellerProductsPage() {
     setPrice(String(product.price))
     setStock(String(product.stock))
     setStatus(product.status)
-    setCategory(product.category || 'Other')
+    setCategory(product.category || categories[0]?.name || 'Other')
     setShopId(product.shop_id ?? shops[0]?.id ?? '')
     setImageUrl(product.image_url ?? '')
     setFormOpen(true)
@@ -361,10 +373,10 @@ export default function SellerProductsPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
-              <select value={category} onChange={(event) => setCategory(event.target.value as ShopCategory)} className="w-full rounded-lg border px-3 py-2">
-                {SHOP_CATEGORIES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
+              <select value={category} onChange={(event) => setCategory(event.target.value)} className="w-full rounded-lg border px-3 py-2">
+                {categories.map((item) => (
+                  <option key={item.slug} value={item.name}>
+                    {item.name}
                   </option>
                 ))}
               </select>

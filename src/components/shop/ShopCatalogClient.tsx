@@ -1,5 +1,5 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ShopProductCard from '@/components/shop/ShopProductCard'
 
 type ShopProduct = {
@@ -14,14 +14,15 @@ type ShopProduct = {
 
 type Props = {
   products: ShopProduct[]
+  initialCategory?: string
 }
 
 type PriceFilter = 'all' | 'under50' | '50to200' | 'above200'
 type SortOption = 'featured' | 'priceAsc' | 'priceDesc' | 'name'
 
-export default function ShopCatalogClient({ products }: Props) {
+export default function ShopCatalogClient({ products, initialCategory }: Props) {
   const [search, setSearch] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('All Products')
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory?.trim() || 'All Products')
   const [priceFilter, setPriceFilter] = useState<PriceFilter>('all')
   const [inStockOnly, setInStockOnly] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('featured')
@@ -33,8 +34,25 @@ export default function ShopCatalogClient({ products }: Props) {
 
   const categories = useMemo(() => {
     const unique = Array.from(new Set(productsWithCategory.map((item) => item.category))).sort()
+    const requested = initialCategory?.trim()
+
+    if (requested && requested !== 'All Products' && !unique.includes(requested)) {
+      unique.unshift(requested)
+    }
+
     return ['All Products', ...unique]
-  }, [productsWithCategory])
+  }, [initialCategory, productsWithCategory])
+
+  useEffect(() => {
+    const requested = initialCategory?.trim()
+
+    if (!requested || requested === 'All Products') {
+      setSelectedCategory('All Products')
+      return
+    }
+
+    setSelectedCategory(requested)
+  }, [initialCategory])
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase()

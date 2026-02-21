@@ -9,10 +9,20 @@ import { supabase } from '@/lib/supabaseClient'
 export default function CartPage() {
   const { items, subtotal, removeFromCart, clearCart, incrementItem, decrementItem } = useCart()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [city, setCity] = useState('')
+  const [notes, setNotes] = useState('')
   const total = subtotal
 
   const handleCheckout = async () => {
     if (items.length === 0 || isCheckingOut) return
+
+    if (!fullName.trim() || !phone.trim() || !address.trim() || !city.trim()) {
+      alert('Please complete your delivery details before checkout.')
+      return
+    }
 
     setIsCheckingOut(true)
 
@@ -30,6 +40,13 @@ export default function CartPage() {
         body: JSON.stringify({
           user_id: auth.user.id,
           email: auth.user.email,
+          delivery: {
+            full_name: fullName.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
+            city: city.trim(),
+            notes: notes.trim(),
+          },
           items: items.map((item) => ({
             product_id: item.productId,
             quantity: item.quantity,
@@ -105,7 +122,7 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 md:justify-self-start md:flex-col md:items-start md:gap-3">
+                  <div className="flex items-center justify-end gap-2 md:hidden">
                     <div className="inline-flex items-center gap-3 rounded-full border px-3 py-1 text-sm">
                       <button
                         onClick={() => decrementItem(item.productId)}
@@ -137,6 +154,41 @@ export default function CartPage() {
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
+
+                  <div className="hidden md:block">
+                    <div className="inline-flex items-center gap-3 rounded-full border px-3 py-1 text-sm">
+                      <button
+                        onClick={() => decrementItem(item.productId)}
+                        className="font-bold text-gray-700 hover:text-black"
+                        aria-label={`Decrease quantity for ${item.title}`}
+                      >
+                        −
+                      </button>
+                      <span className="min-w-6 text-center font-semibold">{item.quantity}</span>
+                      <button
+                        onClick={() => incrementItem(item.productId)}
+                        disabled={item.quantity >= item.availableStock}
+                        className="font-bold text-gray-700 hover:text-black disabled:cursor-not-allowed disabled:text-gray-300"
+                        aria-label={`Increase quantity for ${item.title}`}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="hidden text-sm font-semibold text-gray-900 md:block">
+                    GHS {(item.price * item.quantity).toLocaleString()}
+                  </div>
+
+                  <div className="hidden md:flex md:justify-end">
+                    <button
+                      onClick={() => removeFromCart(item.productId)}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
+                      aria-label={`Remove ${item.title} from cart`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -145,6 +197,42 @@ export default function CartPage() {
 
           <aside className="h-fit rounded-2xl border bg-white p-4">
             <h2 className="text-lg font-semibold">Order Summary</h2>
+
+            <div className="mt-4 space-y-3">
+              <p className="text-sm font-semibold text-gray-900">Delivery Details</p>
+              <input
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="Full name"
+              />
+              <input
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="Phone number"
+              />
+              <textarea
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                rows={2}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="Delivery address"
+              />
+              <input
+                value={city}
+                onChange={(event) => setCity(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="City / Area"
+              />
+              <textarea
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                rows={2}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="Notes (optional)"
+              />
+            </div>
 
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex items-center justify-between">
@@ -159,8 +247,6 @@ export default function CartPage() {
                 <span className="text-lg font-extrabold">GHS {total.toLocaleString()}</span>
               </div>
             </div>
-
-            <p className="mt-4 text-xs text-gray-500">90 day limited warranty against manufacturer defects.</p>
 
             <button
               onClick={handleCheckout}

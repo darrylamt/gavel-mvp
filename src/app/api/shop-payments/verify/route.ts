@@ -37,6 +37,14 @@ export async function POST(req: Request) {
 
     const metadata = json.data.metadata as {
       user_id?: string
+      buyer_email?: string
+      delivery?: {
+        full_name?: string
+        phone?: string
+        address?: string
+        city?: string
+        notes?: string
+      }
       items?: Array<{
         product_id: string
         title: string
@@ -56,6 +64,8 @@ export async function POST(req: Request) {
       p_user_id: metadata.user_id,
       p_total_amount: paidAmount,
       p_items: metadata.items,
+      p_delivery: metadata.delivery ?? {},
+      p_buyer_email: metadata.buyer_email ?? null,
     })
 
     if (processError) {
@@ -64,7 +74,7 @@ export async function POST(req: Request) {
 
       if (lowerMessage.includes('process_shop_payment')) {
         return NextResponse.json(
-          { error: 'Shop checkout migration missing. Run the latest SQL migration, then retry verification.' },
+          { error: 'Shop checkout migration missing. Run the latest SQL migrations (including deliveries), then retry verification.' },
           { status: 500 }
         )
       }

@@ -7,6 +7,14 @@ type CheckoutItemInput = {
   quantity: number
 }
 
+type DeliveryInput = {
+  full_name?: string
+  phone?: string
+  address?: string
+  city?: string
+  notes?: string
+}
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -14,14 +22,27 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { user_id, email, items } = (await req.json()) as {
+    const { user_id, email, items, delivery } = (await req.json()) as {
       user_id?: string
       email?: string
       items?: CheckoutItemInput[]
+      delivery?: DeliveryInput
     }
 
     if (!user_id || !email || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    const deliveryPayload = {
+      full_name: String(delivery?.full_name || '').trim(),
+      phone: String(delivery?.phone || '').trim(),
+      address: String(delivery?.address || '').trim(),
+      city: String(delivery?.city || '').trim(),
+      notes: String(delivery?.notes || '').trim(),
+    }
+
+    if (!deliveryPayload.full_name || !deliveryPayload.phone || !deliveryPayload.address || !deliveryPayload.city) {
+      return NextResponse.json({ error: 'Delivery details are required' }, { status: 400 })
     }
 
     if (!process.env.PAYSTACK_SECRET_KEY) {
@@ -47,7 +68,7 @@ export async function POST(req: Request) {
 
     const { data: products, error: productsError } = await supabase
       .from('shop_products')
-      .select('id, title, price, stock, status')
+      .select('id, title, price, stock, status, shop_id')
       .in('id', productIds)
 
     if (productsError) {
@@ -55,6 +76,32 @@ export async function POST(req: Request) {
     }
 
     const productById = new Map((products ?? []).map((product) => [product.id as string, product]))
+
+    const shopIds = Array.from(new Set((products ?? []).map((product) => String(product.shop_id || '')).filter(Boolean)))
+
+    const { data: shops, error: shopsError } = shopIds.length
+      ? await supabase
+          .from('shops')
+          .select('id, owner_id, name, payout_account_name, payout_account_number, payout_provider')
+          .in('id', shopIds)
+      : { data: [], error: null }
+
+    if (shopsError) {
+      return NextResponse.json({ error: shopsError.message }, { status: 500 })
+    }
+
+    const sellerIds = Array.from(new Set((shops ?? []).map((shop) => String(shop.owner_id || '')).filter(Boolean)))
+
+    const { data: sellerProfiles, error: sellersError } = sellerIds.length
+      ? await supabase.from('profiles').select('id, username, phone').in('id', sellerIds)
+      : { data: [], error: null }
+
+    if (sellersError) {
+      return NextResponse.json({ error: sellersError.message }, { status: 500 })
+    }
+
+    const shopById = new Map((shops ?? []).map((shop) => [String(shop.id), shop]))
+    const sellerById = new Map((sellerProfiles ?? []).map((seller) => [String(seller.id), seller]))
 
     let totalAmount = 0
 
@@ -88,6 +135,18 @@ export async function POST(req: Request) {
         title: product.title,
         quantity: item.quantity,
         unit_price: unitPrice,
+        seller_id: String(shopById.get(String(product.shop_id || ''))?.owner_id || ''),
+        seller_name: String(
+          sellerById.get(String(shopById.get(String(product.shop_id || ''))?.owner_id || ''))?.username ||
+            'Seller'
+        ),
+        seller_phone: String(
+          sellerById.get(String(shopById.get(String(product.shop_id || ''))?.owner_id || ''))?.phone || ''
+        ),
+        seller_shop_name: String(shopById.get(String(product.shop_id || ''))?.name || ''),
+        seller_payout_account_name: String(shopById.get(String(product.shop_id || ''))?.payout_account_name || ''),
+        seller_payout_account_number: String(shopById.get(String(product.shop_id || ''))?.payout_account_number || ''),
+        seller_payout_provider: String(shopById.get(String(product.shop_id || ''))?.payout_provider || ''),
       }
     })
 
@@ -107,6 +166,8 @@ export async function POST(req: Request) {
         metadata: {
           type: 'shop_payment',
           user_id,
+          buyer_email: email,
+          delivery: deliveryPayload,
           items: paystackItems,
         },
         callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?type=shop`,

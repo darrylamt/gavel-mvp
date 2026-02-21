@@ -19,7 +19,14 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export default async function ShopPage() {
+export default async function ShopPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ category?: string }>
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const initialCategory = (resolvedSearchParams?.category || '').trim()
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
   const { data } = await supabase
@@ -75,7 +82,7 @@ export default async function ShopPage() {
     ) : (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-        <ShopCatalogClient products={products} />
+        <ShopCatalogClient products={products} initialCategory={initialCategory} />
       </>
     )
   )

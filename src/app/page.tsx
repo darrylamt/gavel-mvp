@@ -126,14 +126,18 @@ export default async function HomePage() {
 
           <div className="grid grid-cols-2 gap-3">
             {heroCategories.slice(0, 4).map((category) => (
-              <div key={category.name} className="group relative overflow-hidden rounded-2xl border border-gray-200">
+              <Link
+                key={category.name}
+                href={`/shop?category=${encodeURIComponent(category.name)}`}
+                className="group relative overflow-hidden rounded-2xl border border-gray-200"
+              >
                 <img src={category.image} alt={category.name} className="h-36 w-full object-cover transition duration-300 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                 <div className="absolute bottom-2 left-2 right-2">
                   <p className="text-sm font-semibold text-white">{category.name}</p>
                   <p className="text-[11px] text-white/85">{category.tagline}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -146,13 +150,17 @@ export default async function HomePage() {
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {heroCategories.map((category) => (
-            <div key={category.name} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+            <Link
+              key={category.name}
+              href={`/shop?category=${encodeURIComponent(category.name)}`}
+              className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
+            >
               <div className="h-20 overflow-hidden rounded-lg bg-gray-100">
                 <img src={category.image} alt={category.name} className="h-full w-full object-cover" />
               </div>
               <p className="mt-2 text-sm font-semibold text-gray-900">{category.name}</p>
               <p className="text-xs text-gray-500">{category.tagline}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

@@ -17,6 +17,9 @@ type ShopRow = {
   description: string | null
   logo_url: string | null
   cover_image_url: string | null
+  payout_account_name: string | null
+  payout_account_number: string | null
+  payout_provider: string | null
   status: string
 }
 
@@ -61,7 +64,7 @@ async function requireSeller(request: Request): Promise<{ error: NextResponse } 
 async function ensureShop(userId: string): Promise<ShopRow> {
   const { data: existing } = await service
     .from('shops')
-    .select('id, owner_id, slug, name, description, logo_url, cover_image_url, status')
+    .select('id, owner_id, slug, name, description, logo_url, cover_image_url, payout_account_name, payout_account_number, payout_provider, status')
     .eq('owner_id', userId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -91,7 +94,7 @@ async function ensureShop(userId: string): Promise<ShopRow> {
         slug,
         status: 'active',
       })
-      .select('id, owner_id, slug, name, description, logo_url, cover_image_url, status')
+      .select('id, owner_id, slug, name, description, logo_url, cover_image_url, payout_account_name, payout_account_number, payout_provider, status')
       .single()
 
     if (!error && created) return created as ShopRow
@@ -101,7 +104,7 @@ async function ensureShop(userId: string): Promise<ShopRow> {
 
   const { data: fallback } = await service
     .from('shops')
-    .select('id, owner_id, slug, name, description, logo_url, cover_image_url, status')
+    .select('id, owner_id, slug, name, description, logo_url, cover_image_url, payout_account_name, payout_account_number, payout_provider, status')
     .eq('owner_id', userId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -138,6 +141,9 @@ export async function PATCH(request: Request) {
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const logoUrl = typeof body.logo_url === 'string' ? body.logo_url.trim() : ''
     const coverImageUrl = typeof body.cover_image_url === 'string' ? body.cover_image_url.trim() : ''
+    const payoutAccountName = typeof body.payout_account_name === 'string' ? body.payout_account_name.trim() : ''
+    const payoutAccountNumber = typeof body.payout_account_number === 'string' ? body.payout_account_number.trim() : ''
+    const payoutProvider = typeof body.payout_provider === 'string' ? body.payout_provider.trim() : ''
 
     if (!name) {
       return NextResponse.json({ error: 'Shop name is required' }, { status: 400 })
@@ -152,11 +158,14 @@ export async function PATCH(request: Request) {
         description: description || null,
         logo_url: logoUrl || null,
         cover_image_url: coverImageUrl || null,
+        payout_account_name: payoutAccountName || null,
+        payout_account_number: payoutAccountNumber || null,
+        payout_provider: payoutProvider || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', shop.id)
       .eq('owner_id', auth.userId)
-      .select('id, owner_id, slug, name, description, logo_url, cover_image_url, status')
+      .select('id, owner_id, slug, name, description, logo_url, cover_image_url, payout_account_name, payout_account_number, payout_provider, status')
       .single()
 
     if (error) {

@@ -11,6 +11,9 @@ type SellerShop = {
   description: string | null
   logo_url: string | null
   cover_image_url: string | null
+  payout_account_name: string | null
+  payout_account_number: string | null
+  payout_provider: string | null
   status: string
 }
 
@@ -20,6 +23,9 @@ export default function SellerShopPage() {
   const [description, setDescription] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
   const [coverImageUrl, setCoverImageUrl] = useState('')
+  const [payoutProvider, setPayoutProvider] = useState('')
+  const [payoutAccountName, setPayoutAccountName] = useState('')
+  const [payoutAccountNumber, setPayoutAccountNumber] = useState('')
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -60,6 +66,9 @@ export default function SellerShopPage() {
     setDescription(nextShop?.description || '')
     setLogoUrl(nextShop?.logo_url || '')
     setCoverImageUrl(nextShop?.cover_image_url || '')
+    setPayoutProvider(nextShop?.payout_provider || '')
+    setPayoutAccountName(nextShop?.payout_account_name || '')
+    setPayoutAccountNumber(nextShop?.payout_account_number || '')
     setLoading(false)
   }
 
@@ -129,6 +138,9 @@ export default function SellerShopPage() {
           description,
           logo_url: logoUrl,
           cover_image_url: coverImageUrl,
+          payout_provider: payoutProvider,
+          payout_account_name: payoutAccountName,
+          payout_account_number: payoutAccountNumber,
         }),
       })
 
@@ -254,6 +266,36 @@ export default function SellerShopPage() {
               rows={4}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               placeholder="Tell buyers about your company/shop"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Payout Provider</label>
+            <input
+              value={payoutProvider}
+              onChange={(event) => setPayoutProvider(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              placeholder="Bank / Mobile Money"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Payout Account Name</label>
+            <input
+              value={payoutAccountName}
+              onChange={(event) => setPayoutAccountName(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              placeholder="Account holder name"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700">Payout Account Number</label>
+            <input
+              value={payoutAccountNumber}
+              onChange={(event) => setPayoutAccountNumber(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              placeholder="Account number"
             />
           </div>
         </div>
