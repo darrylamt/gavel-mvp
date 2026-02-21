@@ -14,6 +14,7 @@ type ShopRow = {
 type ProductRow = {
   shop_id: string | null
   image_url: string | null
+  category: string | null
 }
 
 const supabase = createClient(
@@ -30,7 +31,7 @@ export default async function SellerShopsPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('shop_products')
-      .select('shop_id, image_url')
+      .select('shop_id, image_url, category')
       .eq('status', 'active')
       .not('shop_id', 'is', null),
   ])
@@ -40,12 +41,19 @@ export default async function SellerShopsPage() {
 
   const productCountByShop = new Map<string, number>()
   const coverImageByShop = new Map<string, string | null>()
+  const categoriesByShop = new Map<string, Set<string>>()
 
   for (const row of rows) {
     if (!row.shop_id) continue
     productCountByShop.set(row.shop_id, (productCountByShop.get(row.shop_id) ?? 0) + 1)
     if (!coverImageByShop.has(row.shop_id)) {
       coverImageByShop.set(row.shop_id, row.image_url ?? null)
+    }
+
+    if (row.category && row.category.trim()) {
+      const existing = categoriesByShop.get(row.shop_id) ?? new Set<string>()
+      existing.add(row.category.trim())
+      categoriesByShop.set(row.shop_id, existing)
     }
   }
 
@@ -54,6 +62,7 @@ export default async function SellerShopsPage() {
       ...shop,
       productCount: productCountByShop.get(shop.id) ?? 0,
       coverImage: coverImageByShop.get(shop.id) ?? shop.cover_image_url,
+      topCategories: Array.from(categoriesByShop.get(shop.id) ?? []).slice(0, 3),
     }))
     .sort((a, b) => b.productCount - a.productCount)
 
@@ -99,6 +108,11 @@ export default async function SellerShopsPage() {
                   <p className="truncate text-lg font-semibold text-gray-900">{shop.name || 'Shop'}</p>
                 </div>
                 <p className="mt-1 text-sm text-gray-600">{shop.productCount} active product(s)</p>
+                {shop.topCategories.length > 0 && (
+                  <p className="mt-1 line-clamp-1 text-xs font-medium text-gray-500">
+                    Into: {shop.topCategories.join(', ')}
+                  </p>
+                )}
               </div>
             </Link>
           ))}

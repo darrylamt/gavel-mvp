@@ -102,8 +102,28 @@ export async function PATCH(req: Request) {
     const reviewIds = parseIds(body.reviewIds)
     const rejectionReason = typeof body.rejectionReason === 'string' ? body.rejectionReason.trim() : null
 
-    if (!['approve_selected', 'reject_selected', 'approve_all_pending', 'reject_all_pending'].includes(action)) {
+    if (!['approve_selected', 'reject_selected', 'approve_all_pending', 'reject_all_pending', 'delete_selected', 'delete_all_rejected'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    }
+
+    if (action === 'delete_selected' || action === 'delete_all_rejected') {
+      let deleteQuery = admin.service.from('shop_product_reviews').delete()
+
+      if (action === 'delete_selected') {
+        if (reviewIds.length === 0) {
+          return NextResponse.json({ error: 'No reviews selected' }, { status: 400 })
+        }
+        deleteQuery = deleteQuery.in('id', reviewIds)
+      } else {
+        deleteQuery = deleteQuery.eq('status', 'rejected')
+      }
+
+      const { error } = await deleteQuery
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true })
     }
 
     const status = action.startsWith('approve') ? 'approved' : 'rejected'

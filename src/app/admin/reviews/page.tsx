@@ -34,6 +34,10 @@ export default function AdminReviewsPage() {
     () => reviews.filter((review) => review.status === 'pending'),
     [reviews]
   )
+  const rejectedReviews = useMemo(
+    () => reviews.filter((review) => review.status === 'rejected'),
+    [reviews]
+  )
 
   const loadReviews = async (filter: StatusFilter = statusFilter) => {
     setLoading(true)
@@ -76,7 +80,15 @@ export default function AdminReviewsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const runAction = async (action: 'approve_selected' | 'reject_selected' | 'approve_all_pending' | 'reject_all_pending') => {
+  const runAction = async (
+    action:
+      | 'approve_selected'
+      | 'reject_selected'
+      | 'approve_all_pending'
+      | 'reject_all_pending'
+      | 'delete_selected'
+      | 'delete_all_rejected'
+  ) => {
     setSaving(true)
     setError(null)
 
@@ -119,6 +131,12 @@ export default function AdminReviewsPage() {
     const pendingIds = pendingReviews.map((review) => review.id)
     const allSelected = pendingIds.every((id) => selectedIds.includes(id))
     setSelectedIds(allSelected ? selectedIds.filter((id) => !pendingIds.includes(id)) : Array.from(new Set([...selectedIds, ...pendingIds])))
+  }
+
+  const toggleSelectAllShown = () => {
+    const shownIds = reviews.map((review) => review.id)
+    const allSelected = shownIds.length > 0 && shownIds.every((id) => selectedIds.includes(id))
+    setSelectedIds(allSelected ? selectedIds.filter((id) => !shownIds.includes(id)) : Array.from(new Set([...selectedIds, ...shownIds])))
   }
 
   return (
@@ -165,6 +183,13 @@ export default function AdminReviewsPage() {
             Select all pending
           </button>
           <button
+            onClick={toggleSelectAllShown}
+            disabled={reviews.length === 0 || saving}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-60"
+          >
+            Select all shown
+          </button>
+          <button
             onClick={() => runAction('approve_selected')}
             disabled={selectedIds.length === 0 || saving}
             className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
@@ -184,6 +209,20 @@ export default function AdminReviewsPage() {
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-60"
           >
             Approve all pending
+          </button>
+          <button
+            onClick={() => runAction('delete_selected')}
+            disabled={selectedIds.length === 0 || saving}
+            className="rounded-lg border border-rose-300 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+          >
+            Delete selected
+          </button>
+          <button
+            onClick={() => runAction('delete_all_rejected')}
+            disabled={rejectedReviews.length === 0 || saving}
+            className="rounded-lg border border-rose-300 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+          >
+            Delete all rejected
           </button>
         </div>
 
@@ -209,7 +248,6 @@ export default function AdminReviewsPage() {
               </thead>
               <tbody>
                 {reviews.map((review) => {
-                  const canSelect = review.status === 'pending'
                   const checked = selectedIds.includes(review.id)
 
                   return (
@@ -218,7 +256,6 @@ export default function AdminReviewsPage() {
                         <input
                           type="checkbox"
                           checked={checked}
-                          disabled={!canSelect}
                           onChange={() => toggleSelection(review.id)}
                           className="h-4 w-4"
                         />

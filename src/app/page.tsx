@@ -52,46 +52,108 @@ export default async function HomePage() {
 
   const engagementCounts = await getAuctionEngagementCounts(allAuctionIds)
 
+  const heroCategories = [
+    {
+      name: 'Electronics',
+      tagline: 'Phones, gadgets, smart devices',
+      image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Home Appliances',
+      tagline: 'Kitchen and everyday essentials',
+      image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Vehicles',
+      tagline: 'Cars, bikes and accessories',
+      image: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Fashion',
+      tagline: 'Clothing, shoes and lifestyle',
+      image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Furniture',
+      tagline: 'Living room and office pieces',
+      image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Collectibles',
+      tagline: 'Unique finds and rare items',
+      image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=900&q=80',
+    },
+  ]
+
   return (
     <main className="max-w-7xl mx-auto px-6 py-14">
       {/* HERO */}
-      <section className="mb-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        <div>
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
-            A smarter way to{' '}
-            <span className="text-gray-400">bid & win</span>
-          </h1>
+      <section className="mb-20 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.05fr_1fr] lg:items-center">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">Marketplace</p>
+            <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl">
+              Shop by Category and
+              <span className="block text-gray-500">Bid with confidence</span>
+            </h1>
 
-          <p className="text-lg text-gray-600 max-w-xl mb-8">
-            Gavel is a modern auction marketplace.
-            Buy tokens, place bids, and win items transparently —
-            no hidden tricks.
-          </p>
+            <p className="mt-4 max-w-xl text-base text-gray-600 md:text-lg">
+              Discover trusted sellers across electronics, home appliances, vehicles, fashion, furniture and more.
+              Buy instantly or join live auctions.
+            </p>
 
-          <div className="flex flex-wrap gap-4">
-            <Link
-              href="/auctions"
-              className="bg-black text-white px-7 py-3 rounded-lg font-semibold hover:opacity-90"
-            >
-              Browse Auctions
-            </Link>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/shop"
+                className="rounded-lg bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+              >
+                Browse Buy Now
+              </Link>
+              <Link
+                href="/auctions"
+                className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+              >
+                Explore Auctions
+              </Link>
+              <Link
+                href="/shop/sellers"
+                className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+              >
+                View Shops
+              </Link>
+            </div>
+          </div>
 
-            <Link
-              href="/shop"
-              className="border border-black px-7 py-3 rounded-lg font-semibold hover:bg-black hover:text-white transition"
-            >
-              Shop
-            </Link>
+          <div className="grid grid-cols-2 gap-3">
+            {heroCategories.slice(0, 4).map((category) => (
+              <div key={category.name} className="group relative overflow-hidden rounded-2xl border border-gray-200">
+                <img src={category.image} alt={category.name} className="h-36 w-full object-cover transition duration-300 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                <div className="absolute bottom-2 left-2 right-2">
+                  <p className="text-sm font-semibold text-white">{category.name}</p>
+                  <p className="text-[11px] text-white/85">{category.tagline}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+      </section>
 
-        {/* HERO IMAGE */}
-        <div className="hidden lg:flex h-80 rounded-2xl overflow-hidden">
-          <img
-            src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1400&q=80"
-            alt="Hero"
-            className="w-full h-full object-cover"
-          />
+      <section className="mb-12">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-bold text-gray-900">Popular Categories</h2>
+          <Link href="/shop" className="text-sm font-semibold underline underline-offset-2">See all products</Link>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {heroCategories.map((category) => (
+            <div key={category.name} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="h-20 overflow-hidden rounded-lg bg-gray-100">
+                <img src={category.image} alt={category.name} className="h-full w-full object-cover" />
+              </div>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{category.name}</p>
+              <p className="text-xs text-gray-500">{category.tagline}</p>
+            </div>
+          ))}
         </div>
       </section>
 
