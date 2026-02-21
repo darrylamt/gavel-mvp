@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 type ShopRow = {
   id: string
   name: string
+  logo_url: string | null
   cover_image_url: string | null
   status: string
 }
@@ -24,7 +25,7 @@ export default async function SellerShopsPage() {
   const [{ data: shopsData }, { data: productRows }] = await Promise.all([
     supabase
       .from('active_seller_shops')
-      .select('id, name, cover_image_url, status, owner_id')
+      .select('id, name, logo_url, cover_image_url, status, owner_id')
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
     supabase
@@ -89,7 +90,14 @@ export default async function SellerShopsPage() {
                 )}
               </div>
               <div className="p-4">
-                <p className="truncate text-lg font-semibold text-gray-900">{shop.name || 'Shop'}</p>
+                <div className="flex items-center gap-2">
+                  {shop.logo_url ? (
+                    <img src={shop.logo_url} alt={shop.name || 'Shop logo'} className="h-9 w-9 rounded-full border border-gray-200 object-cover" />
+                  ) : (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-xs text-gray-500">S</div>
+                  )}
+                  <p className="truncate text-lg font-semibold text-gray-900">{shop.name || 'Shop'}</p>
+                </div>
                 <p className="mt-1 text-sm text-gray-600">{shop.productCount} active product(s)</p>
               </div>
             </Link>

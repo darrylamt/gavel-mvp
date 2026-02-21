@@ -11,6 +11,7 @@ type ShopProfile = {
   id: string
   name: string
   description: string | null
+  logo_url: string | null
   cover_image_url: string | null
 }
 
@@ -35,8 +36,8 @@ export default async function SellerShopPage({ params }: Props) {
 
   const [{ data: shop }, { data: products }] = await Promise.all([
     supabase
-      .from('shops')
-      .select('id, name, description, cover_image_url')
+      .from('active_seller_shops')
+      .select('id, name, description, logo_url, cover_image_url')
       .eq('id', sellerId)
       .maybeSingle(),
     supabase
@@ -79,12 +80,19 @@ export default async function SellerShopPage({ params }: Props) {
     <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="flex items-start gap-3">
+          {shopProfile.logo_url ? (
+            <img src={shopProfile.logo_url} alt={shopProfile.name || 'Shop logo'} className="h-14 w-14 rounded-full border border-gray-200 object-cover" />
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-500">S</div>
+          )}
+          <div>
           <h1 className="text-3xl font-bold text-gray-900">{shopProfile.name || 'Shop'}</h1>
           {shopProfile.description && (
             <p className="mt-2 text-sm text-gray-600">{shopProfile.description}</p>
           )}
           <p className="mt-2 text-sm text-gray-600">{sellerProducts.length} active product(s)</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/shop/sellers" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
