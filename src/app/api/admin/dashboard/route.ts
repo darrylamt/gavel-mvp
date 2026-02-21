@@ -82,7 +82,7 @@ export async function GET(req: Request) {
   let sellerProducts: Array<{ created_by: string | null }> = []
 
   if (sellerUserIds.length > 0) {
-    const [{ data: profiles }, { data: products }] = await Promise.all([
+    const [{ data: profiles }, { data: shops }, { data: products }] = await Promise.all([
       service
         .from('profiles')
         .select('id, username, phone')
