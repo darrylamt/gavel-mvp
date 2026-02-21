@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import ProductDetailActions from '@/components/shop/ProductDetailActions'
 import ShopProductCard from '@/components/shop/ShopProductCard'
+import ProductReviewsSection from '@/components/shop/ProductReviewsSection'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -21,6 +22,14 @@ type RelatedProduct = {
   stock: number
   image_url: string | null
   category: string
+}
+
+type ProductReview = {
+  rating: number
+  title: string | null
+  body: string | null
+  created_at: string
+  reviewer_name: string | null
 }
 
 const supabase = createClient(
@@ -62,9 +71,24 @@ export default async function ShopProductDetailPage({ params }: Props) {
     .order('created_at', { ascending: false })
     .limit(4)
 
+  const { data: reviewsData } = await supabase
+    .from('shop_product_reviews')
+    .select('rating, title, body, created_at, reviewer_name')
+    .eq('product_id', product.id)
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false })
+    .limit(5)
+
   const latest = (latestProducts ?? []) as RelatedProduct[]
+  const reviews = (reviewsData ?? []) as ProductReview[]
   const displaySku = product.id.slice(0, 8).toUpperCase()
   const productUrl = `${siteUrl}/shop/${product.id}`
+  const priceValidUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString().split('T')[0]
+  const reviewCount = reviews.length
+  const averageRating =
+    reviews.length > 0
+      ? Number((reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length).toFixed(1))
+      : null
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -82,6 +106,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
       url: productUrl,
       priceCurrency: 'GHS',
       price: Number(product.price).toFixed(2),
+      priceValidUntil,
       availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       itemCondition: 'https://schema.org/NewCondition',
       shippingDetails: {
@@ -124,6 +149,32 @@ export default async function ShopProductDetailPage({ params }: Props) {
         name: shop?.name || 'Gavel Seller',
       },
     },
+    aggregateRating:
+      averageRating !== null
+        ? {
+            '@type': 'AggregateRating',
+            ratingValue: averageRating,
+            reviewCount: reviews.length,
+          }
+        : undefined,
+    review:
+      reviews.length > 0
+        ? reviews.slice(0, 3).map((review) => ({
+            '@type': 'Review',
+            author: {
+              '@type': 'Person',
+              name: review.reviewer_name || 'Verified buyer',
+            },
+            datePublished: review.created_at,
+            reviewBody: review.body || review.title || 'Great product.',
+            reviewRating: {
+              '@type': 'Rating',
+              ratingValue: review.rating,
+              bestRating: 5,
+              worstRating: 1,
+            },
+          }))
+        : undefined,
   }
 
   return (
@@ -213,6 +264,8 @@ export default async function ShopProductDetailPage({ params }: Props) {
 
         </div>
       </section>
+
+      <ProductReviewsSection productId={product.id} reviews={reviews} />
 
       {latest.length > 0 && (
         <section className="mt-10">
