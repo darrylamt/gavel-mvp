@@ -78,6 +78,7 @@ export async function GET(req: Request) {
   const sellerUserIds = Array.from(latestApprovedByUser.keys())
 
   let sellerProfiles: Array<{ id: string; username: string | null; phone: string | null }> = []
+  let sellerShops: Array<{ owner_id: string; name: string | null }> = []
   let sellerProducts: Array<{ created_by: string | null }> = []
 
   if (sellerUserIds.length > 0) {
@@ -87,6 +88,11 @@ export async function GET(req: Request) {
         .select('id, username, phone')
         .in('id', sellerUserIds),
       service
+        .from('active_seller_shops')
+        .select('owner_id, name')
+        .in('owner_id', sellerUserIds)
+        .eq('status', 'active'),
+      service
         .from('shop_products')
         .select('created_by')
         .in('created_by', sellerUserIds)
@@ -94,10 +100,20 @@ export async function GET(req: Request) {
     ])
 
     sellerProfiles = profiles ?? []
+    sellerShops = shops ?? []
     sellerProducts = products ?? []
   }
 
   const profileMap = new Map(sellerProfiles.map((profile) => [profile.id, profile]))
+  const shopNameMap = new Map<string, string>()
+
+  for (const shop of sellerShops) {
+    if (!shop.owner_id || !shop.name) continue
+    if (!shopNameMap.has(shop.owner_id)) {
+      shopNameMap.set(shop.owner_id, shop.name)
+    }
+  }
+
   const productCountMap = new Map<string, number>()
 
   for (const product of sellerProducts) {
@@ -105,11 +121,13 @@ export async function GET(req: Request) {
     productCountMap.set(product.created_by, (productCountMap.get(product.created_by) ?? 0) + 1)
   }
 
-  const sellers: SellerSummary[] = sellerUserIds.map((userId) => {
+  const sellers: SellerSummary[] = sellerUserIds.flatMap((userId) => {
     const approved = latestApprovedByUser.get(userId)
     const profile = profileMap.get(userId)
+    if (!shopNameMap.has(userId)) return []
 
     const name =
+      (shopNameMap.get(userId) ?? '').trim() ||
       (profile?.username ?? '').trim() ||
       (approved?.business_name ?? '').trim() ||
       'Seller'
@@ -119,12 +137,12 @@ export async function GET(req: Request) {
       (approved?.phone ?? '').trim() ||
       '-'
 
-    return {
+    return [{
       userId,
       name,
       phone,
       totalProducts: productCountMap.get(userId) ?? 0,
-    }
+    }]
   })
 
   return NextResponse.json({

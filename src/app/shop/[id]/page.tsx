@@ -8,9 +8,9 @@ type Props = {
   params: Promise<{ id: string }>
 }
 
-type SellerProfile = {
+type ShopInfo = {
   id: string
-  username: string | null
+  name: string
 }
 
 type RelatedProduct = {
@@ -30,10 +30,11 @@ const supabase = createClient(
 
 export default async function ShopProductDetailPage({ params }: Props) {
   const { id } = await params
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
   const { data: product } = await supabase
     .from('shop_products')
-    .select('id, title, description, price, stock, image_url, status, created_by, category')
+    .select('id, title, description, price, stock, image_url, status, created_by, category, shop_id')
     .eq('id', id)
     .eq('status', 'active')
     .maybeSingle()
@@ -42,15 +43,15 @@ export default async function ShopProductDetailPage({ params }: Props) {
     notFound()
   }
 
-  let seller: SellerProfile | null = null
-  if (product.created_by) {
-    const { data: sellerProfile } = await supabase
-      .from('profiles')
-      .select('id, username')
-      .eq('id', product.created_by)
+  let shop: ShopInfo | null = null
+  if (product.shop_id) {
+    const { data: shopData } = await supabase
+      .from('shops')
+      .select('id, name')
+      .eq('id', product.shop_id)
       .maybeSingle()
 
-    seller = (sellerProfile as SellerProfile | null) ?? null
+    shop = (shopData as ShopInfo | null) ?? null
   }
 
   const { data: latestProducts } = await supabase
@@ -63,9 +64,71 @@ export default async function ShopProductDetailPage({ params }: Props) {
 
   const latest = (latestProducts ?? []) as RelatedProduct[]
   const displaySku = product.id.slice(0, 8).toUpperCase()
+  const productUrl = `${siteUrl}/shop/${product.id}`
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description || undefined,
+    sku: displaySku,
+    image: product.image_url ? [product.image_url] : undefined,
+    category: product.category || undefined,
+    brand: {
+      '@type': 'Brand',
+      name: 'Gavel',
+    },
+    offers: {
+      '@type': 'Offer',
+      url: productUrl,
+      priceCurrency: 'GHS',
+      price: Number(product.price).toFixed(2),
+      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'GH',
+        },
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: '0',
+          currency: 'GHS',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 2,
+            unitCode: 'DAY',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 5,
+            unitCode: 'DAY',
+          },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'GH',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 7,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/FreeReturn',
+      },
+      seller: {
+        '@type': 'Organization',
+        name: shop?.name || 'Gavel Seller',
+      },
+    },
+  }
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <section className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         <div>
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-sm">
@@ -137,9 +200,9 @@ export default async function ShopProductDetailPage({ params }: Props) {
               <p><span className="font-semibold text-gray-900">Stock:</span> {product.stock}</p>
               <p>
                 <span className="font-semibold text-gray-900">Shop:</span>{' '}
-                {seller ? (
-                  <Link href={`/shop/seller/${seller.id}`} className="underline underline-offset-2">
-                    {seller.username || 'Seller shop'}
+                {shop ? (
+                  <Link href={`/shop/seller/${shop.id}`} className="underline underline-offset-2">
+                    {shop.name || 'Shop'}
                   </Link>
                 ) : (
                   'N/A'

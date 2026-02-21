@@ -7,10 +7,11 @@ type Props = {
   params: Promise<{ sellerId: string }>
 }
 
-type SellerProfile = {
+type ShopProfile = {
   id: string
-  username: string | null
-  avatar_url: string | null
+  name: string
+  description: string | null
+  cover_image_url: string | null
 }
 
 type ShopProduct = {
@@ -30,33 +31,59 @@ const supabase = createClient(
 
 export default async function SellerShopPage({ params }: Props) {
   const { sellerId } = await params
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
-  const [{ data: profile }, { data: products }] = await Promise.all([
+  const [{ data: shop }, { data: products }] = await Promise.all([
     supabase
-      .from('profiles')
-      .select('id, username, avatar_url')
+      .from('shops')
+      .select('id, name, description, cover_image_url')
       .eq('id', sellerId)
       .maybeSingle(),
     supabase
       .from('shop_products')
       .select('id, title, description, price, stock, category, image_url')
-      .eq('created_by', sellerId)
+      .eq('shop_id', sellerId)
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
   ])
 
-  if (!profile) {
+  if (!shop) {
     notFound()
   }
 
-  const sellerProfile = profile as SellerProfile
+  const shopProfile = shop as ShopProfile
   const sellerProducts = (products ?? []) as ShopProduct[]
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Store',
+    name: shopProfile.name,
+    description: shopProfile.description || undefined,
+    image: shopProfile.cover_image_url || undefined,
+    url: `${siteUrl}/shop/seller/${shopProfile.id}`,
+    makesOffer: sellerProducts.slice(0, 24).map((product) => ({
+      '@type': 'Offer',
+      url: `${siteUrl}/shop/${product.id}`,
+      itemOffered: {
+        '@type': 'Product',
+        name: product.title,
+        image: product.image_url || undefined,
+        category: product.category || undefined,
+      },
+      priceCurrency: 'GHS',
+      price: Number(product.price).toFixed(2),
+      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+    })),
+  }
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{sellerProfile.username || 'Seller Shop'}</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{shopProfile.name || 'Shop'}</h1>
+          {shopProfile.description && (
+            <p className="mt-2 text-sm text-gray-600">{shopProfile.description}</p>
+          )}
           <p className="mt-2 text-sm text-gray-600">{sellerProducts.length} active product(s)</p>
         </div>
         <div className="flex items-center gap-2">

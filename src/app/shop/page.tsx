@@ -20,6 +20,8 @@ const supabase = createClient(
 )
 
 export default async function ShopPage() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+
   const { data } = await supabase
     .from('shop_products')
     .select('id, title, description, price, stock, category, image_url')
@@ -28,6 +30,33 @@ export default async function ShopPage() {
     .order('created_at', { ascending: false })
 
   const products = (data ?? []) as ShopProduct[]
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Buy Now Products | Gavel',
+    url: `${siteUrl}/shop`,
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: products.slice(0, 24).map((product, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: `${siteUrl}/shop/${product.id}`,
+        item: {
+          '@type': 'Product',
+          name: product.title,
+          image: product.image_url || undefined,
+          category: product.category || undefined,
+          offers: {
+            '@type': 'Offer',
+            priceCurrency: 'GHS',
+            price: Number(product.price).toFixed(2),
+            availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            url: `${siteUrl}/shop/${product.id}`,
+          },
+        },
+      })),
+    },
+  }
 
   return (
     products.length === 0 ? (
@@ -44,7 +73,10 @@ export default async function ShopPage() {
         </div>
       </main>
     ) : (
-      <ShopCatalogClient products={products} />
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+        <ShopCatalogClient products={products} />
+      </>
     )
   )
 }
