@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import { useCart } from '@/hooks/useCart'
+import { useTopToast } from '@/components/ui/TopToastProvider'
 
 type Props = {
   id: string
@@ -16,20 +16,7 @@ type Props = {
 
 export default function ShopProductCard({ id, title, description, price, imageUrl, stock, categoryLabel }: Props) {
   const { addToCart } = useCart()
-  const [showAdded, setShowAdded] = useState(false)
-  const [showLimit, setShowLimit] = useState(false)
-
-  useEffect(() => {
-    if (!showAdded) return
-    const timer = setTimeout(() => setShowAdded(false), 1500)
-    return () => clearTimeout(timer)
-  }, [showAdded])
-
-  useEffect(() => {
-    if (!showLimit) return
-    const timer = setTimeout(() => setShowLimit(false), 1600)
-    return () => clearTimeout(timer)
-  }, [showLimit])
+  const { notify } = useTopToast()
 
   return (
     <article className="overflow-hidden rounded-xl border bg-white relative">
@@ -68,9 +55,9 @@ export default function ShopProductCard({ id, title, description, price, imageUr
               availableStock: stock,
             })
             if (added) {
-              setShowAdded(true)
+              notify({ title: 'Added to cart', description: `${title} was added to your cart.`, variant: 'success' })
             } else {
-              setShowLimit(true)
+              notify({ title: 'Stock limit reached', description: 'You cannot add more of this item.', variant: 'warning' })
             }
           }}
           disabled={stock <= 0}
@@ -79,18 +66,6 @@ export default function ShopProductCard({ id, title, description, price, imageUr
           {stock <= 0 ? 'Out of stock' : 'Add to cart'}
         </button>
       </div>
-
-      {showAdded && (
-        <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white shadow">
-          Added to cart
-        </div>
-      )}
-
-      {showLimit && (
-        <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-md bg-amber-600 px-3 py-1 text-xs font-semibold text-white shadow">
-          Stock limit reached
-        </div>
-      )}
     </article>
   )
 }

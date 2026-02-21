@@ -9,6 +9,7 @@ import type { Metadata } from 'next'
 import gavelTabIcon from '@/assets/branding/gavel-logo.jpeg'
 import { Poppins } from 'next/font/google'
 import Script from 'next/script'
+import { Providers } from './providers'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -59,25 +60,27 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={poppins.className}>
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${googleAnalyticsId}');
-          `}
-        </Script>
-        <Navbar />
-        <InAppBrowserBanner />
-        <WelcomeTourModal />
-        {children}
-        <Footer />
-        <Analytics />
-        <SpeedInsights />
+        <Providers>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${googleAnalyticsId}');
+            `}
+          </Script>
+          <Navbar />
+          <InAppBrowserBanner />
+          <WelcomeTourModal />
+          {children}
+          <Footer />
+          <Analytics />
+          <SpeedInsights />
+        </Providers>
       </body>
     </html>
   )

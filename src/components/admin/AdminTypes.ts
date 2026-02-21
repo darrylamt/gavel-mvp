@@ -22,9 +22,10 @@ export type DashboardAuction = {
 }
 
 export type DashboardSeller = {
+  userId: string
   name: string
   phone: string
-  totalAuctions: number
+  totalProducts: number
 }
 
 export type DashboardPayload = {

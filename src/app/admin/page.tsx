@@ -122,15 +122,15 @@ export default function AdminPage() {
                   <tr>
                     <th className="py-2">Name</th>
                     <th className="py-2">Phone</th>
-                    <th className="py-2">Auctions</th>
+                    <th className="py-2">Products</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.sellers.slice(0, 30).map((seller) => (
-                    <tr key={`${seller.name}-${seller.phone}`} className="border-t">
+                    <tr key={seller.userId} className="border-t">
                       <td className="py-2">{seller.name}</td>
                       <td className="py-2">{seller.phone}</td>
-                      <td className="py-2">{seller.totalAuctions}</td>
+                      <td className="py-2">{seller.totalProducts}</td>
                     </tr>
                   ))}
                 </tbody>

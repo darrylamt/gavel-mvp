@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, LogOut, Heart, ShoppingCart, X } from 'lucide-react'
+import { Menu, LogOut, Heart, ShoppingCart, X, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -9,6 +9,7 @@ import { useAuthUser } from '@/hooks/useAuthUser'
 import AvatarLabelGroup from '@/components/base/avatar/avatar-label-group'
 import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
+import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useCart } from '@/hooks/useCart'
 import navLogo from '@/assets/branding/nav-logo.png'
 
@@ -29,8 +30,10 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isAdmin = useIsAdmin()
   const { starredCount } = useStarredAuctions()
+  const { starredProductCount } = useStarredProducts()
   const { itemCount } = useCart()
   const lockedScrollYRef = useRef(0)
+  const totalStarredCount = starredCount + starredProductCount
 
   useEffect(() => {
     if (!mobileMenuOpen) {
@@ -127,11 +130,35 @@ export default function Navbar() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6">
+              <div className="relative group">
+                <button
+                  className="inline-flex items-center gap-1 text-sm font-medium uppercase tracking-wide text-gray-700 transition-colors hover:text-black"
+                >
+                  MARKET
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+
+                <div className="invisible absolute left-0 top-full z-50 mt-3 w-44 rounded-lg border border-gray-200 bg-white p-1 opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100">
+                  <button
+                    onClick={() => router.push('/auctions')}
+                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-black"
+                  >
+                    Auctions
+                  </button>
+                  <button
+                    onClick={() => router.push('/shop')}
+                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-black"
+                  >
+                    Buy Now
+                  </button>
+                </div>
+              </div>
+
               <button
-                onClick={() => router.push('/auctions')}
+                onClick={() => router.push('/shop/sellers')}
                 className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
               >
-                AUCTIONS
+                SHOPS
               </button>
                 {isAdmin && (
                   <button
@@ -147,12 +174,6 @@ export default function Navbar() {
               >
                 TOKENS
               </button>
-              <button
-                onClick={() => router.push('/shop')}
-                className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
-              >
-                SHOP
-              </button>
             </nav>
           </div>
 
@@ -164,9 +185,9 @@ export default function Navbar() {
               aria-label="Starred auctions"
             >
               <Heart className="h-5 w-5 text-gray-700" />
-              {starredCount > 0 && (
+              {totalStarredCount > 0 && (
                 <span className="absolute -top-1 -right-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
-                  {starredCount}
+                  {totalStarredCount}
                 </span>
               )}
             </button>
@@ -357,21 +378,30 @@ export default function Navbar() {
                 </button>
                 <button
                   onClick={() => {
+                    router.push('/shop')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
+                >
+                  Buy Now
+                </button>
+                <button
+                  onClick={() => {
+                    router.push('/shop/sellers')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
+                >
+                  Shops
+                </button>
+                <button
+                  onClick={() => {
                     router.push('/tokens')
                     setMobileMenuOpen(false)
                   }}
                   className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
                 >
                   Tokens
-                </button>
-                <button
-                  onClick={() => {
-                    router.push('/shop')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
-                >
-                  Shop
                 </button>
                 <button
                   onClick={() => {

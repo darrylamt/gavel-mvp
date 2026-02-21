@@ -1,5 +1,7 @@
 'use client'
 
+import { TopToastProvider } from '@/components/ui/TopToastProvider'
+
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
+  return <TopToastProvider>{children}</TopToastProvider>
 }

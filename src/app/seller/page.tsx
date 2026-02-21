@@ -95,6 +95,12 @@ export default function SellerDashboardPage() {
           >
             Add Product
           </Link>
+          <Link
+            href="/seller/shop"
+            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50"
+          >
+            Edit Shop
+          </Link>
           <Link href="/auctions" className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-gray-50">
             Browse Auctions
           </Link>

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { parseAuctionMeta } from '@/lib/auctionMeta'
 import 'server-only'
 
 type SellerSummary = {
+  userId: string
   name: string
   phone: string
-  totalAuctions: number
+  totalProducts: number
 }
 
 export async function GET(req: Request) {
@@ -47,7 +47,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const [{ data: users }, { data: auctions }] = await Promise.all([
+  const [{ data: users }, { data: auctions }, { data: approvedApplications }] = await Promise.all([
     service
       .from('profiles')
       .select('id, username, phone, token_balance, role')
@@ -58,37 +58,78 @@ export async function GET(req: Request) {
       .select('id, title, status, current_price, reserve_price, starts_at, ends_at, sale_source, seller_name, seller_phone, seller_expected_amount, description, created_at')
       .order('created_at', { ascending: false })
       .limit(200),
+    service
+      .from('seller_applications')
+      .select('user_id, business_name, phone, created_at')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(300),
   ])
 
-  const sellerMap = new Map<string, SellerSummary>()
+  const latestApprovedByUser = new Map<string, { user_id: string; business_name: string | null; phone: string | null }>()
 
-  for (const auction of auctions ?? []) {
-    const source = auction.sale_source ?? parseAuctionMeta(auction.description).meta?.saleSource
-    if (source !== 'seller') continue
-
-    const fallbackMeta = parseAuctionMeta(auction.description).meta
-    const name = (auction.seller_name ?? fallbackMeta?.sellerName ?? '').trim()
-    const phone = (auction.seller_phone ?? fallbackMeta?.sellerPhone ?? '').trim()
-
-    if (!name || !phone) continue
-
-    const key = `${name}|${phone}`
-    const existing = sellerMap.get(key)
-
-    if (existing) {
-      existing.totalAuctions += 1
-    } else {
-      sellerMap.set(key, {
-        name,
-        phone,
-        totalAuctions: 1,
-      })
+  for (const application of approvedApplications ?? []) {
+    if (!application.user_id) continue
+    if (!latestApprovedByUser.has(application.user_id)) {
+      latestApprovedByUser.set(application.user_id, application)
     }
   }
+
+  const sellerUserIds = Array.from(latestApprovedByUser.keys())
+
+  let sellerProfiles: Array<{ id: string; username: string | null; phone: string | null }> = []
+  let sellerProducts: Array<{ created_by: string | null }> = []
+
+  if (sellerUserIds.length > 0) {
+    const [{ data: profiles }, { data: products }] = await Promise.all([
+      service
+        .from('profiles')
+        .select('id, username, phone')
+        .in('id', sellerUserIds),
+      service
+        .from('shop_products')
+        .select('created_by')
+        .in('created_by', sellerUserIds)
+        .neq('status', 'archived'),
+    ])
+
+    sellerProfiles = profiles ?? []
+    sellerProducts = products ?? []
+  }
+
+  const profileMap = new Map(sellerProfiles.map((profile) => [profile.id, profile]))
+  const productCountMap = new Map<string, number>()
+
+  for (const product of sellerProducts) {
+    if (!product.created_by) continue
+    productCountMap.set(product.created_by, (productCountMap.get(product.created_by) ?? 0) + 1)
+  }
+
+  const sellers: SellerSummary[] = sellerUserIds.map((userId) => {
+    const approved = latestApprovedByUser.get(userId)
+    const profile = profileMap.get(userId)
+
+    const name =
+      (profile?.username ?? '').trim() ||
+      (approved?.business_name ?? '').trim() ||
+      'Seller'
+
+    const phone =
+      (profile?.phone ?? '').trim() ||
+      (approved?.phone ?? '').trim() ||
+      '-'
+
+    return {
+      userId,
+      name,
+      phone,
+      totalProducts: productCountMap.get(userId) ?? 0,
+    }
+  })
 
   return NextResponse.json({
     users: users ?? [],
     auctions: auctions ?? [],
-    sellers: Array.from(sellerMap.values()),
+    sellers,
   })
 }
