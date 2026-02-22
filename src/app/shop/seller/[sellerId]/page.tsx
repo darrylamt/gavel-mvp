@@ -79,37 +79,58 @@ export default async function SellerShopPage({ params }: Props) {
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-start gap-3">
-          {shopProfile.logo_url ? (
-            <img src={shopProfile.logo_url} alt={shopProfile.name || 'Shop logo'} className="h-14 w-14 rounded-full border border-gray-200 object-cover" />
+      <section className="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+        <div className="relative h-48 md:h-56">
+          {shopProfile.cover_image_url ? (
+            <img src={shopProfile.cover_image_url} alt={shopProfile.name || 'Shop cover'} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-500">S</div>
+            <div className="h-full w-full bg-gradient-to-r from-gray-100 to-gray-200" />
           )}
-          <div>
-          <h1 className="text-3xl font-bold text-gray-900">{shopProfile.name || 'Shop'}</h1>
-          {shopProfile.description && (
-            <p className="mt-2 text-sm text-gray-600">{shopProfile.description}</p>
-          )}
-          <p className="mt-2 text-sm text-gray-600">{sellerProducts.length} active product(s)</p>
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+          <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-700 backdrop-blur">
+            Seller Storefront
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/shop/sellers" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
-            All Shops
-          </Link>
-          <Link href="/shop" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
-            Main Shop
-          </Link>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 p-5 md:p-6">
+          <div className="flex items-start gap-3">
+            {shopProfile.logo_url ? (
+              <img src={shopProfile.logo_url} alt={shopProfile.name || 'Shop logo'} className="h-16 w-16 rounded-2xl border border-gray-200 object-cover" />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-sm text-gray-500">S</div>
+            )}
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{shopProfile.name || 'Shop'}</h1>
+              {shopProfile.description && <p className="mt-1 text-sm text-gray-600">{shopProfile.description}</p>}
+              <p className="mt-2 inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                {sellerProducts.length} active product(s)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link href="/shop/sellers" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
+              All Shops
+            </Link>
+            <Link href="/shop" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
+              Main Shop
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
 
       {sellerProducts.length === 0 ? (
         <div className="rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center shadow-sm">
           <p className="text-base font-semibold text-gray-900">No active products in this seller shop.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">Products</h2>
+            <p className="text-sm text-gray-500">Ready to buy now</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
           {sellerProducts.map((product) => (
             <ShopProductCard
               key={product.id}
@@ -122,7 +143,8 @@ export default async function SellerShopPage({ params }: Props) {
               categoryLabel={product.category}
             />
           ))}
-        </div>
+          </div>
+        </section>
       )}
     </main>
   )

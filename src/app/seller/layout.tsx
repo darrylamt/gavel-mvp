@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import SellerShell from '@/components/seller/SellerShell'
 
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -41,5 +42,5 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
     return <p className="p-6">Checking seller access…</p>
   }
 
-  return <>{children}</>
+  return <SellerShell>{children}</SellerShell>
 }

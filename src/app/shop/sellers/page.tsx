@@ -84,37 +84,56 @@ export default async function SellerShopsPage() {
           <p className="mt-2 text-sm text-gray-600">Check back soon for seller storefronts.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sortedShops.map((shop) => (
-            <Link
+            <article
               key={shop.id}
-              href={`/shop/seller/${shop.id}`}
-              className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow"
+              className="w-full max-w-sm overflow-hidden rounded-3xl border border-gray-200 bg-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
             >
-              <div className="h-36 bg-gray-100">
-                {shop.coverImage ? (
-                  <img src={shop.coverImage} alt={shop.name || 'Shop'} className="h-full w-full object-cover" />
+              <div className="relative h-48 overflow-hidden rounded-2xl bg-gray-100">
+                {shop.logo_url ? (
+                  <img src={shop.logo_url} alt={shop.name || 'Shop logo'} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-gray-400">No cover image</div>
+                  <div className="flex h-full items-center justify-center text-sm text-gray-400">No logo image</div>
                 )}
-              </div>
-              <div className="p-4">
-                <div className="flex items-center gap-2">
-                  {shop.logo_url ? (
-                    <img src={shop.logo_url} alt={shop.name || 'Shop logo'} className="h-9 w-9 rounded-full border border-gray-200 object-cover" />
-                  ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-xs text-gray-500">S</div>
-                  )}
-                  <p className="truncate text-lg font-semibold text-gray-900">{shop.name || 'Shop'}</p>
+
+                <div className="absolute left-3 top-3 rounded-full bg-white/85 px-3 py-1 text-xs font-medium text-gray-700 backdrop-blur">
+                  Active Shop
                 </div>
-                <p className="mt-1 text-sm text-gray-600">{shop.productCount} active product(s)</p>
-                {shop.topCategories.length > 0 && (
-                  <p className="mt-1 line-clamp-1 text-xs font-medium text-gray-500">
-                    Into: {shop.topCategories.join(', ')}
-                  </p>
-                )}
+
+                <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-white" />
+                  <span className="h-2 w-2 rounded-full bg-white/60" />
+                  <span className="h-2 w-2 rounded-full bg-white/60" />
+                  <span className="h-2 w-2 rounded-full bg-white/60" />
+                </div>
               </div>
-            </Link>
+
+              <div className="px-2 pb-2 pt-3">
+                <h3 className="truncate text-4xl font-extrabold leading-none text-gray-900">{shop.name || 'Shop'}</h3>
+                {shop.topCategories.length > 0 ? (
+                  <p className="mt-1.5 text-sm font-medium text-gray-600">{shop.topCategories.join(' • ')}</p>
+                ) : (
+                  <p className="mt-1.5 text-sm font-medium text-gray-500">Trusted seller storefront</p>
+                )}
+
+                <p className="mt-2 line-clamp-2 text-xs font-medium text-gray-500">
+                  Browse products from this shop and order instantly from available listings.
+                </p>
+
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <div className="rounded-full bg-gray-100 px-3 py-1.5 text-xl font-black text-gray-900">
+                    {shop.productCount}
+                  </div>
+                  <Link
+                    href={`/shop/seller/${shop.id}`}
+                    className="inline-flex items-center rounded-full bg-black px-4 py-2 text-base font-semibold text-white hover:bg-gray-800"
+                  >
+                    View Shop ↗
+                  </Link>
+                </div>
+              </div>
+            </article>
           ))}
         </div>
       )}

@@ -78,11 +78,11 @@ export default function SellerDashboardPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-8 space-y-6">
-      <section className="rounded-2xl border bg-white p-5 shadow-sm">
-        <h1 className="text-3xl font-bold">Seller Dashboard</h1>
-        <p className="mt-2 text-sm text-gray-600">Create auctions and track all your listings in one place.</p>
-        <div className="mt-4 flex flex-wrap gap-3">
+    <>
+      <section className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
+        <h2 className="text-xl font-semibold">Seller Dashboard</h2>
+        <p className="mt-1 text-sm text-gray-500">Manage your listings, orders, and delivery flow from one place.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href="/auctions/new"
             className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
@@ -116,7 +116,7 @@ export default function SellerDashboardPage() {
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <button
           onClick={() => setBucket('active')}
-          className={`rounded-xl border p-4 text-left ${bucket === 'active' ? 'bg-black text-white' : 'bg-white'}`}
+          className={`rounded-xl border p-4 text-left shadow-sm ${bucket === 'active' ? 'bg-black text-white' : 'bg-white'}`}
         >
           <p className="text-xs uppercase tracking-wide opacity-80">Active</p>
           <p className="mt-2 text-2xl font-bold">{groups.active.length}</p>
@@ -124,7 +124,7 @@ export default function SellerDashboardPage() {
 
         <button
           onClick={() => setBucket('ended')}
-          className={`rounded-xl border p-4 text-left ${bucket === 'ended' ? 'bg-black text-white' : 'bg-white'}`}
+          className={`rounded-xl border p-4 text-left shadow-sm ${bucket === 'ended' ? 'bg-black text-white' : 'bg-white'}`}
         >
           <p className="text-xs uppercase tracking-wide opacity-80">Ended</p>
           <p className="mt-2 text-2xl font-bold">{groups.ended.length}</p>
@@ -132,7 +132,7 @@ export default function SellerDashboardPage() {
 
         <button
           onClick={() => setBucket('pending-payment')}
-          className={`rounded-xl border p-4 text-left ${bucket === 'pending-payment' ? 'bg-black text-white' : 'bg-white'}`}
+          className={`rounded-xl border p-4 text-left shadow-sm ${bucket === 'pending-payment' ? 'bg-black text-white' : 'bg-white'}`}
         >
           <p className="text-xs uppercase tracking-wide opacity-80">Pending Payment</p>
           <p className="mt-2 text-2xl font-bold">{groups.pendingPayment.length}</p>
@@ -140,14 +140,14 @@ export default function SellerDashboardPage() {
 
         <button
           onClick={() => setBucket('delivered')}
-          className={`rounded-xl border p-4 text-left ${bucket === 'delivered' ? 'bg-black text-white' : 'bg-white'}`}
+          className={`rounded-xl border p-4 text-left shadow-sm ${bucket === 'delivered' ? 'bg-black text-white' : 'bg-white'}`}
         >
           <p className="text-xs uppercase tracking-wide opacity-80">Delivered</p>
           <p className="mt-2 text-2xl font-bold">{groups.delivered.length}</p>
         </button>
       </section>
 
-      <section className="rounded-2xl border bg-white p-5 shadow-sm">
+      <section className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
         <h2 className="text-lg font-semibold">My Auctions</h2>
 
         {visibleAuctions.length === 0 ? (
@@ -185,6 +185,6 @@ export default function SellerDashboardPage() {
           </div>
         )}
       </section>
-    </main>
+    </>
   )
 }
