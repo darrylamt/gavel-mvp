@@ -34,6 +34,7 @@ export default function Navbar() {
   const { itemCount } = useCart()
   const lockedScrollYRef = useRef(0)
   const totalStarredCount = starredCount + starredProductCount
+  const canBecomeSeller = !!user && profileRole !== 'seller' && profileRole !== 'admin'
 
   useEffect(() => {
     if (!mobileMenuOpen) {
@@ -215,6 +216,15 @@ export default function Navbar() {
                 <span className="font-semibold text-amber-700 text-sm">
                   {tokens ?? 0}
                 </span>
+              </button>
+            )}
+
+            {!loading && canBecomeSeller && (
+              <button
+                onClick={() => router.push('/seller/apply')}
+                className="hidden md:inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                Become a Seller
               </button>
             )}
 
@@ -432,6 +442,17 @@ export default function Navbar() {
                     className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
                   >
                     Seller Dashboard
+                  </button>
+                )}
+                {canBecomeSeller && (
+                  <button
+                    onClick={() => {
+                      router.push('/seller/apply')
+                      setMobileMenuOpen(false)
+                    }}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-50"
+                  >
+                    Become a Seller
                   </button>
                 )}
               </nav>

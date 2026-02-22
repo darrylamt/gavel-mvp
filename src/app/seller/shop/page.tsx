@@ -203,7 +203,7 @@ export default function SellerShopPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Logo URL</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Logo</label>
             <div className="mb-2 flex items-center gap-2">
               <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
                 {uploadingLogo ? 'Uploading…' : 'Upload logo'}
@@ -221,17 +221,12 @@ export default function SellerShopPage() {
                   }}
                 />
               </label>
+              {logoUrl && <span className="text-xs text-gray-500">Logo uploaded</span>}
             </div>
-            <input
-              value={logoUrl}
-              onChange={(event) => setLogoUrl(event.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              placeholder="https://..."
-            />
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-gray-700">Cover image URL</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Cover image</label>
             <div className="mb-2 flex items-center gap-2">
               <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
                 {uploadingCover ? 'Uploading…' : 'Upload cover image'}
@@ -249,13 +244,8 @@ export default function SellerShopPage() {
                   }}
                 />
               </label>
+              {coverImageUrl && <span className="text-xs text-gray-500">Cover image uploaded</span>}
             </div>
-            <input
-              value={coverImageUrl}
-              onChange={(event) => setCoverImageUrl(event.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              placeholder="https://..."
-            />
           </div>
 
           <div className="md:col-span-2">
@@ -310,6 +300,11 @@ export default function SellerShopPage() {
 
         <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
           <p className="text-sm font-semibold text-gray-900">Preview</p>
+          {coverImageUrl && (
+            <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white">
+              <img src={coverImageUrl} alt={name || 'Shop cover'} className="h-32 w-full object-cover" />
+            </div>
+          )}
           <div className="mt-3 flex items-center gap-3">
             {logoUrl ? (
               <img src={logoUrl} alt={name || 'Shop logo'} className="h-12 w-12 rounded-full border border-gray-200 object-cover" />

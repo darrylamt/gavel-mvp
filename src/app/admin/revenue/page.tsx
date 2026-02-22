@@ -17,6 +17,7 @@ type RevenueSummary = {
 export default function AdminRevenuePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
   const [summary, setSummary] = useState<RevenueSummary>({
     productSales: 0,
     auctionSales: 0,
@@ -42,7 +43,7 @@ export default function AdminRevenuePage() {
         return
       }
 
-      const res = await fetch('/api/admin/revenue', {
+      const res = await fetch(`/api/admin/revenue?period=${period}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
@@ -58,7 +59,7 @@ export default function AdminRevenuePage() {
     }
 
     load()
-  }, [])
+  }, [period])
 
   const sourcePie = useMemo(
     () => [
@@ -80,8 +81,22 @@ export default function AdminRevenuePage() {
   return (
     <AdminShell>
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-        <h2 className="text-xl font-semibold">Revenue</h2>
-        <p className="mt-1 text-sm text-gray-500">Website revenue and Gavel profit metrics based on product markup and paystack costs.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">Revenue</h2>
+            <p className="mt-1 text-sm text-gray-500">Website revenue and Gavel profit metrics based on product markup and paystack costs.</p>
+          </div>
+          <select
+            value={period}
+            onChange={(event) => setPeriod(event.target.value as '7d' | '30d' | '90d' | 'all')}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="all">All time</option>
+          </select>
+        </div>
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}

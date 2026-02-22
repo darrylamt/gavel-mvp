@@ -407,9 +407,21 @@ export default function SellerProductsPage() {
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-medium text-gray-700">Product Image</label>
-              <input type="file" accept="image/*" onChange={handleImageSelect} className="w-full rounded-lg border px-3 py-2" />
+              <div className="mb-2 flex items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                  {uploadingImage ? 'Uploading…' : 'Upload image'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingImage || saving}
+                    onChange={handleImageSelect}
+                  />
+                </label>
+                {imageUrl && <span className="text-xs text-gray-500">Image uploaded</span>}
+              </div>
               {uploadingImage && <p className="mt-1 text-xs text-gray-600">Uploading image…</p>}
-              {imageUrl && <p className="mt-1 truncate text-xs text-gray-500">Uploaded: {imageUrl}</p>}
+              {imageUrl && <img src={imageUrl} alt="Product preview" className="mt-2 h-24 w-24 rounded-lg border object-cover" />}
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Price (GHS)</label>

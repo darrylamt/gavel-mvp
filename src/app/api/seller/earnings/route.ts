@@ -6,6 +6,14 @@ function unauthorized() {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 }
 
+function resolvePeriodStart(period: string | null) {
+  const now = Date.now()
+  if (period === '7d') return new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+  if (period === '30d') return new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()
+  if (period === '90d') return new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString()
+  return null
+}
+
 export async function GET(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -29,6 +37,10 @@ export async function GET(request: Request) {
     error: userError,
   } = await anon.auth.getUser(token)
 
+  const { searchParams } = new URL(request.url)
+  const period = searchParams.get('period')
+  const periodStart = resolvePeriodStart(period)
+
   if (userError || !user) {
     return unauthorized()
   }
@@ -43,38 +55,36 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { data: orderItems, error: orderItemsError } = await service
-    .from('shop_order_items')
-    .select('order_id, unit_price, quantity')
-    .eq('seller_id', user.id)
-    .limit(5000)
-
-  if (orderItemsError) {
-    return NextResponse.json({ error: orderItemsError.message }, { status: 500 })
+  let paidOrdersQuery = service.from('shop_orders').select('id').eq('status', 'paid').limit(5000)
+  if (periodStart) {
+    paidOrdersQuery = paidOrdersQuery.gte('created_at', periodStart)
   }
 
-  const orderIds = Array.from(new Set((orderItems ?? []).map((item) => String(item.order_id)).filter(Boolean)))
-  let paidOrderIds = new Set<string>()
+  const { data: paidOrders, error: paidOrdersError } = await paidOrdersQuery
 
-  if (orderIds.length > 0) {
-    const { data: paidOrders, error: paidOrdersError } = await service
-      .from('shop_orders')
-      .select('id, status')
-      .in('id', orderIds)
-      .eq('status', 'paid')
+  if (paidOrdersError) {
+    return NextResponse.json({ error: paidOrdersError.message }, { status: 500 })
+  }
 
-    if (paidOrdersError) {
-      return NextResponse.json({ error: paidOrdersError.message }, { status: 500 })
+  const paidOrderIds = (paidOrders ?? []).map((row) => String(row.id)).filter(Boolean)
+  let productSales = 0
+
+  if (paidOrderIds.length > 0) {
+    const { data: orderItems, error: orderItemsError } = await service
+      .from('shop_order_items')
+      .select('unit_price, quantity')
+      .eq('seller_id', user.id)
+      .in('order_id', paidOrderIds)
+      .limit(5000)
+
+    if (orderItemsError) {
+      return NextResponse.json({ error: orderItemsError.message }, { status: 500 })
     }
 
-    paidOrderIds = new Set((paidOrders ?? []).map((row) => String(row.id)))
+    productSales = (orderItems ?? []).reduce((sum, item) => {
+      return sum + Number(item.unit_price ?? 0) * Number(item.quantity ?? 0)
+    }, 0)
   }
-
-  const productSales = (orderItems ?? []).reduce((sum, item) => {
-    const orderId = String(item.order_id || '')
-    if (!paidOrderIds.has(orderId)) return sum
-    return sum + Number(item.unit_price ?? 0) * Number(item.quantity ?? 0)
-  }, 0)
 
   const { data: sellerAuctions, error: sellerAuctionsError } = await service
     .from('auctions')
@@ -91,12 +101,18 @@ export async function GET(request: Request) {
   let auctionSales = 0
 
   if (paidAuctionIds.length > 0) {
-    const { data: auctionPayments, error: paymentsError } = await service
+    let paymentsQuery = service
       .from('payments')
       .select('auction_id, amount, status')
       .in('auction_id', paidAuctionIds)
       .eq('status', 'success')
       .limit(5000)
+
+    if (periodStart) {
+      paymentsQuery = paymentsQuery.gte('created_at', periodStart)
+    }
+
+    const { data: auctionPayments, error: paymentsError } = await paymentsQuery
 
     if (!paymentsError) {
       const paymentByAuction = new Map<string, number>()
@@ -111,7 +127,7 @@ export async function GET(request: Request) {
         const amount = paymentByAuction.get(auctionId) ?? Number(auction.current_price ?? 0)
         auctionSales += amount
       }
-    } else {
+    } else if (!periodStart) {
       auctionSales = (sellerAuctions ?? []).reduce((sum, auction) => sum + Number(auction.current_price ?? 0), 0)
     }
   }
@@ -124,5 +140,6 @@ export async function GET(request: Request) {
       auctionSales,
       totalEarnings,
     },
+    period: period ?? 'all',
   })
 }

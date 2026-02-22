@@ -13,6 +13,7 @@ type EarningsSummary = {
 export default function SellerEarningsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
   const [summary, setSummary] = useState<EarningsSummary>({
     productSales: 0,
     auctionSales: 0,
@@ -35,7 +36,7 @@ export default function SellerEarningsPage() {
         return
       }
 
-      const res = await fetch('/api/seller/earnings', {
+      const res = await fetch(`/api/seller/earnings?period=${period}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
@@ -51,7 +52,7 @@ export default function SellerEarningsPage() {
     }
 
     load()
-  }, [])
+  }, [period])
 
   const sourcePie = useMemo(
     () => [
@@ -73,8 +74,22 @@ export default function SellerEarningsPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-8 space-y-6">
       <section className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-        <h1 className="text-2xl font-bold">Earnings</h1>
-        <p className="mt-1 text-sm text-gray-500">Track how much you are making from product sales and auction sales.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">Earnings</h1>
+            <p className="mt-1 text-sm text-gray-500">Track how much you are making from product sales and auction sales.</p>
+          </div>
+          <select
+            value={period}
+            onChange={(event) => setPeriod(event.target.value as '7d' | '30d' | '90d' | 'all')}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="all">All time</option>
+          </select>
+        </div>
       </section>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}

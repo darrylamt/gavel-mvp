@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import SellerShell from '@/components/seller/SellerShell'
 
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [loading, setLoading] = useState(true)
+  const [isSeller, setIsSeller] = useState(false)
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -27,19 +30,27 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
         .eq('id', user.id)
         .single()
 
-      if (profile?.role !== 'seller') {
+      const sellerRole = profile?.role === 'seller'
+      const isSellerApplyPage = pathname === '/seller/apply'
+
+      if (!sellerRole && !isSellerApplyPage) {
         router.replace('/contact')
         return
       }
 
+      setIsSeller(sellerRole)
       setLoading(false)
     }
 
     checkAccess()
-  }, [router])
+  }, [pathname, router])
 
   if (loading) {
     return <p className="p-6">Checking seller access…</p>
+  }
+
+  if (!isSeller) {
+    return <>{children}</>
   }
 
   return <SellerShell>{children}</SellerShell>
