@@ -100,9 +100,9 @@ export default async function HomePage() {
             <Link
               key={category.name}
               href={`/shop?category=${encodeURIComponent(category.name)}`}
-              className="snap-start shrink-0 min-w-[220px] rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition-transform transition-shadow duration-200 hover:-translate-y-0.5 hover:shadow-md sm:min-w-0"
+              className="snap-start w-[78%] max-w-[250px] flex-none rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition-transform transition-shadow duration-200 hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:max-w-none"
             >
-              <div className="h-20 overflow-hidden rounded-lg bg-gray-100">
+              <div className="aspect-[16/10] overflow-hidden rounded-lg bg-gray-100">
                 <img src={category.image} alt={category.name} className="h-full w-full object-cover transition-transform duration-200 hover:scale-[1.03]" />
               </div>
               <p className="mt-2 text-sm font-semibold text-gray-900">{category.name}</p>

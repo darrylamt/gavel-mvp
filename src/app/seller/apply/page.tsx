@@ -176,7 +176,18 @@ export default function SellerApplyPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Business type</label>
-              <input value={businessType} onChange={(event) => setBusinessType(event.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" required />
+              <select
+                value={businessType}
+                onChange={(event) => setBusinessType(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                required
+              >
+                <option value="" disabled>Select business type</option>
+                <option value="Registered">Registered</option>
+                <option value="Unregistered">Unregistered</option>
+                <option value="Not sure">Not sure yet</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">Choose what best describes your business right now.</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Phone</label>
