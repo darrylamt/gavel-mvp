@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { ChevronLeft, ChevronRight, LayoutDashboard, Package, Store, Truck } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LayoutDashboard, Package, Store, Truck } from 'lucide-react'
 
 type Props = {
   children: React.ReactNode
@@ -32,11 +32,16 @@ export default function SellerShell({ children }: Props) {
               className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
               title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              <span className="inline-flex lg:hidden">
+                {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </span>
+              <span className="hidden lg:inline-flex">
+                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </span>
             </button>
           </div>
 
-          <nav className="space-y-2 text-sm">
+          <nav className={`${collapsed ? 'flex flex-wrap items-center gap-2 lg:block lg:space-y-2' : 'space-y-2'} text-sm`}>
             {tabs.map((tab) => {
               const active = pathname === tab.href
               const Icon = tab.icon
@@ -46,7 +51,7 @@ export default function SellerShell({ children }: Props) {
                   key={tab.href}
                   href={tab.href}
                   title={tab.label}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 font-medium transition ${
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 font-medium transition ${collapsed ? 'justify-center px-2' : ''} ${
                     active ? 'bg-gray-100 text-black' : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >

@@ -10,6 +10,8 @@ type Props = {
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
 
@@ -31,10 +33,18 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     .eq('id', id)
     .maybeSingle()
 
-  if (!data || (data.status === 'scheduled' && data.is_hidden)) {
+  if (!data) {
     return {
-      title: 'Auction not found',
-      description: 'This auction is not available.',
+      title: 'Auction',
+      description: 'Auction details on Gavel Ghana.',
+      robots: { index: false, follow: false },
+    }
+  }
+
+  if (data.status === 'scheduled' && data.is_hidden) {
+    return {
+      title: data.title || 'Auction preview',
+      description: 'This auction is not publicly available yet.',
       robots: { index: false, follow: false },
     }
   }

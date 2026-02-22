@@ -182,7 +182,7 @@ export async function GET(request: Request) {
 
   const query = service
     .from('shop_products')
-    .select('id, title, description, price, stock, status, category, image_url, created_at, created_by, shop_id')
+    .select('id, title, description, price, seller_base_price, stock, status, category, image_url, created_at, created_by, shop_id')
     .order('created_at', { ascending: false })
     .limit(300)
 
@@ -252,12 +252,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'You can only use your own shop' }, { status: 403 })
     }
 
+    const listingPrice = auth.role === 'seller' ? Number((price * 1.1).toFixed(2)) : price
+    const sellerBasePrice = auth.role === 'seller' ? Number(price.toFixed(2)) : null
+
     const { data, error } = await service
       .from('shop_products')
       .insert({
         title,
         description: description || null,
-        price,
+        price: listingPrice,
+        seller_base_price: sellerBasePrice,
         stock,
         status,
         category,
@@ -265,7 +269,7 @@ export async function POST(request: Request) {
         created_by: selectedShop.owner_id,
         shop_id: selectedShop.id,
       })
-      .select('id, title, description, price, stock, status, category, image_url, created_at, created_by, shop_id')
+      .select('id, title, description, price, seller_base_price, stock, status, category, image_url, created_at, created_by, shop_id')
       .single()
 
     if (error) {
@@ -333,19 +337,39 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'You can only use your own shop' }, { status: 403 })
     }
 
+    const listingPrice = auth.role === 'seller' ? Number((price * 1.1).toFixed(2)) : price
+    const sellerBasePrice = auth.role === 'seller' ? Number(price.toFixed(2)) : null
+
+    const updatePayload: {
+      title: string
+      description: string | null
+      price: number
+      stock: number
+      status: string
+      category: string
+      image_url: string | null
+      shop_id: string
+      created_by: string
+      seller_base_price?: number
+    } = {
+      title,
+      description: description || null,
+      price: listingPrice,
+      stock,
+      status,
+      category,
+      image_url: imageUrl || null,
+      shop_id: selectedShop.id,
+      created_by: selectedShop.owner_id,
+    }
+
+    if (auth.role === 'seller') {
+      updatePayload.seller_base_price = sellerBasePrice ?? 0
+    }
+
     const updateQuery = service
       .from('shop_products')
-      .update({
-        title,
-        description: description || null,
-        price,
-        stock,
-        status,
-        category,
-        image_url: imageUrl || null,
-        shop_id: selectedShop.id,
-        created_by: selectedShop.owner_id,
-      })
+      .update(updatePayload)
       .eq('id', id)
 
     if (auth.role === 'seller') {
@@ -353,7 +377,7 @@ export async function PATCH(request: Request) {
     }
 
     const { data, error } = await updateQuery
-      .select('id, title, description, price, stock, status, category, image_url, created_at, created_by, shop_id')
+      .select('id, title, description, price, seller_base_price, stock, status, category, image_url, created_at, created_by, shop_id')
       .single()
 
     if (error) {

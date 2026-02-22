@@ -8,6 +8,7 @@ type ShopProduct = {
   title: string
   description: string | null
   price: number
+  seller_base_price: number | null
   stock: number
   status: 'draft' | 'active' | 'sold_out' | 'archived'
   category: string
@@ -49,6 +50,10 @@ export default function SellerProductsPage() {
   const [shopId, setShopId] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+
+  const parsedPrice = Number(price)
+  const hasValidPrice = Number.isFinite(parsedPrice) && parsedPrice >= 0
+  const listedPricePreview = hasValidPrice ? Number((parsedPrice * 1.1).toFixed(2)) : null
 
   const loadProducts = async () => {
     setLoading(true)
@@ -123,7 +128,11 @@ export default function SellerProductsPage() {
     setEditingId(product.id)
     setTitle(product.title)
     setDescription(product.description ?? '')
-    setPrice(String(product.price))
+    const basePrice =
+      typeof product.seller_base_price === 'number' && Number.isFinite(product.seller_base_price)
+        ? Number(product.seller_base_price)
+        : Number((Number(product.price) / 1.1).toFixed(2))
+    setPrice(String(basePrice))
     setStock(String(product.stock))
     setStatus(product.status)
     setCategory(product.category || categories[0]?.name || 'Other')
@@ -356,6 +365,12 @@ export default function SellerProductsPage() {
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Price (GHS)</label>
               <input type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+              <p className="mt-1 text-xs text-gray-500">Listed price adds 10% automatically when sellers save a product.</p>
+              {listedPricePreview != null && (
+                <p className="mt-1 text-xs font-medium text-gray-700">
+                  You enter: GHS {parsedPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} • Listed price: GHS {listedPricePreview.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                </p>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Stock</label>

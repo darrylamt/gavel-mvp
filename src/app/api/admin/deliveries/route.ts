@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 
 type DeliveryRow = {
+  item_id: string
   order_id: string
   order_created_at: string
   order_total_amount: number
@@ -15,6 +16,8 @@ type DeliveryRow = {
   product_title: string
   quantity: number
   unit_price: number
+  delivered_by_seller: boolean
+  delivered_at: string | null
   seller_name: string | null
   seller_phone: string | null
   seller_shop_name: string | null
@@ -63,7 +66,8 @@ export async function GET(req: Request) {
 
   const { data: orders, error: ordersError } = await service
     .from('shop_orders')
-    .select('id, created_at, total_amount, buyer_email, buyer_full_name, buyer_phone, delivery_address, delivery_city, delivery_notes')
+    .select('id, status, created_at, total_amount, buyer_email, buyer_full_name, buyer_phone, delivery_address, delivery_city, delivery_notes')
+    .eq('status', 'paid')
     .order('created_at', { ascending: false })
     .limit(300)
 
@@ -80,7 +84,7 @@ export async function GET(req: Request) {
 
   const { data: items, error: itemsError } = await service
     .from('shop_order_items')
-    .select('order_id, title_snapshot, quantity, unit_price, seller_name, seller_phone, seller_shop_name, seller_payout_provider, seller_payout_account_name, seller_payout_account_number')
+    .select('id, order_id, title_snapshot, quantity, unit_price, delivered_by_seller, delivered_at, seller_name, seller_phone, seller_shop_name, seller_payout_provider, seller_payout_account_name, seller_payout_account_number')
     .in('order_id', orderIds)
 
   if (itemsError) {
@@ -95,6 +99,7 @@ export async function GET(req: Request) {
       if (!order) return null
 
       return {
+        item_id: String(item.id),
         order_id: String(order.id),
         order_created_at: String(order.created_at),
         order_total_amount: Number(order.total_amount ?? 0),
@@ -107,6 +112,8 @@ export async function GET(req: Request) {
         product_title: String(item.title_snapshot || 'Product'),
         quantity: Number(item.quantity ?? 0),
         unit_price: Number(item.unit_price ?? 0),
+        delivered_by_seller: Boolean(item.delivered_by_seller),
+        delivered_at: (item.delivered_at as string | null) ?? null,
         seller_name: (item.seller_name as string | null) ?? null,
         seller_phone: (item.seller_phone as string | null) ?? null,
         seller_shop_name: (item.seller_shop_name as string | null) ?? null,

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
 
 type DeliveryRow = {
+  item_id: string
   order_id: string
   order_created_at: string
   order_total_amount: number
@@ -17,6 +18,8 @@ type DeliveryRow = {
   product_title: string
   quantity: number
   unit_price: number
+  delivered_by_seller: boolean
+  delivered_at: string | null
   seller_name: string | null
   seller_phone: string | null
   seller_shop_name: string | null
@@ -69,7 +72,7 @@ export default function AdminDeliveriesPage() {
     <AdminShell>
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
         <h2 className="text-xl font-semibold">Deliveries</h2>
-        <p className="mt-1 text-sm text-gray-500">Buyer delivery details and seller payout/account details for each purchased item.</p>
+        <p className="mt-1 text-sm text-gray-500">All sold items with buyer details, seller/store details, payout account snapshot, and delivery status.</p>
       </div>
 
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
@@ -91,11 +94,12 @@ export default function AdminDeliveriesPage() {
                   <th className="py-2">Delivery</th>
                   <th className="py-2">Seller</th>
                   <th className="py-2">Seller Account</th>
+                  <th className="py-2">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {deliveries.map((row, index) => (
-                  <tr key={`${row.order_id}-${index}`} className="border-t align-top">
+                  <tr key={`${row.order_id}-${row.item_id}-${index}`} className="border-t align-top">
                     <td className="py-2 whitespace-nowrap">{new Date(row.order_created_at).toLocaleString()}</td>
                     <td className="py-2">
                       <p className="font-medium text-gray-900">{row.order_id.slice(0, 8)}…</p>
@@ -124,6 +128,16 @@ export default function AdminDeliveriesPage() {
                       <p className="font-medium text-gray-900">{row.seller_payout_provider || 'N/A'}</p>
                       <p className="text-xs text-gray-500">{row.seller_payout_account_name || 'No account name'}</p>
                       <p className="text-xs text-gray-500">{row.seller_payout_account_number || 'No account number'}</p>
+                    </td>
+                    <td className="py-2 whitespace-nowrap">
+                      {row.delivered_by_seller ? (
+                        <div>
+                          <p className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Delivered</p>
+                          {row.delivered_at ? <p className="mt-1 text-xs text-gray-500">{new Date(row.delivered_at).toLocaleString()}</p> : null}
+                        </div>
+                      ) : (
+                        <p className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Pending</p>
+                      )}
                     </td>
                   </tr>
                 ))}

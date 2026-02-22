@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
 type SellerDeliveryRow = {
+  item_id: string
   order_id: string
   order_created_at: string
   buyer_full_name: string | null
@@ -16,6 +17,8 @@ type SellerDeliveryRow = {
   product_title: string
   quantity: number
   unit_price: number
+  delivered_by_seller: boolean
+  delivered_at: string | null
   seller_payout_provider: string | null
   seller_payout_account_name: string | null
   seller_payout_account_number: string | null
@@ -25,6 +28,7 @@ export default function SellerDeliveriesPage() {
   const [deliveries, setDeliveries] = useState<SellerDeliveryRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -61,6 +65,53 @@ export default function SellerDeliveriesPage() {
     load()
   }, [])
 
+  const markDelivered = async (itemId: string) => {
+    setUpdatingItemId(itemId)
+    setError(null)
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      const token = session?.access_token
+      if (!token) {
+        setError('Unauthorized')
+        return
+      }
+
+      const res = await fetch('/api/seller/deliveries', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ item_id: itemId }),
+      })
+
+      const payload = await res.json().catch(() => null)
+      if (!res.ok) {
+        setError(payload?.error || 'Failed to mark delivered')
+        return
+      }
+
+      const deliveredAt = (payload?.item?.delivered_at as string | undefined) ?? new Date().toISOString()
+      setDeliveries((previous) =>
+        previous.map((row) =>
+          row.item_id === itemId
+            ? {
+                ...row,
+                delivered_by_seller: true,
+                delivered_at: deliveredAt,
+              }
+            : row
+        )
+      )
+    } finally {
+      setUpdatingItemId(null)
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-8 space-y-6">
       <section className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -93,11 +144,12 @@ export default function SellerDeliveriesPage() {
                   <th className="py-2">Buyer</th>
                   <th className="py-2">Delivery</th>
                   <th className="py-2">Payout Snapshot</th>
+                  <th className="py-2">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {deliveries.map((row, index) => (
-                  <tr key={`${row.order_id}-${index}`} className="border-t align-top">
+                  <tr key={`${row.order_id}-${row.item_id}-${index}`} className="border-t align-top">
                     <td className="py-2 whitespace-nowrap">{new Date(row.order_created_at).toLocaleString()}</td>
                     <td className="py-2">{row.order_id.slice(0, 8)}…</td>
                     <td className="py-2">
@@ -118,6 +170,23 @@ export default function SellerDeliveriesPage() {
                       <p className="font-medium text-gray-900">{row.seller_payout_provider || 'N/A'}</p>
                       <p className="text-xs text-gray-500">{row.seller_payout_account_name || 'No account name'}</p>
                       <p className="text-xs text-gray-500">{row.seller_payout_account_number || 'No account number'}</p>
+                    </td>
+                    <td className="py-2 whitespace-nowrap">
+                      {row.delivered_by_seller ? (
+                        <div>
+                          <p className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Delivered</p>
+                          {row.delivered_at ? <p className="mt-1 text-xs text-gray-500">{new Date(row.delivered_at).toLocaleString()}</p> : null}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => markDelivered(row.item_id)}
+                          disabled={updatingItemId === row.item_id}
+                          className="rounded-md border border-green-300 px-3 py-1 text-xs font-medium text-green-700 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {updatingItemId === row.item_id ? 'Saving…' : 'Mark Delivered'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

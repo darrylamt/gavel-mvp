@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Heart, Info } from 'lucide-react'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
+import { getOrCreateViewerKey } from '@/lib/engagement'
 import { buildAuctionPath } from '@/lib/seo'
 
 type AuctionCardProps = {
@@ -90,9 +91,34 @@ export default function AuctionCard({
     return () => clearInterval(t)
   }, [startsAt, isScheduled])
 
+  const trackCardView = () => {
+    const viewerKey = getOrCreateViewerKey()
+    if (!viewerKey) return
+
+    const body = JSON.stringify({
+      auction_id: id,
+      viewer_key: viewerKey,
+      action: 'view',
+    })
+
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      const payload = new Blob([body], { type: 'application/json' })
+      const sent = navigator.sendBeacon('/api/auctions/engagement', payload)
+      if (sent) return
+    }
+
+    void fetch('/api/auctions/engagement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true,
+    })
+  }
+
   return (
     <Link
       href={buildAuctionPath(id, title)}
+      onClick={trackCardView}
       className={`group block overflow-hidden border bg-white transition hover:shadow-lg ${
         compactMobile ? 'rounded-xl sm:rounded-2xl' : 'rounded-2xl'
       }`}
