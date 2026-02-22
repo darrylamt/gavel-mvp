@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { Heart } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useTopToast } from '@/components/ui/TopToastProvider'
 
 type Props = {
@@ -16,11 +18,33 @@ type Props = {
 
 export default function ShopProductCard({ id, title, description, price, imageUrl, stock, categoryLabel }: Props) {
   const { addToCart } = useCart()
+  const { isStarredProduct, toggleStarredProduct } = useStarredProducts()
   const { notify } = useTopToast()
+  const isStarred = isStarredProduct(id)
 
   return (
     <article className="overflow-hidden rounded-xl border bg-white relative">
       <div className="relative h-32 bg-gray-100 sm:h-40">
+        <button
+          type="button"
+          onClick={() => {
+            const nextIsStarred = toggleStarredProduct(id)
+            notify({
+              title: nextIsStarred ? 'Added to starred' : 'Removed from starred',
+              description: nextIsStarred ? `${title} is now in your favorites.` : `${title} was removed from your favorites.`,
+              variant: nextIsStarred ? 'success' : 'info',
+            })
+          }}
+          aria-label={isStarred ? 'Remove from starred products' : 'Add to starred products'}
+          className={`absolute left-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
+            isStarred
+              ? 'border-red-300 bg-red-50 text-red-600'
+              : 'border-gray-200 bg-white/95 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          <Heart className={`h-4 w-4 ${isStarred ? 'fill-current' : ''}`} />
+        </button>
+
         {categoryLabel && (
           <span className="absolute right-2 top-2 z-10 rounded-full border border-gray-200 bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-gray-700">
             {categoryLabel}
