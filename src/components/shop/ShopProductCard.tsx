@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { Heart } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useCart } from '@/hooks/useCart'
 import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useTopToast } from '@/components/ui/TopToastProvider'
@@ -17,17 +17,31 @@ type Props = {
 }
 
 export default function ShopProductCard({ id, title, description, price, imageUrl, stock, categoryLabel }: Props) {
+  const router = useRouter()
   const { addToCart } = useCart()
   const { isStarredProduct, toggleStarredProduct } = useStarredProducts()
   const { notify } = useTopToast()
   const isStarred = isStarredProduct(id)
 
   return (
-    <article className="overflow-hidden rounded-xl border bg-white relative">
+    <article
+      className="relative overflow-hidden rounded-xl border bg-white"
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(`/shop/${id}`)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          router.push(`/shop/${id}`)
+        }
+      }}
+    >
       <div className="relative h-32 bg-gray-100 sm:h-40">
         <button
           type="button"
-          onClick={() => {
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
             const nextIsStarred = toggleStarredProduct(id)
             notify({
               title: nextIsStarred ? 'Added to starred' : 'Removed from starred',
@@ -62,15 +76,10 @@ export default function ShopProductCard({ id, title, description, price, imageUr
         {description && <p className="mt-1 line-clamp-2 text-xs text-gray-500">{description}</p>}
         <p className="mt-2 text-base font-bold text-black">GHS {Number(price).toLocaleString()}</p>
 
-        <Link
-          href={`/shop/${id}`}
-          className="mt-2 inline-flex text-xs font-semibold underline underline-offset-2"
-        >
-          View details
-        </Link>
-
         <button
-          onClick={() => {
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
             const added = addToCart({
               productId: id,
               title,

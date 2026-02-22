@@ -95,15 +95,15 @@ export default async function HomePage() {
           <h2 className="text-xl font-bold text-gray-900">Popular Categories</h2>
           <Link href="/shop" className="text-sm font-semibold underline underline-offset-2">See all products</Link>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="no-scrollbar mt-4 -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-6">
           {heroCategories.map((category) => (
             <Link
               key={category.name}
               href={`/shop?category=${encodeURIComponent(category.name)}`}
-              className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
+              className="snap-start shrink-0 min-w-[220px] rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition-transform transition-shadow duration-200 hover:-translate-y-0.5 hover:shadow-md sm:min-w-0"
             >
               <div className="h-20 overflow-hidden rounded-lg bg-gray-100">
-                <img src={category.image} alt={category.name} className="h-full w-full object-cover" />
+                <img src={category.image} alt={category.name} className="h-full w-full object-cover transition-transform duration-200 hover:scale-[1.03]" />
               </div>
               <p className="mt-2 text-sm font-semibold text-gray-900">{category.name}</p>
               <p className="text-xs text-gray-500">{category.tagline}</p>
