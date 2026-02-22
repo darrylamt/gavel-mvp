@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import PieChartCard from '@/components/base/PieChartCard'
 
 type SellerAuction = {
   id: string
@@ -15,13 +16,9 @@ type SellerAuction = {
   ends_at: string | null
 }
 
-type SellerBucket = 'active' | 'ended' | 'pending-payment' | 'delivered'
-
 export default function SellerDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [auctions, setAuctions] = useState<SellerAuction[]>([])
-
-  const [bucket, setBucket] = useState<SellerBucket>('active')
 
   useEffect(() => {
     const load = async () => {
@@ -64,14 +61,25 @@ export default function SellerDashboardPage() {
     return { active, ended, pendingPayment, delivered }
   }, [auctions])
 
-  const visibleAuctions =
-    bucket === 'active'
-      ? groups.active
-      : bucket === 'ended'
-      ? groups.ended
-      : bucket === 'pending-payment'
-      ? groups.pendingPayment
-      : groups.delivered
+  const lifecyclePie = useMemo(
+    () => [
+      { label: 'Active', value: groups.active.length },
+      { label: 'Ended', value: groups.ended.length },
+      { label: 'Pending Payment', value: groups.pendingPayment.length },
+      { label: 'Delivered', value: groups.delivered.length },
+    ],
+    [groups.active.length, groups.ended.length, groups.pendingPayment.length, groups.delivered.length]
+  )
+
+  const paymentPie = useMemo(() => {
+    const paid = auctions.filter((auction) => !!auction.paid).length
+    const unpaid = Math.max(auctions.length - paid, 0)
+
+    return [
+      { label: 'Paid/Delivered', value: paid },
+      { label: 'Not Paid Yet', value: unpaid },
+    ]
+  }, [auctions])
 
   if (loading) {
     return <p className="p-6">Loading seller dashboard…</p>
@@ -81,17 +89,29 @@ export default function SellerDashboardPage() {
     <>
       <section className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
         <h2 className="text-xl font-semibold">Seller Dashboard</h2>
-        <p className="mt-1 text-sm text-gray-500">Manage your listings, orders, and delivery flow from one place.</p>
+        <p className="mt-1 text-sm text-gray-500">Use My Auctions for auction listings and My Products for buy-now inventory.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
-            href="/auctions/new"
+            href="/seller/auctions"
             className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
           >
-            Create Auction
+            My Auctions
           </Link>
           <Link
             href="/seller/products"
             className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
+          >
+            My Products
+          </Link>
+          <Link
+            href="/auctions/new"
+            className="hidden rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50 md:inline-flex"
+          >
+            New Auction
+          </Link>
+          <Link
+            href="/seller/products"
+            className="hidden rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50 md:inline-flex"
           >
             Add Product
           </Link>
@@ -107,83 +127,37 @@ export default function SellerDashboardPage() {
           >
             Delivery Details
           </Link>
-          <Link href="/auctions" className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-gray-50">
+          <Link href="/auctions" className="hidden rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-gray-50 md:inline-flex">
             Browse Auctions
           </Link>
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <button
-          onClick={() => setBucket('active')}
-          className={`rounded-xl border p-4 text-left shadow-sm ${bucket === 'active' ? 'bg-black text-white' : 'bg-white'}`}
-        >
-          <p className="text-xs uppercase tracking-wide opacity-80">Active</p>
-          <p className="mt-2 text-2xl font-bold">{groups.active.length}</p>
-        </button>
-
-        <button
-          onClick={() => setBucket('ended')}
-          className={`rounded-xl border p-4 text-left shadow-sm ${bucket === 'ended' ? 'bg-black text-white' : 'bg-white'}`}
-        >
-          <p className="text-xs uppercase tracking-wide opacity-80">Ended</p>
-          <p className="mt-2 text-2xl font-bold">{groups.ended.length}</p>
-        </button>
-
-        <button
-          onClick={() => setBucket('pending-payment')}
-          className={`rounded-xl border p-4 text-left shadow-sm ${bucket === 'pending-payment' ? 'bg-black text-white' : 'bg-white'}`}
-        >
-          <p className="text-xs uppercase tracking-wide opacity-80">Pending Payment</p>
-          <p className="mt-2 text-2xl font-bold">{groups.pendingPayment.length}</p>
-        </button>
-
-        <button
-          onClick={() => setBucket('delivered')}
-          className={`rounded-xl border p-4 text-left shadow-sm ${bucket === 'delivered' ? 'bg-black text-white' : 'bg-white'}`}
-        >
-          <p className="text-xs uppercase tracking-wide opacity-80">Delivered</p>
-          <p className="mt-2 text-2xl font-bold">{groups.delivered.length}</p>
-        </button>
+      <section className="grid gap-4 lg:grid-cols-2">
+        <PieChartCard title="Auction Lifecycle" points={lifecyclePie} emptyLabel="No auctions yet" />
+        <PieChartCard title="Payment Completion" points={paymentPie} emptyLabel="No payment data yet" />
       </section>
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-        <h2 className="text-lg font-semibold">My Auctions</h2>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border bg-white p-4 text-left shadow-sm">
+          <p className="text-xs uppercase tracking-wide opacity-80">Active</p>
+          <p className="mt-2 text-2xl font-bold">{groups.active.length}</p>
+        </div>
 
-        {visibleAuctions.length === 0 ? (
-          <p className="mt-3 text-sm text-gray-500">No auctions in this category yet.</p>
-        ) : (
-          <div className="mt-4 overflow-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-gray-500">
-                <tr>
-                  <th className="py-2">Title</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2">Current Price</th>
-                  <th className="py-2">Ends At</th>
-                  <th className="py-2">Created</th>
-                  <th className="py-2">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleAuctions.map((auction) => (
-                  <tr key={auction.id} className="border-t">
-                    <td className="py-2">{auction.title}</td>
-                    <td className="py-2">{auction.paid ? 'delivered' : auction.status ?? '-'}</td>
-                    <td className="py-2">GHS {Number(auction.current_price ?? 0).toLocaleString()}</td>
-                    <td className="py-2">{auction.ends_at ? new Date(auction.ends_at).toLocaleString() : '-'}</td>
-                    <td className="py-2">{auction.created_at ? new Date(auction.created_at).toLocaleString() : '-'}</td>
-                    <td className="py-2">
-                      <Link href={`/auctions/${auction.id}`} className="font-medium underline underline-offset-2">
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="rounded-xl border bg-white p-4 text-left shadow-sm">
+          <p className="text-xs uppercase tracking-wide opacity-80">Ended</p>
+          <p className="mt-2 text-2xl font-bold">{groups.ended.length}</p>
+        </div>
+
+        <div className="rounded-xl border bg-white p-4 text-left shadow-sm">
+          <p className="text-xs uppercase tracking-wide opacity-80">Pending Payment</p>
+          <p className="mt-2 text-2xl font-bold">{groups.pendingPayment.length}</p>
+        </div>
+
+        <div className="rounded-xl border bg-white p-4 text-left shadow-sm">
+          <p className="text-xs uppercase tracking-wide opacity-80">Delivered</p>
+          <p className="mt-2 text-2xl font-bold">{groups.delivered.length}</p>
+        </div>
       </section>
     </>
   )

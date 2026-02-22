@@ -28,6 +28,7 @@ type StatusFilter = 'pending' | 'approved' | 'rejected'
 export default function AdminSellersPage() {
   const [applications, setApplications] = useState<SellerApplication[]>([])
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending')
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -68,6 +69,15 @@ export default function AdminSellersPage() {
   useEffect(() => {
     loadApplications(statusFilter)
   }, [statusFilter])
+
+  const filteredApplications = applications.filter((application) => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return true
+
+    return `${application.business_name} ${application.phone} ${application.address}`
+      .toLowerCase()
+      .includes(query)
+  })
 
   const reviewApplication = async (id: string, action: 'approved' | 'rejected') => {
     setBusyId(id)
@@ -123,7 +133,7 @@ export default function AdminSellersPage() {
       </div>
 
       <div className="rounded-2xl bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {(['pending', 'approved', 'rejected'] as StatusFilter[]).map((status) => (
             <button
               key={status}
@@ -137,6 +147,13 @@ export default function AdminSellersPage() {
               {status[0].toUpperCase() + status.slice(1)}
             </button>
           ))}
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search applications"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:ml-auto sm:max-w-xs"
+          />
         </div>
       </div>
 
@@ -149,7 +166,7 @@ export default function AdminSellersPage() {
 
         {loading ? (
           <p className="text-sm text-gray-500">Loading applications…</p>
-        ) : applications.length === 0 ? (
+        ) : filteredApplications.length === 0 ? (
           <p className="text-sm text-gray-500">No {statusFilter} applications found.</p>
         ) : (
           <div className="max-h-[60vh] overflow-auto">
@@ -164,7 +181,7 @@ export default function AdminSellersPage() {
                 </tr>
               </thead>
               <tbody>
-                {applications.map((application) => (
+                {filteredApplications.map((application) => (
                   <tr key={application.id} className="border-t align-top">
                     <td className="py-2 font-medium">{application.business_name}</td>
                     <td className="py-2">{application.phone}</td>

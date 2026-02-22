@@ -29,6 +29,7 @@ export default function AdminReviewsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const pendingReviews = useMemo(
     () => reviews.filter((review) => review.status === 'pending'),
@@ -38,6 +39,17 @@ export default function AdminReviewsPage() {
     () => reviews.filter((review) => review.status === 'rejected'),
     [reviews]
   )
+
+  const filteredReviews = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return reviews
+
+    return reviews.filter((review) =>
+      `${review.shop_products?.title || ''} ${review.reviewer_name || ''} ${review.title || ''} ${review.body || ''}`
+        .toLowerCase()
+        .includes(query)
+    )
+  }, [reviews, searchQuery])
 
   const loadReviews = async (filter: StatusFilter = statusFilter) => {
     setLoading(true)
@@ -134,7 +146,7 @@ export default function AdminReviewsPage() {
   }
 
   const toggleSelectAllShown = () => {
-    const shownIds = reviews.map((review) => review.id)
+    const shownIds = filteredReviews.map((review) => review.id)
     const allSelected = shownIds.length > 0 && shownIds.every((id) => selectedIds.includes(id))
     setSelectedIds(allSelected ? selectedIds.filter((id) => !shownIds.includes(id)) : Array.from(new Set([...selectedIds, ...shownIds])))
   }
@@ -149,6 +161,13 @@ export default function AdminReviewsPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search reviews"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+            />
             <select
               value={statusFilter}
               onChange={(event) => {
@@ -184,7 +203,7 @@ export default function AdminReviewsPage() {
           </button>
           <button
             onClick={toggleSelectAllShown}
-            disabled={reviews.length === 0 || saving}
+            disabled={filteredReviews.length === 0 || saving}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-60"
           >
             Select all shown
@@ -230,7 +249,7 @@ export default function AdminReviewsPage() {
 
         {loading ? (
           <p className="text-sm text-gray-500">Loading reviews…</p>
-        ) : reviews.length === 0 ? (
+        ) : filteredReviews.length === 0 ? (
           <p className="text-sm text-gray-500">No reviews found.</p>
         ) : (
           <div className="max-h-[70vh] overflow-auto">
@@ -247,7 +266,7 @@ export default function AdminReviewsPage() {
                 </tr>
               </thead>
               <tbody>
-                {reviews.map((review) => {
+                {filteredReviews.map((review) => {
                   const checked = selectedIds.includes(review.id)
 
                   return (

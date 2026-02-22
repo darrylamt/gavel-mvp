@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LayoutDashboard, Package, Store, Truck } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Gavel, LayoutDashboard, Package, Store, Truck, Wallet } from 'lucide-react'
 
 type Props = {
   children: React.ReactNode
@@ -11,7 +11,9 @@ type Props = {
 
 const tabs = [
   { href: '/seller', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/seller/products', label: 'Products', icon: Package },
+  { href: '/seller/auctions', label: 'My Auctions', icon: Gavel },
+  { href: '/seller/products', label: 'My Products', icon: Package },
+  { href: '/seller/earnings', label: 'Earnings', icon: Wallet },
   { href: '/seller/shop', label: 'Shop Profile', icon: Store },
   { href: '/seller/deliveries', label: 'Deliveries', icon: Truck },
 ]
@@ -24,7 +26,7 @@ export default function SellerShell({ children }: Props) {
     <main className="min-h-[calc(100vh-64px)] bg-gray-100 p-4 md:p-6">
       <div className={`mx-auto grid w-full max-w-7xl gap-4 ${collapsed ? 'lg:grid-cols-[84px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
         <aside className="rounded-2xl bg-white p-4 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
+          <div className={`${collapsed ? 'mb-2' : 'mb-4'} flex items-center justify-between`}>
             {!collapsed && <h1 className="text-2xl font-bold">Seller</h1>}
             <button
               type="button"
@@ -61,14 +63,6 @@ export default function SellerShell({ children }: Props) {
               )
             })}
           </nav>
-
-          <Link
-            href="/auctions/new"
-            title="New Auction"
-            className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-          >
-            {collapsed ? 'New' : 'New Auction'}
-          </Link>
         </aside>
 
         <section className="space-y-4">{children}</section>

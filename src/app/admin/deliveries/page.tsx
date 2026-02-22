@@ -32,6 +32,26 @@ export default function AdminDeliveriesPage() {
   const [deliveries, setDeliveries] = useState<DeliveryRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'delivered'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredDeliveries = deliveries.filter((row) => {
+    const statusMatch =
+      statusFilter === 'delivered'
+        ? row.delivered_by_seller
+        : statusFilter === 'pending'
+          ? !row.delivered_by_seller
+          : true
+
+    const query = searchQuery.trim().toLowerCase()
+    const textMatch =
+      !query ||
+      `${row.product_title} ${row.buyer_full_name || ''} ${row.buyer_phone || ''} ${row.seller_name || ''} ${row.seller_shop_name || ''}`
+        .toLowerCase()
+        .includes(query)
+
+    return statusMatch && textMatch
+  })
 
   useEffect(() => {
     const load = async () => {
@@ -76,11 +96,33 @@ export default function AdminDeliveriesPage() {
       </div>
 
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search by product, buyer, or seller"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+          />
+          <p className="text-sm text-gray-500">
+            Showing {filteredDeliveries.length} of {deliveries.length} sold item{deliveries.length === 1 ? '' : 's'}.
+          </p>
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as 'all' | 'pending' | 'delivered')}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="all">All statuses</option>
+            <option value="pending">Pending only</option>
+            <option value="delivered">Delivered only</option>
+          </select>
+        </div>
+
         {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
         {loading ? (
           <p className="text-sm text-gray-500">Loading deliveries…</p>
-        ) : deliveries.length === 0 ? (
+        ) : filteredDeliveries.length === 0 ? (
           <p className="text-sm text-gray-500">No delivery records yet.</p>
         ) : (
           <div className="max-h-[70vh] overflow-auto">
@@ -98,7 +140,7 @@ export default function AdminDeliveriesPage() {
                 </tr>
               </thead>
               <tbody>
-                {deliveries.map((row, index) => (
+                {filteredDeliveries.map((row, index) => (
                   <tr key={`${row.order_id}-${row.item_id}-${index}`} className="border-t align-top">
                     <td className="py-2 whitespace-nowrap">{new Date(row.order_created_at).toLocaleString()}</td>
                     <td className="py-2">

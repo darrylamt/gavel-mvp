@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import PieChartCard from '@/components/base/PieChartCard'
 
 type ShopProduct = {
   id: string
@@ -40,6 +41,7 @@ export default function SellerProductsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -54,6 +56,35 @@ export default function SellerProductsPage() {
   const parsedPrice = Number(price)
   const hasValidPrice = Number.isFinite(parsedPrice) && parsedPrice >= 0
   const listedPricePreview = hasValidPrice ? Number((parsedPrice * 1.1).toFixed(2)) : null
+
+  const statusPie = useMemo(() => {
+    const grouped = new Map<string, number>()
+    for (const product of products) {
+      const key = product.status || 'unknown'
+      grouped.set(key, (grouped.get(key) ?? 0) + 1)
+    }
+    return Array.from(grouped.entries()).map(([label, value]) => ({ label, value }))
+  }, [products])
+
+  const filteredProducts = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase()
+    if (!normalizedQuery) return products
+
+    return products.filter((product) => product.title.toLowerCase().includes(normalizedQuery))
+  }, [products, searchQuery])
+
+  const categoryPie = useMemo(() => {
+    const grouped = new Map<string, number>()
+    for (const product of products) {
+      const key = product.category || 'Other'
+      grouped.set(key, (grouped.get(key) ?? 0) + 1)
+    }
+
+    return Array.from(grouped.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([label, value]) => ({ label, value }))
+  }, [products])
 
   const loadProducts = async () => {
     setLoading(true)
@@ -270,22 +301,38 @@ export default function SellerProductsPage() {
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold">My Buy-Now Products</h2>
-            <p className="mt-1 text-sm text-gray-500">Create and manage products for direct purchase.</p>
+            <h2 className="text-xl font-semibold">My Products</h2>
+            <p className="mt-1 text-sm text-gray-500">Add, manage, and review buy-now product listings and history.</p>
           </div>
           <button
             onClick={openCreateForm}
             className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
           >
-            New Product
+            Add Product
           </button>
+        </div>
+
+        <div className="mb-4 grid gap-4 lg:grid-cols-2">
+          <PieChartCard title="Product Status Split" points={statusPie} emptyLabel="No products yet" />
+          <PieChartCard title="Top Categories" points={categoryPie} emptyLabel="No category data yet" />
+        </div>
+
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search products by title"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+          />
+          <p className="text-xs text-gray-500">Showing {filteredProducts.length} of {products.length} products</p>
         </div>
 
         {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
         {loading ? (
           <p className="text-sm text-gray-500">Loading products…</p>
-        ) : products.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <p className="text-sm text-gray-500">No products yet.</p>
         ) : (
           <div className="max-h-[30rem] overflow-auto">
@@ -298,11 +345,12 @@ export default function SellerProductsPage() {
                   <th className="py-2">Category</th>
                   <th className="py-2">Shop</th>
                   <th className="py-2">Status</th>
+                  <th className="py-2">Created</th>
                   <th className="py-2 text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <tr key={product.id} className="border-t">
                     <td className="py-2">
                       <div className="flex items-center gap-2">
@@ -317,6 +365,7 @@ export default function SellerProductsPage() {
                     <td className="py-2">{product.category}</td>
                     <td className="py-2">{shops.find((shop) => shop.id === product.shop_id)?.name || '—'}</td>
                     <td className="py-2 capitalize">{product.status.replace('_', ' ')}</td>
+                    <td className="py-2">{product.created_at ? new Date(product.created_at).toLocaleString() : '-'}</td>
                     <td className="py-2 text-right">
                       <div className="inline-flex items-center gap-2">
                         <button
@@ -345,7 +394,7 @@ export default function SellerProductsPage() {
       {formOpen && (
         <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">{formMode === 'edit' ? 'Edit Product' : 'New Product'}</h2>
+            <h2 className="text-xl font-semibold">{formMode === 'edit' ? 'Edit Product' : 'Add Product'}</h2>
             <button onClick={closeForm} className="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">
               Close
             </button>
@@ -416,7 +465,7 @@ export default function SellerProductsPage() {
             disabled={saving}
             className="mt-4 rounded-lg bg-black px-4 py-2 font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
           >
-            {saving ? 'Saving…' : formMode === 'edit' ? 'Save Changes' : 'Create Product'}
+            {saving ? 'Saving…' : formMode === 'edit' ? 'Save Changes' : 'Add Product'}
           </button>
         </div>
       )}

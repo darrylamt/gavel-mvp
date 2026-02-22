@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
 
@@ -20,6 +20,8 @@ export default function AdminMessagesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<ContactMessage | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | ContactMessage['status']>('all')
 
   useEffect(() => {
     const loadMessages = async () => {
@@ -57,6 +59,15 @@ export default function AdminMessagesPage() {
     loadMessages()
   }, [])
 
+  const filteredMessages = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return messages.filter((item) => {
+      const statusMatch = statusFilter === 'all' || item.status === statusFilter
+      const textMatch = !query || `${item.name} ${item.email} ${item.subject} ${item.source}`.toLowerCase().includes(query)
+      return statusMatch && textMatch
+    })
+  }, [messages, searchQuery, statusFilter])
+
   return (
     <AdminShell>
       <div className="rounded-2xl bg-white p-4 shadow-sm">
@@ -65,6 +76,28 @@ export default function AdminMessagesPage() {
       </div>
 
       <div className="rounded-2xl bg-white p-4 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search messages"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+          />
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as 'all' | ContactMessage['status'])}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="all">All statuses</option>
+            <option value="new">New</option>
+            <option value="read">Read</option>
+            <option value="replied">Replied</option>
+            <option value="archived">Archived</option>
+          </select>
+          <span className="text-xs text-gray-500">{filteredMessages.length} shown</span>
+        </div>
+
         {error && (
           <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
@@ -73,7 +106,7 @@ export default function AdminMessagesPage() {
 
         {loading ? (
           <p className="text-sm text-gray-500">Loading messages…</p>
-        ) : messages.length === 0 ? (
+        ) : filteredMessages.length === 0 ? (
           <p className="text-sm text-gray-500">No contact messages found.</p>
         ) : (
           <div className="max-h-[68vh] overflow-auto">
@@ -88,7 +121,7 @@ export default function AdminMessagesPage() {
                 </tr>
               </thead>
               <tbody>
-                {messages.map((item) => (
+                {filteredMessages.map((item) => (
                   <tr key={item.id} className="border-t align-top">
                     <td className="py-2 whitespace-nowrap">{new Date(item.created_at).toLocaleString()}</td>
                     <td className="py-2">{item.name}</td>

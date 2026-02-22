@@ -10,6 +10,8 @@ import { DashboardPayload } from '@/components/admin/AdminTypes'
 export default function AdminAuctionsPage() {
   const [auctions, setAuctions] = useState<DashboardPayload['auctions']>([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   const loadAuctions = async () => {
     const {
@@ -80,6 +82,18 @@ export default function AdminAuctionsPage() {
     return Array.from(grouped.entries()).map(([label, value]) => ({ label, value }))
   }, [auctions])
 
+  const filteredAuctions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return auctions.filter((auction) => {
+      const status = auction.status || 'unknown'
+      const statusMatch = statusFilter === 'all' || status === statusFilter
+      const textMatch =
+        !query ||
+        `${auction.title || ''} ${auction.seller_name || ''} ${status}`.toLowerCase().includes(query)
+      return statusMatch && textMatch
+    })
+  }, [auctions, searchQuery, statusFilter])
+
   return (
     <AdminShell>
       <div className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
@@ -95,9 +109,31 @@ export default function AdminAuctionsPage() {
       <MiniBarChart title="Auction Status" points={statusGraph} colorClass="bg-sky-500" />
 
       <div className="rounded-2xl bg-white p-4 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search auctions"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+          />
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="ended">Ended</option>
+            <option value="delivered">Delivered</option>
+          </select>
+          <span className="text-xs text-gray-500">{filteredAuctions.length} shown</span>
+        </div>
+
         {loading ? (
           <p className="text-sm text-gray-500">Loading auctions…</p>
-        ) : auctions.length === 0 ? (
+        ) : filteredAuctions.length === 0 ? (
           <p className="text-sm text-gray-500">No auctions found.</p>
         ) : (
           <div className="max-h-[60vh] overflow-auto">
@@ -114,7 +150,7 @@ export default function AdminAuctionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {auctions.map((auction) => {
+                {filteredAuctions.map((auction) => {
                   const hasStarted = auction.starts_at ? new Date(auction.starts_at).getTime() <= Date.now() : true
 
                   return (

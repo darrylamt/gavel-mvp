@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
 
@@ -40,6 +40,8 @@ export default function AdminProductsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -50,6 +52,19 @@ export default function AdminProductsPage() {
   const [shopId, setShopId] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return products.filter((product) => {
+      const statusMatch = statusFilter === 'all' || product.status === statusFilter
+      const textMatch =
+        !query ||
+        `${product.title} ${product.category} ${shops.find((shop) => shop.id === product.shop_id)?.name || ''}`
+          .toLowerCase()
+          .includes(query)
+      return statusMatch && textMatch
+    })
+  }, [products, searchQuery, shops, statusFilter])
 
   const loadProducts = async () => {
     setLoading(true)
@@ -270,11 +285,33 @@ export default function AdminProductsPage() {
           </button>
         </div>
 
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search products"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+          />
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft</option>
+            <option value="active">Active</option>
+            <option value="sold_out">Sold out</option>
+            <option value="archived">Archived</option>
+          </select>
+          <span className="text-xs text-gray-500">{filteredProducts.length} shown</span>
+        </div>
+
         {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
         {loading ? (
           <p className="text-sm text-gray-500">Loading products…</p>
-        ) : products.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <p className="text-sm text-gray-500">No products yet.</p>
         ) : (
           <div className="max-h-[30rem] overflow-auto">
@@ -291,7 +328,7 @@ export default function AdminProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <tr key={product.id} className="border-t">
                     <td className="py-2">
                       <div className="flex items-center gap-2">

@@ -5,10 +5,16 @@ import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
 import MiniBarChart from '@/components/admin/MiniBarChart'
 import { DashboardPayload } from '@/components/admin/AdminTypes'
+import PieChartCard from '@/components/base/PieChartCard'
 
 export default function AdminPage() {
   const [data, setData] = useState<DashboardPayload>({ users: [], auctions: [], sellers: [] })
   const [loading, setLoading] = useState(true)
+  const [userSearch, setUserSearch] = useState('')
+  const [userRoleFilter, setUserRoleFilter] = useState('all')
+  const [sellerSearch, setSellerSearch] = useState('')
+  const [auctionSearch, setAuctionSearch] = useState('')
+  const [auctionStatusFilter, setAuctionStatusFilter] = useState('all')
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -64,12 +70,52 @@ export default function AdminPage() {
     return Array.from(grouped.entries()).map(([label, value]) => ({ label, value }))
   }, [data.users])
 
+  const filteredUsers = useMemo(() => {
+    const query = userSearch.trim().toLowerCase()
+    return data.users.filter((user) => {
+      const role = user.role || 'user'
+      const roleMatch = userRoleFilter === 'all' || role === userRoleFilter
+      const textMatch =
+        !query ||
+        `${user.username || ''} ${user.phone || ''} ${role}`.toLowerCase().includes(query)
+      return roleMatch && textMatch
+    })
+  }, [data.users, userRoleFilter, userSearch])
+
+  const filteredSellers = useMemo(() => {
+    const query = sellerSearch.trim().toLowerCase()
+    if (!query) return data.sellers
+    return data.sellers.filter((seller) => `${seller.name} ${seller.phone}`.toLowerCase().includes(query))
+  }, [data.sellers, sellerSearch])
+
+  const filteredAuctions = useMemo(() => {
+    const query = auctionSearch.trim().toLowerCase()
+    return data.auctions.filter((auction) => {
+      const status = auction.status || 'unknown'
+      const statusMatch = auctionStatusFilter === 'all' || status === auctionStatusFilter
+      const textMatch =
+        !query ||
+        `${auction.title || ''} ${auction.seller_name || ''} ${status}`.toLowerCase().includes(query)
+      return statusMatch && textMatch
+    })
+  }, [auctionSearch, auctionStatusFilter, data.auctions])
+
   if (loading) {
     return <p className="p-6">Loading admin dashboard…</p>
   }
 
   return (
     <AdminShell>
+      <div className="grid gap-4 md:grid-cols-2">
+        <MiniBarChart title="Auctions by Status" points={statusGraph} colorClass="bg-blue-500" />
+        <MiniBarChart title="Users by Role" points={roleGraph} colorClass="bg-violet-500" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <PieChartCard title="Auction Status Split" points={statusGraph} emptyLabel="No auction status data" />
+        <PieChartCard title="User Role Split" points={roleGraph} emptyLabel="No user role data" />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Users" value={String(data.users.length)} />
         <StatCard label="Auctions" value={String(data.auctions.length)} />
@@ -77,14 +123,30 @@ export default function AdminPage() {
         <StatCard label="Sellers" value={String(data.sellers.length)} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <MiniBarChart title="Auctions by Status" points={statusGraph} colorClass="bg-blue-500" />
-        <MiniBarChart title="Users by Role" points={roleGraph} colorClass="bg-violet-500" />
-      </div>
-
       <div className="grid gap-4 xl:grid-cols-2">
         <Card title="Users">
-          {data.users.length === 0 ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={userSearch}
+              onChange={(event) => setUserSearch(event.target.value)}
+              placeholder="Search users"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+            />
+            <select
+              value={userRoleFilter}
+              onChange={(event) => setUserRoleFilter(event.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="all">All roles</option>
+              <option value="admin">Admin</option>
+              <option value="seller">Seller</option>
+              <option value="user">User</option>
+            </select>
+            <span className="text-xs text-gray-500">{filteredUsers.length} shown</span>
+          </div>
+
+          {filteredUsers.length === 0 ? (
             <p className="text-sm text-gray-500">No users found.</p>
           ) : (
             <div className="max-h-72 overflow-auto">
@@ -98,7 +160,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.users.slice(0, 30).map((user) => (
+                  {filteredUsers.slice(0, 30).map((user) => (
                     <tr key={user.id} className="border-t">
                       <td className="py-2">{user.username || '-'}</td>
                       <td className="py-2">{user.phone || '-'}</td>
@@ -113,7 +175,18 @@ export default function AdminPage() {
         </Card>
 
         <Card title="Sellers">
-          {data.sellers.length === 0 ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={sellerSearch}
+              onChange={(event) => setSellerSearch(event.target.value)}
+              placeholder="Search sellers"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+            />
+            <span className="text-xs text-gray-500">{filteredSellers.length} shown</span>
+          </div>
+
+          {filteredSellers.length === 0 ? (
             <p className="text-sm text-gray-500">No external sellers yet.</p>
           ) : (
             <div className="max-h-72 overflow-auto">
@@ -126,7 +199,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.sellers.slice(0, 30).map((seller) => (
+                  {filteredSellers.slice(0, 30).map((seller) => (
                     <tr key={seller.userId} className="border-t">
                       <td className="py-2">{seller.name}</td>
                       <td className="py-2">{seller.phone}</td>
@@ -141,7 +214,29 @@ export default function AdminPage() {
       </div>
 
       <Card title="Auctions">
-        {data.auctions.length === 0 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={auctionSearch}
+            onChange={(event) => setAuctionSearch(event.target.value)}
+            placeholder="Search auctions"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+          />
+          <select
+            value={auctionStatusFilter}
+            onChange={(event) => setAuctionStatusFilter(event.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="ended">Ended</option>
+            <option value="delivered">Delivered</option>
+          </select>
+          <span className="text-xs text-gray-500">{filteredAuctions.length} shown</span>
+        </div>
+
+        {filteredAuctions.length === 0 ? (
           <p className="text-sm text-gray-500">No auctions found.</p>
         ) : (
           <div className="max-h-80 overflow-auto">
@@ -157,7 +252,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.auctions.slice(0, 60).map((auction) => (
+                {filteredAuctions.slice(0, 60).map((auction) => (
                   <tr key={auction.id} className="border-t">
                     <td className="py-2">{auction.title}</td>
                     <td className="py-2">{auction.status || '-'}</td>

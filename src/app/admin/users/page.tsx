@@ -9,6 +9,8 @@ import { DashboardPayload } from '@/components/admin/AdminTypes'
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<DashboardPayload['users']>([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
 
   useEffect(() => {
     const load = async () => {
@@ -46,6 +48,17 @@ export default function AdminUsersPage() {
     return Array.from(grouped.entries()).map(([label, value]) => ({ label, value }))
   }, [users])
 
+  const filteredUsers = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+
+    return users.filter((user) => {
+      const role = user.role || 'user'
+      const roleMatch = roleFilter === 'all' || role === roleFilter
+      const textMatch = !query || `${user.username || ''} ${user.phone || ''} ${role}`.toLowerCase().includes(query)
+      return roleMatch && textMatch
+    })
+  }, [roleFilter, searchQuery, users])
+
   return (
     <AdminShell>
       <div className="rounded-2xl bg-white p-4 shadow-sm">
@@ -56,9 +69,30 @@ export default function AdminUsersPage() {
       <MiniBarChart title="User Roles" points={roleGraph} colorClass="bg-indigo-500" />
 
       <div className="rounded-2xl bg-white p-4 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search users"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
+          />
+          <select
+            value={roleFilter}
+            onChange={(event) => setRoleFilter(event.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="all">All roles</option>
+            <option value="admin">Admin</option>
+            <option value="seller">Seller</option>
+            <option value="user">User</option>
+          </select>
+          <span className="text-xs text-gray-500">{filteredUsers.length} shown</span>
+        </div>
+
         {loading ? (
           <p className="text-sm text-gray-500">Loading users…</p>
-        ) : users.length === 0 ? (
+        ) : filteredUsers.length === 0 ? (
           <p className="text-sm text-gray-500">No users found.</p>
         ) : (
           <div className="max-h-[60vh] overflow-auto">
@@ -72,7 +106,7 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.id} className="border-t">
                     <td className="py-2">{user.username || '-'}</td>
                     <td className="py-2">{user.phone || '-'}</td>
