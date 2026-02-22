@@ -84,6 +84,36 @@ export default async function HomePage() {
       tagline: 'Unique finds and rare items',
       image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=900&q=80',
     },
+    {
+      name: 'Cosmetics',
+      tagline: 'Beauty, skincare, and makeup',
+      image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Books',
+      tagline: 'Textbooks, novels, and learning',
+      image: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Sports',
+      tagline: 'Fitness gear and accessories',
+      image: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Kids',
+      tagline: 'Toys, essentials, and accessories',
+      image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Office Supplies',
+      tagline: 'Workstation and stationery picks',
+      image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=900&q=80',
+    },
+    {
+      name: 'Jewelry',
+      tagline: 'Rings, watches, and accessories',
+      image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=900&q=80',
+    },
   ]
 
   return (

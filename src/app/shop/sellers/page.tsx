@@ -84,13 +84,13 @@ export default async function SellerShopsPage() {
           <p className="mt-2 text-sm text-gray-600">Check back soon for seller storefronts.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sortedShops.map((shop) => (
             <article
               key={shop.id}
-              className="w-full max-w-sm overflow-hidden rounded-3xl border border-gray-200 bg-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
+              className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
             >
-              <div className="relative h-48 overflow-hidden rounded-2xl bg-gray-100">
+              <div className="relative h-40 overflow-hidden rounded-xl bg-gray-100 sm:h-44">
                 {shop.logo_url ? (
                   <img src={shop.logo_url} alt={shop.name || 'Shop logo'} className="h-full w-full object-cover" />
                 ) : (
@@ -101,35 +101,29 @@ export default async function SellerShopsPage() {
                   Active Shop
                 </div>
 
-                <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-white" />
-                  <span className="h-2 w-2 rounded-full bg-white/60" />
-                  <span className="h-2 w-2 rounded-full bg-white/60" />
-                  <span className="h-2 w-2 rounded-full bg-white/60" />
-                </div>
               </div>
 
-              <div className="px-2 pb-2 pt-3">
-                <h3 className="truncate text-4xl font-extrabold leading-none text-gray-900">{shop.name || 'Shop'}</h3>
+              <div className="px-1 pb-1 pt-3">
+                <h3 className="text-xl font-bold leading-tight text-gray-900 break-words">{shop.name || 'Shop'}</h3>
                 {shop.topCategories.length > 0 ? (
-                  <p className="mt-1.5 text-sm font-medium text-gray-600">{shop.topCategories.join(' • ')}</p>
+                  <p className="mt-1 text-sm font-medium text-gray-600">{shop.topCategories.join(' • ')}</p>
                 ) : (
-                  <p className="mt-1.5 text-sm font-medium text-gray-500">Trusted seller storefront</p>
+                  <p className="mt-1 text-sm font-medium text-gray-500">Trusted seller storefront</p>
                 )}
 
-                <p className="mt-2 line-clamp-2 text-xs font-medium text-gray-500">
+                <p className="mt-2 text-xs font-medium text-gray-500">
                   Browse products from this shop and order instantly from available listings.
                 </p>
 
                 <div className="mt-4 flex items-center justify-between gap-2">
-                  <div className="rounded-full bg-gray-100 px-3 py-1.5 text-xl font-black text-gray-900">
+                  <div className="rounded-full bg-gray-100 px-3 py-1 text-sm font-bold text-gray-900">
                     {shop.productCount}
                   </div>
                   <Link
                     href={`/shop/seller/${shop.id}`}
-                    className="inline-flex items-center rounded-full bg-black px-4 py-2 text-base font-semibold text-white hover:bg-gray-800"
+                    className="inline-flex items-center rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
                   >
-                    View Shop ↗
+                    View Shop
                   </Link>
                 </div>
               </div>
