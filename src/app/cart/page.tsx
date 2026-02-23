@@ -49,6 +49,8 @@ export default function CartPage() {
           },
           items: items.map((item) => ({
             product_id: item.productId,
+            variant_id: item.variantId ?? null,
+            variant_label: item.variantLabel ?? null,
             quantity: item.quantity,
           })),
         }),
@@ -106,7 +108,7 @@ export default function CartPage() {
 
             <div className="divide-y">
               {items.map((item) => (
-                <div key={item.productId} className="grid grid-cols-[1fr_auto] gap-3 py-4 md:grid-cols-[1.3fr_0.8fr_0.7fr_0.3fr] md:items-center">
+                <div key={item.lineId} className="grid grid-cols-[1fr_auto] gap-3 py-4 md:grid-cols-[1.3fr_0.8fr_0.7fr_0.3fr] md:items-center">
                   <div className="flex items-center gap-3">
                     <div className="h-14 w-14 overflow-hidden rounded-lg bg-gray-100">
                       {item.imageUrl ? (
@@ -117,6 +119,7 @@ export default function CartPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-gray-900">{item.title}</p>
+                      {item.variantLabel ? <p className="text-xs text-gray-500">{item.variantLabel}</p> : null}
                       <p className="text-xs text-gray-500">GHS {item.price.toLocaleString()} each</p>
                       <p className="text-xs text-gray-500">In stock: {item.availableStock}</p>
                     </div>
@@ -125,7 +128,7 @@ export default function CartPage() {
                   <div className="flex items-center justify-end gap-2 md:hidden">
                     <div className="inline-flex items-center gap-3 rounded-full border px-3 py-1 text-sm">
                       <button
-                        onClick={() => decrementItem(item.productId)}
+                        onClick={() => decrementItem(item.lineId)}
                         className="font-bold text-gray-700 hover:text-black"
                         aria-label={`Decrease quantity for ${item.title}`}
                       >
@@ -133,7 +136,7 @@ export default function CartPage() {
                       </button>
                       <span className="min-w-6 text-center font-semibold">{item.quantity}</span>
                       <button
-                        onClick={() => incrementItem(item.productId)}
+                        onClick={() => incrementItem(item.lineId)}
                         disabled={item.quantity >= item.availableStock}
                         className="font-bold text-gray-700 hover:text-black disabled:cursor-not-allowed disabled:text-gray-300"
                         aria-label={`Increase quantity for ${item.title}`}
@@ -147,7 +150,7 @@ export default function CartPage() {
                     </div>
 
                     <button
-                      onClick={() => removeFromCart(item.productId)}
+                      onClick={() => removeFromCart(item.lineId)}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
                       aria-label={`Remove ${item.title} from cart`}
                     >
@@ -158,7 +161,7 @@ export default function CartPage() {
                   <div className="hidden md:block">
                     <div className="inline-flex items-center gap-3 rounded-full border px-3 py-1 text-sm">
                       <button
-                        onClick={() => decrementItem(item.productId)}
+                        onClick={() => decrementItem(item.lineId)}
                         className="font-bold text-gray-700 hover:text-black"
                         aria-label={`Decrease quantity for ${item.title}`}
                       >
@@ -166,7 +169,7 @@ export default function CartPage() {
                       </button>
                       <span className="min-w-6 text-center font-semibold">{item.quantity}</span>
                       <button
-                        onClick={() => incrementItem(item.productId)}
+                        onClick={() => incrementItem(item.lineId)}
                         disabled={item.quantity >= item.availableStock}
                         className="font-bold text-gray-700 hover:text-black disabled:cursor-not-allowed disabled:text-gray-300"
                         aria-label={`Increase quantity for ${item.title}`}
@@ -182,7 +185,7 @@ export default function CartPage() {
 
                   <div className="hidden md:flex md:justify-end">
                     <button
-                      onClick={() => removeFromCart(item.productId)}
+                      onClick={() => removeFromCart(item.lineId)}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
                       aria-label={`Remove ${item.title} from cart`}
                     >

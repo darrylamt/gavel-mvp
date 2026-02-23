@@ -82,6 +82,8 @@ export default function ShopProductCard({ id, title, description, price, imageUr
             event.stopPropagation()
             const added = addToCart({
               productId: id,
+              variantId: null,
+              variantLabel: null,
               title,
               price,
               imageUrl,

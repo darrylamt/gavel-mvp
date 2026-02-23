@@ -4,6 +4,8 @@ import 'server-only'
 
 type CheckoutItemInput = {
   product_id: string
+  variant_id?: string | null
+  variant_label?: string | null
   quantity: number
 }
 
@@ -56,6 +58,8 @@ export async function POST(req: Request) {
     const normalizedItems = items
       .map((item) => ({
         product_id: String(item.product_id || '').trim(),
+        variant_id: item.variant_id ? String(item.variant_id).trim() : null,
+        variant_label: item.variant_label ? String(item.variant_label).trim() : null,
         quantity: Math.max(0, Math.floor(Number(item.quantity))),
       }))
       .filter((item) => item.product_id && item.quantity > 0)
@@ -65,6 +69,7 @@ export async function POST(req: Request) {
     }
 
     const productIds = [...new Set(normalizedItems.map((item) => item.product_id))]
+    const variantIds = [...new Set(normalizedItems.map((item) => item.variant_id).filter((value): value is string => !!value))]
 
     const { data: products, error: productsError } = await supabase
       .from('shop_products')
@@ -76,6 +81,19 @@ export async function POST(req: Request) {
     }
 
     const productById = new Map((products ?? []).map((product) => [product.id as string, product]))
+
+    const { data: variants, error: variantsError } = variantIds.length
+      ? await supabase
+          .from('shop_product_variants')
+          .select('id, product_id, color, size, price, stock, is_active')
+          .in('id', variantIds)
+      : { data: [], error: null }
+
+    if (variantsError) {
+      return NextResponse.json({ error: variantsError.message }, { status: 500 })
+    }
+
+    const variantById = new Map((variants ?? []).map((variant) => [String(variant.id), variant]))
 
     const shopIds = Array.from(new Set((products ?? []).map((product) => String(product.shop_id || '')).filter(Boolean)))
 
@@ -112,12 +130,27 @@ export async function POST(req: Request) {
         throw new Error('One or more products no longer exist')
       }
 
-      const unitPrice = Number(product.price)
-      const currentStock = Number(product.stock)
+      const variant = item.variant_id ? variantById.get(item.variant_id) : null
+
+      if (item.variant_id && !variant) {
+        throw new Error(`${product.title} variant is not available`)
+      }
+
+      if (variant && String(variant.product_id) !== String(product.id)) {
+        throw new Error(`${product.title} variant does not match product`)
+      }
+
+      const unitPrice = Number(variant ? variant.price : product.price)
+      const currentStock = Number(variant ? variant.stock : product.stock)
       const status = String(product.status ?? '')
+      const variantActive = variant ? Boolean(variant.is_active) : true
 
       if (status !== 'active') {
         throw new Error(`${product.title} is not available for checkout`)
+      }
+
+      if (!variantActive) {
+        throw new Error(`${product.title} variant is not active`)
       }
 
       if (!Number.isFinite(unitPrice) || unitPrice < 0) {
@@ -130,9 +163,19 @@ export async function POST(req: Request) {
 
       totalAmount += unitPrice * item.quantity
 
+      const variantLabel = variant
+        ? [variant.color, variant.size].filter((value): value is string => !!value && value.trim().length > 0).join(' / ')
+        : ''
+
+      const resolvedVariantLabel = variantLabel || item.variant_label || null
+
+      const title = resolvedVariantLabel ? `${product.title} (${resolvedVariantLabel})` : product.title
+
       return {
         product_id: product.id,
-        title: product.title,
+        variant_id: variant ? String(variant.id) : null,
+        variant_label: resolvedVariantLabel,
+        title,
         quantity: item.quantity,
         unit_price: unitPrice,
         seller_id: String(shopById.get(String(product.shop_id || ''))?.owner_id || ''),

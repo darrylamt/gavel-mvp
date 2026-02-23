@@ -6,26 +6,80 @@ import { useCart } from '@/hooks/useCart'
 import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useTopToast } from '@/components/ui/TopToastProvider'
 
+type VariantOption = {
+  id: string
+  color: string | null
+  size: string | null
+  sku?: string | null
+  price: number
+  stock: number
+  imageUrl?: string | null
+  isDefault?: boolean
+}
+
 type Props = {
   productId: string
   title: string
   price: number
   imageUrl: string | null
   stock: number
+  variantId?: string | null
+  variantLabel?: string | null
+  variants?: VariantOption[]
 }
 
-export default function ProductDetailActions({ productId, title, price, imageUrl, stock }: Props) {
+function formatVariantLabel(option: VariantOption) {
+  const parts = [option.color, option.size].filter((value): value is string => !!value && value.trim().length > 0)
+  return parts.join(' / ') || option.sku || 'Default'
+}
+
+export default function ProductDetailActions({ productId, title, price, imageUrl, stock, variantId = null, variantLabel = null, variants = [] }: Props) {
   const { addToCart } = useCart()
   const [quantity, setQuantity] = useState(1)
   const { isStarredProduct, toggleStarredProduct } = useStarredProducts()
   const { notify } = useTopToast()
   const isStarred = isStarredProduct(productId)
 
-  const maxQuantity = Math.max(1, Math.min(stock, 99))
+  const hasVariants = variants.length > 0
+  const defaultVariant = hasVariants
+    ? variants.find((option) => option.isDefault) ?? variants[0]
+    : null
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(defaultVariant?.id ?? variantId)
+  const selectedVariant = hasVariants
+    ? variants.find((option) => option.id === selectedVariantId) ?? defaultVariant
+    : null
+
+  const effectivePrice = selectedVariant ? Number(selectedVariant.price) : Number(price)
+  const effectiveStock = selectedVariant ? Number(selectedVariant.stock) : Number(stock)
+  const selectedVariantLabel = selectedVariant
+    ? formatVariantLabel(selectedVariant)
+    : variantLabel
+
+  const maxQuantity = Math.max(1, Math.min(effectiveStock, 99))
 
   return (
     <div className="relative">
       <div className="flex flex-wrap items-center gap-3">
+        {hasVariants && (
+          <div className="w-full space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Variant</label>
+            <select
+              value={selectedVariant?.id ?? ''}
+              onChange={(event) => {
+                setSelectedVariantId(event.target.value)
+                setQuantity(1)
+              }}
+              className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm text-gray-900 outline-none focus:border-gray-500"
+            >
+              {variants.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {formatVariantLabel(option)} — GHS {Number(option.price).toLocaleString()} ({option.stock} in stock)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <input
           type="number"
           min={1}
@@ -49,10 +103,12 @@ export default function ProductDetailActions({ productId, title, price, imageUrl
             for (let i = 0; i < quantity; i += 1) {
               const added = addToCart({
                 productId,
+                variantId: selectedVariant?.id ?? variantId,
+                variantLabel: selectedVariantLabel,
                 title,
-                price,
-                imageUrl,
-                availableStock: stock,
+                price: effectivePrice,
+                imageUrl: selectedVariant?.imageUrl ?? imageUrl,
+                availableStock: effectiveStock,
               })
 
               if (!added) break
@@ -66,7 +122,7 @@ export default function ProductDetailActions({ productId, title, price, imageUrl
 
             notify({ title: 'Added to cart', description: `${title} was added to your cart.`, variant: 'success' })
           }}
-          disabled={stock <= 0}
+          disabled={effectiveStock <= 0}
           className="h-12 min-w-44 border border-gray-900 px-6 text-xs font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:bg-gray-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           Add to Cart

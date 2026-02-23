@@ -24,6 +24,18 @@ type RelatedProduct = {
   category: string
 }
 
+type ProductVariant = {
+  id: string
+  color: string | null
+  size: string | null
+  sku: string | null
+  price: number
+  stock: number
+  image_url: string | null
+  is_default: boolean
+  is_active: boolean
+}
+
 type ProductReview = {
   rating: number
   title: string | null
@@ -79,8 +91,20 @@ export default async function ShopProductDetailPage({ params }: Props) {
     .order('created_at', { ascending: false })
     .limit(5)
 
+  const { data: variantRows } = await supabase
+    .from('shop_product_variants')
+    .select('id, color, size, sku, price, stock, image_url, is_default, is_active')
+    .eq('product_id', product.id)
+    .eq('is_active', true)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: true })
+
   const latest = (latestProducts ?? []) as RelatedProduct[]
   const reviews = (reviewsData ?? []) as ProductReview[]
+  const variants = (variantRows ?? []) as ProductVariant[]
+  const hasVariants = variants.length > 0
+  const minVariantPrice = hasVariants ? Math.min(...variants.map((variant) => Number(variant.price ?? 0))) : Number(product.price)
+  const totalVariantStock = hasVariants ? variants.reduce((sum, variant) => sum + Number(variant.stock ?? 0), 0) : Number(product.stock)
   const displaySku = product.id.slice(0, 8).toUpperCase()
   const productUrl = `${siteUrl}/shop/${product.id}`
   const priceValidUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString().split('T')[0]
@@ -226,8 +250,10 @@ export default async function ShopProductDetailPage({ params }: Props) {
           <div className="mt-4 border-t border-gray-200" />
 
           <div className="mt-6 flex items-center justify-between gap-3">
-            <p className="text-4xl font-bold text-gray-900">GHS {Number(product.price).toLocaleString()}</p>
-            <p className="text-sm font-medium text-gray-500">{product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}</p>
+            <p className="text-4xl font-bold text-gray-900">
+              {hasVariants ? 'From ' : ''}GHS {Number(minVariantPrice).toLocaleString()}
+            </p>
+            <p className="text-sm font-medium text-gray-500">{totalVariantStock > 0 ? `${totalVariantStock} in stock` : 'Out of stock'}</p>
           </div>
 
           <div className="mt-6">
@@ -237,6 +263,16 @@ export default async function ShopProductDetailPage({ params }: Props) {
               price={Number(product.price)}
               imageUrl={product.image_url}
               stock={Number(product.stock)}
+              variants={variants.map((variant) => ({
+                id: variant.id,
+                color: variant.color,
+                size: variant.size,
+                sku: variant.sku,
+                price: Number(variant.price ?? 0),
+                stock: Number(variant.stock ?? 0),
+                imageUrl: variant.image_url,
+                isDefault: !!variant.is_default,
+              }))}
             />
           </div>
 

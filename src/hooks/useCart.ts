@@ -6,7 +6,10 @@ const CART_ITEMS_KEY = 'gavel:cart-items'
 const CART_ITEMS_EVENT = 'gavel:cart-items-changed'
 
 export type CartItem = {
+  lineId: string
   productId: string
+  variantId?: string | null
+  variantLabel?: string | null
   title: string
   price: number
   imageUrl: string | null
@@ -16,10 +19,16 @@ export type CartItem = {
 
 type AddToCartInput = {
   productId: string
+  variantId?: string | null
+  variantLabel?: string | null
   title: string
   price: number
   imageUrl: string | null
   availableStock: number
+}
+
+function buildLineId(productId: string, variantId?: string | null) {
+  return variantId ? `${productId}:${variantId}` : `${productId}:default`
 }
 
 function readCartItems(): CartItem[] {
@@ -34,6 +43,7 @@ function readCartItems(): CartItem[] {
 
     return parsed.filter((item): item is CartItem => {
       return (
+        typeof item?.lineId === 'string' &&
         typeof item?.productId === 'string' &&
         typeof item?.title === 'string' &&
         typeof item?.price === 'number' &&
@@ -73,7 +83,8 @@ export function useCart() {
     if (safeStock <= 0) return false
 
     const current = readCartItems()
-    const index = current.findIndex((item) => item.productId === input.productId)
+    const lineId = buildLineId(input.productId, input.variantId)
+    const index = current.findIndex((item) => item.lineId === lineId)
 
     let next: CartItem[]
 
@@ -91,7 +102,10 @@ export function useCart() {
       next = [
         ...current,
         {
+          lineId,
           productId: input.productId,
+          variantId: input.variantId ?? null,
+          variantLabel: input.variantLabel ?? null,
           title: input.title,
           price: input.price,
           imageUrl: input.imageUrl,
@@ -106,40 +120,40 @@ export function useCart() {
     return true
   }, [])
 
-  const removeFromCart = useCallback((productId: string) => {
+  const removeFromCart = useCallback((lineId: string) => {
     const current = readCartItems()
-    const next = current.filter((item) => item.productId !== productId)
+    const next = current.filter((item) => item.lineId !== lineId)
     writeCartItems(next)
     setItems(next)
   }, [])
 
-  const setItemQuantity = useCallback((productId: string, quantity: number) => {
+  const setItemQuantity = useCallback((lineId: string, quantity: number) => {
     const current = readCartItems()
 
-    const target = current.find((item) => item.productId === productId)
+    const target = current.find((item) => item.lineId === lineId)
     if (!target) return
 
     const clampedQuantity = Math.max(0, Math.min(Math.floor(quantity), Math.max(target.availableStock, 0)))
 
     if (clampedQuantity <= 0) {
-      const next = current.filter((item) => item.productId !== productId)
+      const next = current.filter((item) => item.lineId !== lineId)
       writeCartItems(next)
       setItems(next)
       return
     }
 
     const next = current.map((item) =>
-      item.productId === productId ? { ...item, quantity: clampedQuantity } : item
+      item.lineId === lineId ? { ...item, quantity: clampedQuantity } : item
     )
 
     writeCartItems(next)
     setItems(next)
   }, [])
 
-  const incrementItem = useCallback((productId: string) => {
+  const incrementItem = useCallback((lineId: string) => {
     const current = readCartItems()
     const next = current.map((item) =>
-      item.productId === productId
+      item.lineId === lineId
         ? { ...item, quantity: Math.min(item.quantity + 1, Math.max(item.availableStock, 0)) }
         : item
     )
@@ -148,11 +162,11 @@ export function useCart() {
     setItems(next)
   }, [])
 
-  const decrementItem = useCallback((productId: string) => {
+  const decrementItem = useCallback((lineId: string) => {
     const current = readCartItems()
     const next = current
       .map((item) =>
-        item.productId === productId ? { ...item, quantity: item.quantity - 1 } : item
+        item.lineId === lineId ? { ...item, quantity: item.quantity - 1 } : item
       )
       .filter((item) => item.quantity > 0)
 

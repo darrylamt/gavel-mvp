@@ -16,6 +16,20 @@ type ShopProduct = {
   image_url: string | null
   created_at: string
   shop_id: string | null
+  variants?: ShopProductVariant[]
+}
+
+type ShopProductVariant = {
+  id: string
+  product_id: string
+  color: string | null
+  size: string | null
+  sku: string | null
+  price: number
+  seller_base_price: number | null
+  stock: number
+  is_default: boolean
+  is_active: boolean
 }
 
 type ShopOption = {
@@ -28,6 +42,29 @@ type ShopCategoryOption = {
   name: string
   slug: string
   image_url: string | null
+}
+
+type ProductVariantDraft = {
+  id?: string
+  color: string
+  size: string
+  sku: string
+  price: string
+  stock: string
+  is_default: boolean
+  is_active: boolean
+}
+
+function createEmptyVariant(): ProductVariantDraft {
+  return {
+    color: '',
+    size: '',
+    sku: '',
+    price: '',
+    stock: '',
+    is_default: false,
+    is_active: true,
+  }
 }
 
 export default function SellerProductsPage() {
@@ -52,10 +89,24 @@ export default function SellerProductsPage() {
   const [shopId, setShopId] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [useVariants, setUseVariants] = useState(false)
+  const [variants, setVariants] = useState<ProductVariantDraft[]>([createEmptyVariant()])
 
   const parsedPrice = Number(price)
   const hasValidPrice = Number.isFinite(parsedPrice) && parsedPrice >= 0
   const listedPricePreview = hasValidPrice ? Number((parsedPrice * 1.1).toFixed(2)) : null
+
+  const variantPricePreview = useMemo(
+    () =>
+      variants.map((variant) => {
+        const numeric = Number(variant.price)
+        if (!Number.isFinite(numeric) || numeric < 0) {
+          return null
+        }
+        return Number((numeric * 1.1).toFixed(2))
+      }),
+    [variants]
+  )
 
   const statusPie = useMemo(() => {
     const grouped = new Map<string, number>()
@@ -143,6 +194,8 @@ export default function SellerProductsPage() {
     setCategory(categories[0]?.name ?? 'Other')
     setShopId(shops[0]?.id ?? '')
     setImageUrl('')
+    setUseVariants(false)
+    setVariants([createEmptyVariant()])
     setEditingId(null)
     setFormMode('create')
   }
@@ -169,12 +222,69 @@ export default function SellerProductsPage() {
     setCategory(product.category || categories[0]?.name || 'Other')
     setShopId(product.shop_id ?? shops[0]?.id ?? '')
     setImageUrl(product.image_url ?? '')
+    const activeVariants = (product.variants ?? []).filter((variant) => variant.is_active)
+    if (activeVariants.length > 0) {
+      setUseVariants(true)
+      setVariants(
+        activeVariants.map((variant, index) => {
+          const basePrice =
+            typeof variant.seller_base_price === 'number' && Number.isFinite(variant.seller_base_price)
+              ? Number(variant.seller_base_price)
+              : Number((Number(variant.price) / 1.1).toFixed(2))
+
+          return {
+            id: variant.id,
+            color: variant.color ?? '',
+            size: variant.size ?? '',
+            sku: variant.sku ?? '',
+            price: String(basePrice),
+            stock: String(variant.stock ?? 0),
+            is_default: index === 0 ? true : variant.is_default,
+            is_active: variant.is_active,
+          }
+        })
+      )
+    } else {
+      setUseVariants(false)
+      setVariants([createEmptyVariant()])
+    }
     setFormOpen(true)
   }
 
   const closeForm = () => {
     setFormOpen(false)
     resetForm()
+  }
+
+  const addVariantRow = () => {
+    setVariants((previous) => [...previous, createEmptyVariant()])
+  }
+
+  const updateVariantRow = (index: number, key: keyof ProductVariantDraft, value: string | boolean) => {
+    setVariants((previous) =>
+      previous.map((variant, variantIndex) =>
+        variantIndex === index ? { ...variant, [key]: value } : variant
+      )
+    )
+  }
+
+  const removeVariantRow = (index: number) => {
+    setVariants((previous) => {
+      const next = previous.filter((_, variantIndex) => variantIndex !== index)
+      if (next.length === 0) {
+        return [createEmptyVariant()]
+      }
+
+      if (!next.some((variant) => variant.is_default)) {
+        next[0] = { ...next[0], is_default: true }
+      }
+
+      return next
+    })
+  }
+
+  const setDefaultVariant = (index: number) => {
+    setVariants((previous) => previous.map((variant, variantIndex) => ({ ...variant, is_default: variantIndex === index })))
   }
 
   const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,6 +337,25 @@ export default function SellerProductsPage() {
         category,
         shop_id: shopId,
         image_url: imageUrl,
+        variants: useVariants
+          ? variants
+              .filter((variant) => {
+                const hasLabel = Boolean(variant.color.trim() || variant.size.trim() || variant.sku.trim())
+                const hasPrice = Number.isFinite(Number(variant.price))
+                const hasStock = Number.isFinite(Number(variant.stock))
+                return hasLabel || hasPrice || hasStock
+              })
+              .map((variant, index) => ({
+                id: variant.id,
+                color: variant.color.trim() || null,
+                size: variant.size.trim() || null,
+                sku: variant.sku.trim() || null,
+                price: Number(variant.price),
+                stock: Math.max(0, Math.floor(Number(variant.stock))),
+                is_default: variant.is_default || index === 0,
+                is_active: variant.is_active,
+              }))
+          : undefined,
       }
 
       const res = await fetch('/api/admin/products', {
@@ -423,20 +552,84 @@ export default function SellerProductsPage() {
               {uploadingImage && <p className="mt-1 text-xs text-gray-600">Uploading image…</p>}
               {imageUrl && <img src={imageUrl} alt="Product preview" className="mt-2 h-24 w-24 rounded-lg border object-cover" />}
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Price (GHS)</label>
-              <input type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
-              <p className="mt-1 text-xs text-gray-500">Listed price adds 10% automatically when sellers save a product.</p>
-              {listedPricePreview != null && (
-                <p className="mt-1 text-xs font-medium text-gray-700">
-                  You enter: GHS {parsedPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} • Listed price: GHS {listedPricePreview.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </p>
-              )}
+            <div className="md:col-span-2">
+              <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={useVariants}
+                  onChange={(event) => setUseVariants(event.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                This product has variants (different colors/sizes/prices)
+              </label>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Stock</label>
-              <input type="number" value={stock} onChange={(event) => setStock(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
-            </div>
+            {!useVariants ? (
+              <>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Price (GHS)</label>
+                  <input type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+                  <p className="mt-1 text-xs text-gray-500">Listed price adds 10% automatically when sellers save a product.</p>
+                  {listedPricePreview != null && (
+                    <p className="mt-1 text-xs font-medium text-gray-700">
+                      You enter: GHS {parsedPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} • Listed price: GHS {listedPricePreview.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Stock</label>
+                  <input type="number" value={stock} onChange={(event) => setStock(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+                </div>
+              </>
+            ) : (
+              <div className="md:col-span-2 rounded-xl border border-gray-200 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-800">Variants</p>
+                  <button type="button" onClick={addVariantRow} className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium hover:bg-gray-50">
+                    Add Variant
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {variants.map((variant, index) => (
+                    <div key={`${variant.id ?? 'new'}-${index}`} className="rounded-lg border border-gray-200 p-3">
+                      <div className="grid gap-3 md:grid-cols-6">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">Color</label>
+                          <input value={variant.color} onChange={(event) => updateVariantRow(index, 'color', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">Size</label>
+                          <input value={variant.size} onChange={(event) => updateVariantRow(index, 'size', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">SKU</label>
+                          <input value={variant.sku} onChange={(event) => updateVariantRow(index, 'sku', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">Price (GHS)</label>
+                          <input type="number" value={variant.price} onChange={(event) => updateVariantRow(index, 'price', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                          {variantPricePreview[index] != null && (
+                            <p className="mt-1 text-[11px] text-gray-500">Listed: GHS {Number(variantPricePreview[index]).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">Stock</label>
+                          <input type="number" value={variant.stock} onChange={(event) => updateVariantRow(index, 'stock', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                        </div>
+                        <div className="flex items-end gap-2 pb-1">
+                          <label className="inline-flex items-center gap-1 text-xs text-gray-600">
+                            <input type="radio" checked={variant.is_default} onChange={() => setDefaultVariant(index)} />
+                            Default
+                          </label>
+                          <button type="button" onClick={() => removeVariantRow(index)} className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50">
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Shop</label>
               <select value={shopId} onChange={(event) => setShopId(event.target.value)} className="w-full rounded-lg border px-3 py-2">

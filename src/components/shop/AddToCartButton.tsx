@@ -34,6 +34,8 @@ export default function AddToCartButton({ productId, title, price, imageUrl, sto
         onClick={() => {
           const added = addToCart({
             productId,
+            variantId: null,
+            variantLabel: null,
             title,
             price,
             imageUrl,

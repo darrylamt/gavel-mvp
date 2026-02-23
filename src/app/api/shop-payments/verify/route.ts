@@ -47,6 +47,8 @@ export async function POST(req: Request) {
       }
       items?: Array<{
         product_id: string
+        variant_id?: string | null
+        variant_label?: string | null
         title: string
         quantity: number
         unit_price: number
