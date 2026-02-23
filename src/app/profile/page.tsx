@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
@@ -24,6 +25,7 @@ type ProfileData = {
   phone: string | null
   address: string | null
   avatar_url: string | null
+  role: string | null
 }
 
 type BidAuctionItem = {
@@ -69,6 +71,7 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [onboardingHandled, setOnboardingHandled] = useState(false)
+  const [canAccessSellerDashboard, setCanAccessSellerDashboard] = useState(false)
 
   const loadWonAuctions = async (uid: string) => {
     const { data } = await supabase.rpc(
@@ -133,7 +136,7 @@ export default function ProfilePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, token_balance, phone, address, avatar_url')
+        .select('username, token_balance, phone, address, avatar_url, role')
         .eq('id', authUser.id)
         .single()
 
@@ -151,6 +154,21 @@ export default function ProfilePage() {
       setPhone(profileData?.phone ?? '')
       setAddress(profileData?.address ?? '')
       setAvatarUrl(profileData?.avatar_url ?? null)
+
+      const isSellerRole = profileData?.role === 'seller'
+      if (isSellerRole) {
+        setCanAccessSellerDashboard(true)
+      } else {
+        const { data: activeShop } = await supabase
+          .from('shops')
+          .select('id')
+          .eq('owner_id', authUser.id)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle()
+
+        setCanAccessSellerDashboard(!!activeShop)
+      }
 
       await loadWonAuctions(authUser.id)
       await loadBidAuctions(authUser.id)
@@ -214,6 +232,23 @@ export default function ProfilePage() {
         avatarUrl={avatarUrl}
         onEdit={() => setEditOpen(true)}
       />
+
+      {canAccessSellerDashboard && (
+        <section className="rounded-xl border border-gray-200 bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Seller access available</p>
+              <p className="text-sm text-gray-600">Manage your auctions, products, earnings, and deliveries.</p>
+            </div>
+            <Link
+              href="/seller"
+              className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+            >
+              Seller Dashboard
+            </Link>
+          </div>
+        </section>
+      )}
 
       <ContactDetailsSection
         phone={phone}

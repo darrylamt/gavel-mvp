@@ -81,7 +81,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const sourceApplications = status === 'approved'
+  let sourceApplications = status === 'approved'
     ? Array.from(
         new Map((data ?? []).map((application) => [application.user_id, application])).values()
       )
@@ -91,10 +91,23 @@ export async function GET(request: Request) {
   if (status === 'approved') {
     const userIds = Array.from(new Set(sourceApplications.map((application) => application.user_id).filter(Boolean)))
     if (userIds.length > 0) {
+      const { data: profiles } = await auth.service
+        .from('profiles')
+        .select('id, role')
+        .in('id', userIds)
+
+      const sellerRoleIds = new Set(
+        (profiles ?? [])
+          .filter((profile) => profile.role === 'seller')
+          .map((profile) => String(profile.id))
+      )
+
+      sourceApplications = sourceApplications.filter((application) => sellerRoleIds.has(String(application.user_id)))
+
       const { data: shops } = await auth.service
         .from('shops')
         .select('owner_id, name, status, created_at')
-        .in('owner_id', userIds)
+        .in('owner_id', Array.from(sellerRoleIds))
         .order('created_at', { ascending: false })
 
       for (const shop of shops ?? []) {

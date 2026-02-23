@@ -28,9 +28,22 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
-      const sellerRole = profile?.role === 'seller'
+      let sellerRole = profile?.role === 'seller'
+
+      if (!sellerRole) {
+        const { data: activeShop } = await supabase
+          .from('shops')
+          .select('id')
+          .eq('owner_id', user.id)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle()
+
+        sellerRole = !!activeShop
+      }
+
       const isSellerApplyPage = pathname === '/seller/apply'
 
       if (!sellerRole && !isSellerApplyPage) {

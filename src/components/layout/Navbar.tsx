@@ -192,6 +192,14 @@ export default function Navbar() {
               >
                 SHOPS
               </button>
+              {!loading && user && profileRole === 'seller' && (
+                <button
+                  onClick={() => router.push('/seller')}
+                  className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
+                >
+                  SELLER
+                </button>
+              )}
                 {isAdmin && (
                   <button
                     onClick={() => router.push('/admin')}

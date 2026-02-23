@@ -73,6 +73,11 @@ export default function Footer() {
                   Contact
                 </Link>
               </li>
+              <li>
+                <Link href="/seller/apply" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
+                  Become a Seller
+                </Link>
+              </li>
             </ul>
           </div>
 
