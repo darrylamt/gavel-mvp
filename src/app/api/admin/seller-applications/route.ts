@@ -26,6 +26,7 @@ type SellerApplicationRow = {
 type SellerApplicationResponse = SellerApplicationRow & {
   id_document_signed_url: string | null
   selfie_with_card_signed_url: string | null
+  shop_name: string | null
 }
 
 async function requireAdmin(request: Request) {
@@ -80,9 +81,34 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  const sourceApplications = status === 'approved'
+    ? Array.from(
+        new Map((data ?? []).map((application) => [application.user_id, application])).values()
+      )
+    : (data ?? [])
+
+  let shopNameByOwner = new Map<string, string>()
+  if (status === 'approved') {
+    const userIds = Array.from(new Set(sourceApplications.map((application) => application.user_id).filter(Boolean)))
+    if (userIds.length > 0) {
+      const { data: shops } = await auth.service
+        .from('shops')
+        .select('owner_id, name, status, created_at')
+        .in('owner_id', userIds)
+        .order('created_at', { ascending: false })
+
+      for (const shop of shops ?? []) {
+        if (!shop.owner_id || !shop.name) continue
+        if (!shopNameByOwner.has(shop.owner_id)) {
+          shopNameByOwner.set(shop.owner_id, shop.name)
+        }
+      }
+    }
+  }
+
   const applications: SellerApplicationResponse[] = []
 
-  for (const application of data ?? []) {
+  for (const application of sourceApplications) {
     const { data: idSigned } = await auth.service.storage
       .from('seller-documents')
       .createSignedUrl(application.id_document_url, 60 * 10)
@@ -97,6 +123,7 @@ export async function GET(request: Request) {
       ...application,
       id_document_signed_url: idSigned?.signedUrl ?? null,
       selfie_with_card_signed_url: selfieSigned?.signedUrl ?? null,
+      shop_name: shopNameByOwner.get(application.user_id) ?? null,
     })
   }
 

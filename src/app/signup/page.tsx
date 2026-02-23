@@ -97,7 +97,7 @@ export default function SignupPage() {
     }
 
     setShowOtpModal(false)
-    router.replace('/profile')
+    router.replace('/profile?onboarding=1')
     router.refresh()
   }
 
@@ -129,7 +129,7 @@ export default function SignupPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/profile%3Fonboarding%3D1`,
       },
     })
     setLoading(false)

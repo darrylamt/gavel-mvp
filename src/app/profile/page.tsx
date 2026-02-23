@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 import ProfileHeader from '@/components/profile/ProfileHeader'
@@ -53,6 +54,8 @@ type UserBidRow = {
 }
 
 export default function ProfilePage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [userId, setUserId] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
   const [tokens, setTokens] = useState<number>(0)
@@ -65,6 +68,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [onboardingHandled, setOnboardingHandled] = useState(false)
 
   const loadWonAuctions = async (uid: string) => {
     const { data } = await supabase.rpc(
@@ -156,6 +160,17 @@ export default function ProfilePage() {
 
     loadProfile()
   }, [])
+
+  useEffect(() => {
+    const onboarding = searchParams.get('onboarding')
+    if (loading || onboardingHandled || onboarding !== '1') {
+      return
+    }
+
+    setEditOpen(true)
+    setOnboardingHandled(true)
+    router.replace('/profile')
+  }, [loading, onboardingHandled, router, searchParams])
 
   const payNow = async (auctionId: string) => {
     const { data: auth } = await supabase.auth.getUser()

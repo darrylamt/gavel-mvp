@@ -8,6 +8,7 @@ type SellerApplication = {
   id: string
   user_id: string
   business_name: string
+  shop_name?: string | null
   business_type: string
   phone: string
   address: string
@@ -74,7 +75,11 @@ export default function AdminSellersPage() {
     const query = searchQuery.trim().toLowerCase()
     if (!query) return true
 
-    return `${application.business_name} ${application.phone} ${application.address}`
+    const displayName = statusFilter === 'approved'
+      ? (application.shop_name || application.business_name)
+      : application.business_name
+
+    return `${displayName} ${application.business_name} ${application.phone} ${application.address}`
       .toLowerCase()
       .includes(query)
   })
@@ -183,7 +188,7 @@ export default function AdminSellersPage() {
               <tbody>
                 {filteredApplications.map((application) => (
                   <tr key={application.id} className="border-t align-top">
-                    <td className="py-2 font-medium">{application.business_name}</td>
+                    <td className="py-2 font-medium">{statusFilter === 'approved' ? (application.shop_name || application.business_name) : application.business_name}</td>
                     <td className="py-2">{application.phone}</td>
                     <td className="py-2">{new Date(application.created_at).toLocaleString()}</td>
                     <td className="py-2">{application.status}</td>
@@ -208,7 +213,7 @@ export default function AdminSellersPage() {
           <div className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl bg-white p-5 shadow-xl">
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <h3 className="text-xl font-semibold">{selected.business_name}</h3>
+                <h3 className="text-xl font-semibold">{selected.shop_name || selected.business_name}</h3>
                 <p className="text-sm text-gray-500">Submitted {new Date(selected.created_at).toLocaleString()}</p>
               </div>
               <button
@@ -221,6 +226,7 @@ export default function AdminSellersPage() {
 
             <div className="grid gap-3 text-sm sm:grid-cols-2">
               <InfoItem label="Business Type" value={selected.business_type} />
+              <InfoItem label="Application Name" value={selected.business_name} />
               <InfoItem label="Phone" value={selected.phone} />
               <InfoItem label="Address" value={selected.address} />
               <InfoItem label="Ghana Card" value={selected.national_id_number} />

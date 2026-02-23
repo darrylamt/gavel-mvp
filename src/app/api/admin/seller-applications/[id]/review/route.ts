@@ -6,6 +6,15 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+function toSlug(input: string): string {
+  const normalized = input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return normalized || 'shop'
+}
+
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const authHeader = request.headers.get('authorization') || ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
@@ -62,6 +71,48 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  if (action === 'approved') {
+    const { data: application } = await service
+      .from('seller_applications')
+      .select('user_id, business_name')
+      .eq('id', id)
+      .maybeSingle<{ user_id: string; business_name: string | null }>()
+
+    const sellerId = application?.user_id || null
+    if (sellerId) {
+      const { data: existingShop } = await service
+        .from('shops')
+        .select('id, name')
+        .eq('owner_id', sellerId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle<{ id: string; name: string | null }>()
+
+      if (!existingShop) {
+        const preferredName = (application?.business_name || '').trim() || 'Seller Shop'
+        const baseSlug = `${toSlug(preferredName)}-${sellerId.slice(0, 6)}`
+
+        for (let index = 0; index < 5; index += 1) {
+          const slug = index === 0 ? baseSlug : `${baseSlug}-${index}`
+          const { error: createShopError } = await service
+            .from('shops')
+            .insert({
+              owner_id: sellerId,
+              name: preferredName,
+              slug,
+              status: 'active',
+            })
+
+          if (!createShopError) break
+
+          if (!String(createShopError.message || '').toLowerCase().includes('duplicate')) {
+            break
+          }
+        }
+      }
+    }
   }
 
   return NextResponse.json({ success: true })
