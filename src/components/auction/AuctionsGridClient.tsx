@@ -2,7 +2,7 @@
 
 import AuctionCard from '@/components/auction/AuctionCard'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type Auction = {
   id: string
@@ -28,6 +28,11 @@ type AuctionsGridClientProps = {
 
 export default function AuctionsGridClient({ auctions, starredOnly = false, engagementCounts = {} }: AuctionsGridClientProps) {
   const { starredSet, pruneStarred } = useStarredAuctions()
+  const [liveEngagementCounts, setLiveEngagementCounts] = useState(engagementCounts)
+
+  useEffect(() => {
+    setLiveEngagementCounts(engagementCounts)
+  }, [engagementCounts])
 
   useEffect(() => {
     if (!starredOnly) return
@@ -38,6 +43,42 @@ export default function AuctionsGridClient({ auctions, starredOnly = false, enga
   const visibleAuctions = starredOnly
     ? auctions.filter((auction) => starredSet.has(auction.id))
     : auctions
+
+  const visibleAuctionIds = useMemo(() => visibleAuctions.map((auction) => auction.id), [visibleAuctions])
+
+  useEffect(() => {
+    if (visibleAuctionIds.length === 0) return
+
+    let cancelled = false
+
+    const refreshEngagement = async () => {
+      const ids = visibleAuctionIds.join(',')
+      const res = await fetch(`/api/auctions/engagement?auctionIds=${encodeURIComponent(ids)}`, {
+        cache: 'no-store',
+      })
+
+      if (!res.ok || cancelled) return
+
+      const payload = (await res.json()) as {
+        counts?: Record<string, { bidderCount: number; watcherCount: number }>
+      }
+
+      if (cancelled || !payload?.counts) return
+
+      setLiveEngagementCounts((previous) => ({
+        ...previous,
+        ...payload.counts,
+      }))
+    }
+
+    void refreshEngagement()
+    const interval = setInterval(refreshEngagement, 15000)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [visibleAuctionIds])
 
   if (!visibleAuctions.length) {
     return (
@@ -51,7 +92,7 @@ export default function AuctionsGridClient({ auctions, starredOnly = false, enga
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
       {visibleAuctions.map((auction) => (
         (() => {
-          const counts = engagementCounts[auction.id] ?? { bidderCount: 0, watcherCount: 0 }
+          const counts = liveEngagementCounts[auction.id] ?? { bidderCount: 0, watcherCount: 0 }
           return (
         <AuctionCard
           key={auction.id}

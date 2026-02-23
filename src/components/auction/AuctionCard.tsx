@@ -210,8 +210,8 @@ export default function AuctionCard({
           </div>
         )}
 
-        {!isEnded && isScheduled && typeof watcherCount === 'number' && (
-          <div className="mt-3 text-xs font-medium text-purple-700">
+        {!isEnded && typeof watcherCount === 'number' && (
+          <div className={`text-xs font-medium ${!isScheduled && typeof bidderCount === 'number' ? 'mt-1' : 'mt-3'} text-purple-700`}>
             {watcherCount} watching
           </div>
         )}
