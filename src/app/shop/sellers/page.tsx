@@ -91,11 +91,11 @@ export default async function SellerShopsPage() {
               className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
             >
               <div className="relative h-40 overflow-hidden rounded-xl bg-gray-100 sm:h-44">
-                {shop.logo_url ? (
-                  <img src={shop.logo_url} alt={shop.name || 'Shop logo'} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-gray-400">No logo image</div>
-                )}
+                <img
+                  src={shop.logo_url || '/shop-placeholder.svg'}
+                  alt={shop.name || 'Shop logo'}
+                  className="h-full w-full object-cover"
+                />
 
                 <div className="absolute left-3 top-3 rounded-full bg-white/85 px-3 py-1 text-xs font-medium text-gray-700 backdrop-blur">
                   Active Shop

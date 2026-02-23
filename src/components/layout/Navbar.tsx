@@ -36,6 +36,18 @@ export default function Navbar() {
   const totalStarredCount = starredCount + starredProductCount
   const canBecomeSeller = !!user && profileRole !== 'seller' && profileRole !== 'admin'
 
+  const getMetadataFullName = () => {
+    if (!user) return null
+    const fullName =
+      (typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()) ||
+      [user.user_metadata?.first_name, user.user_metadata?.last_name]
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        .join(' ')
+        .trim()
+
+    return fullName || null
+  }
+
   useEffect(() => {
     if (!mobileMenuOpen) {
       return
@@ -67,10 +79,15 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!user) {
+      setProfileUsername(null)
+      setTokens(null)
+      setProfileAvatarUrl(null)
+      setProfileRole('user')
       return
     }
 
     const loadProfile = async () => {
+      const metadataFullName = getMetadataFullName()
       const { data } = await supabase
         .from('profiles')
         .select('username, token_balance, avatar_url, role')
@@ -78,7 +95,21 @@ export default function Navbar() {
         .single()
 
       const profile = (data as ProfileData | null) ?? null
-      setProfileUsername(profile?.username ?? null)
+      const nextUsername = profile?.username || metadataFullName || user.email || null
+
+      if (!profile?.username && metadataFullName) {
+        await supabase
+          .from('profiles')
+          .upsert(
+            {
+              id: user.id,
+              username: metadataFullName,
+            },
+            { onConflict: 'id' }
+          )
+      }
+
+      setProfileUsername(nextUsername)
       setTokens(profile?.token_balance ?? 0)
       setProfileAvatarUrl(profile?.avatar_url ?? null)
       setProfileRole(profile?.role ?? 'user')

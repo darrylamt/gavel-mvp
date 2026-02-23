@@ -152,6 +152,10 @@ export default function SellerApplyPage() {
       <section className="rounded-2xl border bg-white p-5 shadow-sm md:p-6">
         <h1 className="text-2xl font-bold">Become a Seller</h1>
         <p className="mt-1 text-sm text-gray-600">Submit your business and identity details for seller verification.</p>
+        <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+          <p><span className="font-semibold text-gray-800">Note:</span> Your <span className="font-semibold">Business name</span> is for seller verification and storefront records. It is separate from your profile display name.</p>
+          <p className="mt-1"><span className="font-semibold text-gray-800">Why Ghana Card + Selfie:</span> We use these to confirm identity, prevent impersonation/fraud, and protect buyers and sellers on the marketplace.</p>
+        </div>
 
         {error && <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         {success && <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{success}</div>}
@@ -210,6 +214,7 @@ export default function SellerApplyPage() {
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 required
               />
+              <p className="mt-1 text-xs text-gray-500">Needed to verify your legal identity for seller approval.</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Upload selfie holding Ghana Card</label>
@@ -220,6 +225,7 @@ export default function SellerApplyPage() {
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 required
               />
+              <p className="mt-1 text-xs text-gray-500">Needed to confirm the ID belongs to you and reduce fraud.</p>
             </div>
             <button
               type="submit"

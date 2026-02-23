@@ -50,7 +50,7 @@ export default function HeroShowcaseCarousel() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-1">
+      <div className="hidden md:grid md:grid-cols-1 md:gap-4">
         {spotlight.map((item) => (
           <Link key={item.name} href={item.href} className="group relative overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
             <div className="h-40 md:h-[188px]">

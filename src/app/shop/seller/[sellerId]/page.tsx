@@ -95,11 +95,11 @@ export default async function SellerShopPage({ params }: Props) {
 
         <div className="flex flex-wrap items-center justify-between gap-4 p-5 md:p-6">
           <div className="flex items-start gap-3">
-            {shopProfile.logo_url ? (
-              <img src={shopProfile.logo_url} alt={shopProfile.name || 'Shop logo'} className="h-16 w-16 rounded-2xl border border-gray-200 object-cover" />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-sm text-gray-500">S</div>
-            )}
+            <img
+              src={shopProfile.logo_url || '/shop-placeholder.svg'}
+              alt={shopProfile.name || 'Shop logo'}
+              className="h-16 w-16 rounded-2xl border border-gray-200 object-cover"
+            />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{shopProfile.name || 'Shop'}</h1>
               {shopProfile.description && <p className="mt-1 text-sm text-gray-600">{shopProfile.description}</p>}
