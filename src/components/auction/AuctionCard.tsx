@@ -101,17 +101,16 @@ export default function AuctionCard({
       action: 'view',
     })
 
-    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-      const payload = new Blob([body], { type: 'application/json' })
-      const sent = navigator.sendBeacon('/api/auctions/engagement', payload)
-      if (sent) return
-    }
-
     void fetch('/api/auctions/engagement', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
       keepalive: true,
+    }).catch(() => {
+      if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+        const payload = new Blob([body], { type: 'application/json' })
+        navigator.sendBeacon('/api/auctions/engagement', payload)
+      }
     })
   }
 

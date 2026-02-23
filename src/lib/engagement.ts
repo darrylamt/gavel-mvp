@@ -1,6 +1,7 @@
 'use client'
 
 const VIEWER_KEY_STORAGE = 'gavel:viewer-key'
+let inMemoryViewerKey: string | null = null
 
 function generateViewerKey() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -13,10 +14,24 @@ function generateViewerKey() {
 export function getOrCreateViewerKey() {
   if (typeof window === 'undefined') return null
 
-  const existing = window.localStorage.getItem(VIEWER_KEY_STORAGE)
-  if (existing) return existing
+  try {
+    const existing = window.localStorage.getItem(VIEWER_KEY_STORAGE)
+    if (existing) {
+      inMemoryViewerKey = existing
+      return existing
+    }
+  } catch {
+    if (inMemoryViewerKey) return inMemoryViewerKey
+  }
 
   const next = generateViewerKey()
-  window.localStorage.setItem(VIEWER_KEY_STORAGE, next)
+  inMemoryViewerKey = next
+
+  try {
+    window.localStorage.setItem(VIEWER_KEY_STORAGE, next)
+  } catch {
+    // localStorage may be unavailable in strict privacy contexts
+  }
+
   return next
 }

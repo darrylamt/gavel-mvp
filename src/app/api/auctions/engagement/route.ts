@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
+import { createHash } from 'node:crypto'
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,12 +33,38 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    let body: Record<string, unknown> | null = null
+    const contentType = request.headers.get('content-type') || ''
+
+    if (contentType.includes('application/json')) {
+      body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    } else {
+      const raw = await request.text().catch(() => '')
+      if (raw) {
+        body = JSON.parse(raw) as Record<string, unknown>
+      }
+    }
+
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
+
     const auctionId = typeof body.auction_id === 'string' ? body.auction_id.trim() : ''
-    const viewerKey = typeof body.viewer_key === 'string' ? body.viewer_key.trim() : ''
+    let viewerKey = typeof body.viewer_key === 'string' ? body.viewer_key.trim() : ''
     const action = body.action === 'star' ? 'star' : body.action === 'view' ? 'view' : null
     const starred = typeof body.starred === 'boolean' ? body.starred : null
     const userId = typeof body.user_id === 'string' ? body.user_id.trim() : null
+
+    if (!viewerKey) {
+      if (userId) {
+        viewerKey = `user:${userId}`
+      } else {
+        const forwardedFor = request.headers.get('x-forwarded-for') || ''
+        const userAgent = request.headers.get('user-agent') || ''
+        const fingerprint = `${forwardedFor}|${userAgent}`
+        viewerKey = `anon:${createHash('sha256').update(fingerprint).digest('hex').slice(0, 32)}`
+      }
+    }
 
     if (!auctionId || !viewerKey || !action) {
       return NextResponse.json({ error: 'auction_id, viewer_key and action are required' }, { status: 400 })
