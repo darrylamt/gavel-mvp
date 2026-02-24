@@ -435,7 +435,7 @@ export async function POST(request: Request) {
     const description = typeof body.description === 'string' ? body.description.trim() : ''
     const status = typeof body.status === 'string' ? body.status : 'active'
     const category = typeof body.category === 'string' ? body.category.trim() : 'Other'
-    const imageUrl = typeof body.image_url === 'string' ? body.image_url.trim() : ''
+    const imageUrls = Array.isArray(body.image_urls) ? body.image_urls.filter((u: any) => typeof u === 'string' && u.trim() !== '') : []
     const price = Number(body.price)
     const stock = Number(body.stock)
     const variants = normalizeVariantInput(body.variants)
@@ -489,11 +489,11 @@ export async function POST(request: Request) {
         stock: effectiveStock,
         status,
         category,
-        image_url: imageUrl || null,
+        image_urls: imageUrls,
         created_by: selectedShop.owner_id,
         shop_id: selectedShop.id,
       })
-      .select('id, title, description, price, seller_base_price, stock, status, category, image_url, created_at, created_by, shop_id')
+      .select('id, title, description, price, seller_base_price, stock, status, category, image_urls, created_at, created_by, shop_id')
       .single()
 
     if (error) {

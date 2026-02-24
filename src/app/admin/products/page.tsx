@@ -12,7 +12,7 @@ type ShopProduct = {
   stock: number
   status: 'draft' | 'active' | 'sold_out' | 'archived'
   category: string
-  image_url: string | null
+  image_urls?: string[]
   created_at: string
   shop_id: string | null
   variants?: ShopProductVariant[]
@@ -26,7 +26,7 @@ type ShopProductVariant = {
   sku: string | null
   price: number
   stock: number
-  image_url: string | null
+  image_url?: string | null
   is_default: boolean
   is_active: boolean
 }
@@ -89,7 +89,7 @@ export default function AdminProductsPage() {
   const [status, setStatus] = useState<ShopProduct['status']>('active')
   const [category, setCategory] = useState('Other')
   const [shopId, setShopId] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageUrls, setImageUrls] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
   const [useVariants, setUseVariants] = useState(false)
   const [variants, setVariants] = useState<ProductVariantDraft[]>([createEmptyVariant()])
@@ -164,7 +164,7 @@ export default function AdminProductsPage() {
     setStatus('active')
     setCategory(categories[0]?.name ?? 'Other')
     setShopId(shops[0]?.id ?? '')
-    setImageUrl('')
+    setImageUrls([])
     setUseVariants(false)
     setVariants([createEmptyVariant()])
     setUploadingVariantIndex(null)
@@ -189,7 +189,7 @@ export default function AdminProductsPage() {
     setStatus(product.status)
     setCategory(product.category || categories[0]?.name || 'Other')
     setShopId(product.shop_id ?? shops[0]?.id ?? '')
-    setImageUrl(product.image_url ?? '')
+    setImageUrls(product.image_urls ?? [])
     const activeVariants = (product.variants ?? []).filter((variant) => variant.is_active)
     if (activeVariants.length > 0) {
       setUseVariants(true)
@@ -219,30 +219,31 @@ export default function AdminProductsPage() {
   }
 
   const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const files = event.target.files
+    if (!files || files.length === 0) return
 
     setUploadingImage(true)
     setError(null)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await fetch('/api/upload/product-image', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Image upload failed')
-
-      setImageUrl(data.url)
+      const uploadedUrls: string[] = []
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await fetch('/api/upload/product-image', {
+          method: 'POST',
+          body: formData,
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Image upload failed')
+        uploadedUrls.push(data.url)
+      }
+      setImageUrls((prev) => [...prev, ...uploadedUrls])
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Image upload failed')
     } finally {
       setUploadingImage(false)
-      event.target.value = ''
     }
   }
 
@@ -326,7 +327,7 @@ export default function AdminProductsPage() {
         status,
         category,
         shop_id: shopId,
-        image_url: imageUrl,
+        image_urls: imageUrls,
         variants: useVariants
           ? variants
               .filter((variant) => {
@@ -477,8 +478,8 @@ export default function AdminProductsPage() {
                   <tr key={product.id} className="border-t">
                     <td className="py-2">
                       <div className="flex items-center gap-2">
-                        {product.image_url ? (
-                          <img src={product.image_url} alt={product.title} className="h-8 w-8 rounded border object-cover" />
+                        {product.image_urls && product.image_urls.length > 0 ? (
+                          <img src={product.image_urls[0]} alt={product.title} className="h-8 w-8 rounded border object-cover" />
                         ) : null}
                         <span>{product.title}</span>
                       </div>
@@ -542,15 +543,23 @@ export default function AdminProductsPage() {
                     onChange={handleImageSelect}
                   />
                 </label>
-                {imageUrl && <span className="text-xs text-gray-500">Image uploaded</span>}
-                {imageUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setImageUrl('')}
-                    className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                  >
-                    Remove image
-                  </button>
+                {imageUrls.length > 0 && <span className="text-xs text-gray-500">{imageUrls.length} image{imageUrls.length > 1 ? 's' : ''} uploaded</span>}
+                {imageUrls.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {imageUrls.map((url, idx) => (
+                      <div key={url} className="relative group">
+                        <img src={url} alt={`Product image ${idx + 1}`} className="h-14 w-14 rounded border object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setImageUrls(imageUrls.filter((_, i) => i !== idx))}
+                          className="absolute -top-2 -right-2 rounded-full bg-white border border-gray-300 px-1 py-0.5 text-xs text-gray-700 shadow hover:bg-gray-50"
+                          title="Remove image"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
               {uploadingImage && <p className="mt-1 text-xs text-gray-600">Uploading image…</p>}
@@ -681,9 +690,16 @@ export default function AdminProductsPage() {
               <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
               <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className="w-full rounded-lg border px-3 py-2" />
             </div>
-            {imageUrl && (
-              <div className="md:col-span-2">
-                <img src={imageUrl} alt="Product preview" className="h-28 w-28 rounded-lg border object-cover" />
+            {imageUrls.length > 0 && (
+              <div className="md:col-span-2 flex flex-wrap gap-4 mt-2">
+                {imageUrls.map((url, idx) => (
+                  <img
+                    key={url}
+                    src={url}
+                    alt={`Product preview ${idx + 1}`}
+                    className="h-28 w-28 rounded-lg border object-cover"
+                  />
+                ))}
               </div>
             )}
           </div>

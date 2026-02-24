@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import PieChartCard from '@/components/base/PieChartCard'
 
@@ -79,6 +79,13 @@ export default function SellerProductsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
+  const formRef = useRef<HTMLDivElement | null>(null)
+    // Scroll to form when opened
+    useEffect(() => {
+      if (formOpen && formRef.current) {
+        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, [formOpen])
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -90,7 +97,7 @@ export default function SellerProductsPage() {
   const [status, setStatus] = useState<ShopProduct['status']>('active')
   const [category, setCategory] = useState('Other')
   const [shopId, setShopId] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageUrls, setImageUrls] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
   const [useVariants, setUseVariants] = useState(false)
   const [variants, setVariants] = useState<ProductVariantDraft[]>([createEmptyVariant()])
@@ -197,7 +204,7 @@ export default function SellerProductsPage() {
     setStatus('active')
     setCategory(categories[0]?.name ?? 'Other')
     setShopId(shops[0]?.id ?? '')
-    setImageUrl('')
+    setImageUrls([])
     setUseVariants(false)
     setVariants([createEmptyVariant()])
     setUploadingVariantIndex(null)
@@ -226,7 +233,7 @@ export default function SellerProductsPage() {
     setStatus(product.status)
     setCategory(product.category || categories[0]?.name || 'Other')
     setShopId(product.shop_id ?? shops[0]?.id ?? '')
-    setImageUrl(product.image_url ?? '')
+    setImageUrls(product.image_urls ?? [])
     const activeVariants = (product.variants ?? []).filter((variant) => variant.is_active)
     if (activeVariants.length > 0) {
       setUseVariants(true)
@@ -322,32 +329,34 @@ export default function SellerProductsPage() {
   }
 
   const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-    setUploadingImage(true)
-    setError(null)
+    setUploadingImage(true);
+    setError(null);
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await fetch('/api/upload/product-image', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Image upload failed')
-
-      setImageUrl(data.url)
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload/product-image', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Image upload failed');
+        uploadedUrls.push(data.url);
+      }
+      setImageUrls((prev) => [...prev, ...uploadedUrls]);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Image upload failed')
+      setError(err instanceof Error ? err.message : 'Image upload failed');
     } finally {
-      setUploadingImage(false)
-      event.target.value = ''
+      setUploadingImage(false);
+      event.target.value = '';
     }
-  }
+  };
 
   const submitProduct = async () => {
     setSaving(true)
@@ -370,7 +379,7 @@ export default function SellerProductsPage() {
         status,
         category,
         shop_id: shopId,
-        image_url: imageUrl,
+        image_urls: imageUrls,
         variants: useVariants
           ? variants
               .filter((variant) => {
@@ -557,7 +566,7 @@ export default function SellerProductsPage() {
       </div>
 
       {formOpen && (
-        <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
+        <div ref={formRef} className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold">{formMode === 'edit' ? 'Edit Product' : 'Add Product'}</h2>
             <button onClick={closeForm} className="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">
@@ -571,22 +580,39 @@ export default function SellerProductsPage() {
               <input value={title} onChange={(event) => setTitle(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">Product Image</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Product Images</label>
               <div className="mb-2 flex items-center gap-2">
                 <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                  {uploadingImage ? 'Uploading…' : 'Upload image'}
+                  {uploadingImage ? 'Uploading…' : 'Upload images'}
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     className="hidden"
                     disabled={uploadingImage || saving}
                     onChange={handleImageSelect}
                   />
                 </label>
-                {imageUrl && <span className="text-xs text-gray-500">Image uploaded</span>}
+                {imageUrls.length > 0 && <span className="text-xs text-gray-500">{imageUrls.length} image(s) uploaded</span>}
               </div>
               {uploadingImage && <p className="mt-1 text-xs text-gray-600">Uploading image…</p>}
-              {imageUrl && <img src={imageUrl} alt="Product preview" className="mt-2 h-24 w-24 rounded-lg border object-cover" />}
+              {imageUrls.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {imageUrls.map((url, idx) => (
+                    <div key={url} className="relative">
+                      <img src={url} alt={`Product preview ${idx + 1}`} className="h-24 w-24 rounded-lg border object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setImageUrls(imageUrls.filter((u) => u !== url))}
+                        className="absolute top-1 right-1 rounded-full bg-white/80 p-1 text-xs text-gray-700 border border-gray-300 hover:bg-red-100"
+                        aria-label="Remove image"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="md:col-span-2">
               <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
