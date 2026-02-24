@@ -223,8 +223,8 @@ export default async function ShopProductDetailPage({ params }: Props) {
           <ProductImageGallery
             productId={product.id}
             title={product.title}
-            baseImageUrl={product.image_url}
-            variantImages={variants.map((variant) => variant.image_url)}
+            baseImageUrl={null}
+            variantImages={galleryImages}
           />
         </div>
 
