@@ -14,6 +14,7 @@ type ShopProduct = {
   status: 'draft' | 'active' | 'sold_out' | 'archived'
   category: string
   image_url: string | null
+  image_urls?: string[]
   created_at: string
   shop_id: string | null
   variants?: ShopProductVariant[]
