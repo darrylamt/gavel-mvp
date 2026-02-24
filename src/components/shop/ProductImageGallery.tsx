@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
+
 type Props = {
   productId: string
   title: string
@@ -10,26 +11,23 @@ type Props = {
 }
 
 type VariantImageChangeDetail = {
-  productId?: string
-  imageUrl?: string | null
+  productId: string
+  imageUrl: string | null
 }
 
 export default function ProductImageGallery({ productId, title, baseImageUrl, variantImages }: Props) {
-  const galleryImages = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          [baseImageUrl, ...variantImages].filter((value): value is string => Boolean(value && value.trim()))
-        )
-      ),
-    [baseImageUrl, variantImages]
-  )
+  const galleryImages = useMemo(() => {
+    const images = [baseImageUrl, ...variantImages].filter((img): img is string => !!img && img.trim() !== '')
+    // Remove duplicates
+    return Array.from(new Set(images))
+  }, [baseImageUrl, variantImages])
 
   const [selectedImage, setSelectedImage] = useState<string | null>(galleryImages[0] ?? null)
-  const [expandedImage, setExpandedImage] = useState<string | null>(null)
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
 
   useEffect(() => {
     setSelectedImage(galleryImages[0] ?? null)
+    setExpandedIndex(null)
   }, [galleryImages])
 
   useEffect(() => {
@@ -41,6 +39,8 @@ export default function ProductImageGallery({ productId, title, baseImageUrl, va
       const nextImage = detail.imageUrl && detail.imageUrl.trim() ? detail.imageUrl : baseImageUrl
       if (nextImage) {
         setSelectedImage(nextImage)
+        const idx = galleryImages.findIndex((img) => img === nextImage)
+        setExpandedIndex(idx >= 0 ? idx : null)
       }
     }
 
@@ -48,7 +48,8 @@ export default function ProductImageGallery({ productId, title, baseImageUrl, va
     return () => {
       window.removeEventListener('product-variant-image-change', handleVariantImageChange as EventListener)
     }
-  }, [baseImageUrl, productId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseImageUrl, productId, galleryImages])
 
   return (
     <>
@@ -57,7 +58,10 @@ export default function ProductImageGallery({ productId, title, baseImageUrl, va
           <button
             type="button"
             className="block w-full"
-            onClick={() => setExpandedImage(selectedImage)}
+            onClick={() => {
+              const idx = galleryImages.findIndex((img) => img === selectedImage)
+              setExpandedIndex(idx >= 0 ? idx : 0)
+            }}
             aria-label="Expand product image"
           >
             <img src={selectedImage} alt={title} className="h-full max-h-[620px] w-full object-contain" />
@@ -89,33 +93,94 @@ export default function ProductImageGallery({ productId, title, baseImageUrl, va
         )}
       </div>
 
-      {expandedImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setExpandedImage(null)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              setExpandedImage(null)
-            }
-          }}
-        >
-          <button
-            type="button"
-            className="absolute right-4 top-4 rounded-md border border-white/30 px-3 py-1 text-sm text-white"
-            onClick={() => setExpandedImage(null)}
-          >
-            Close
-          </button>
-          <img
-            src={expandedImage}
-            alt={`${title} expanded`}
-            className="max-h-[90vh] max-w-[95vw] object-contain"
-            onClick={(event) => event.stopPropagation()}
-          />
-        </div>
+      {expandedIndex !== null && galleryImages[expandedIndex] && (
+        <ExpandedGallery
+          images={galleryImages}
+          index={expandedIndex}
+          title={title}
+          onClose={() => setExpandedIndex(null)}
+          setIndex={(idx: number) => setExpandedIndex(idx)}
+        />
       )}
     </>
   )
+
+
+
+
+type ExpandedGalleryProps = {
+  images: string[]
+  index: number
+  title: string
+  onClose: () => void
+  setIndex: (idx: number) => void
+}
+
+function ExpandedGallery({ images, index, title, onClose, setIndex }: ExpandedGalleryProps) {
+  const total = images.length
+  const current = images[index]
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      } else if (event.key === 'ArrowLeft') {
+        setIndex(index > 0 ? index - 1 : total - 1)
+      } else if (event.key === 'ArrowRight') {
+        setIndex(index < total - 1 ? index + 1 : 0)
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose, setIndex, total, index])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+      onClick={onClose}
+      role="button"
+      tabIndex={0}
+    >
+      <button
+        type="button"
+        className="absolute right-4 top-4 rounded-md border border-white/30 px-3 py-1 text-sm text-white"
+        onClick={onClose}
+      >
+        Close
+      </button>
+      <button
+        type="button"
+        className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/70"
+        onClick={(e) => {
+          e.stopPropagation()
+          setIndex(index > 0 ? index - 1 : total - 1)
+        }}
+        aria-label="Previous image"
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <img
+        src={current}
+        alt={`${title} expanded`}
+        className="max-h-[90vh] max-w-[95vw] object-contain"
+        onClick={(event) => event.stopPropagation()}
+      />
+      <button
+        type="button"
+        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/70"
+        onClick={(e) => {
+          e.stopPropagation()
+          setIndex(index < total - 1 ? index + 1 : 0)
+        }}
+        aria-label="Next image"
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/80">
+        {index + 1} / {total}
+      </div>
+    </div>
+  )
+}
 }
