@@ -529,7 +529,13 @@ export default function SellerProductsPage() {
                   <tr key={product.id} className="border-t">
                     <td className="py-2">
                       <div className="flex items-center gap-2">
-                        {product.image_url ? (
+                        {product.image_urls && product.image_urls.length > 0 ? (
+                          <div className="flex gap-1">
+                            {product.image_urls.map((url, idx) => (
+                              <img key={url} src={url} alt={product.title + ' ' + (idx + 1)} className="h-8 w-8 rounded border object-cover" />
+                            ))}
+                          </div>
+                        ) : product.image_url ? (
                           <img src={product.image_url} alt={product.title} className="h-8 w-8 rounded border object-cover" />
                         ) : null}
                         <span>{product.title}</span>
