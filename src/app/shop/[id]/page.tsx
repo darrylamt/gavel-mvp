@@ -106,6 +106,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
   const galleryImages = Array.from(
     new Set(
       [
+        ...(Array.isArray(product.image_urls) ? product.image_urls : []),
         product.image_url,
         ...variants
           .map((variant) => variant.image_url)

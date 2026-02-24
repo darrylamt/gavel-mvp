@@ -534,10 +534,11 @@ export default function AdminProductsPage() {
               <label className="mb-1 block text-sm font-medium text-gray-700">Product Image</label>
               <div className="mb-2 flex items-center gap-2">
                 <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                  {uploadingImage ? 'Uploading…' : 'Upload image'}
+                  {uploadingImage ? 'Uploading…' : 'Upload images'}
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     className="hidden"
                     disabled={uploadingImage || saving}
                     onChange={handleImageSelect}

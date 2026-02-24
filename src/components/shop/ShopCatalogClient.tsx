@@ -10,6 +10,7 @@ type ShopProduct = {
   stock: number
   category: string
   image_url: string | null
+  image_urls?: string[]
 }
 
 type Props = {
@@ -223,7 +224,7 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
                   title={product.title}
                   description={product.description}
                   price={product.price}
-                  imageUrl={product.image_url}
+                  imageUrl={product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : product.image_url}
                   stock={product.stock}
                   categoryLabel={product.category}
                 />
