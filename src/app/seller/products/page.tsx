@@ -28,6 +28,7 @@ type ShopProductVariant = {
   price: number
   seller_base_price: number | null
   stock: number
+  image_url: string | null
   is_default: boolean
   is_active: boolean
 }
