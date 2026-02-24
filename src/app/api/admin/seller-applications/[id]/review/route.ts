@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { queueSellerApplicationReviewedNotification } from '@/lib/whatsapp/events'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -71,6 +72,20 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  const { data: reviewedApplication } = await service
+    .from('seller_applications')
+    .select('user_id')
+    .eq('id', id)
+    .maybeSingle<{ user_id: string }>()
+
+  if (reviewedApplication?.user_id) {
+    await queueSellerApplicationReviewedNotification({
+      userId: reviewedApplication.user_id,
+      status: action,
+      reason: action === 'rejected' ? rejectionReason : null,
+    })
   }
 
   if (action === 'approved') {

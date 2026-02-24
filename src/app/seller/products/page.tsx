@@ -51,6 +51,7 @@ type ProductVariantDraft = {
   sku: string
   price: string
   stock: string
+  image_url: string
   is_default: boolean
   is_active: boolean
 }
@@ -62,6 +63,7 @@ function createEmptyVariant(): ProductVariantDraft {
     sku: '',
     price: '',
     stock: '',
+    image_url: '',
     is_default: false,
     is_active: true,
   }
@@ -91,6 +93,7 @@ export default function SellerProductsPage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [useVariants, setUseVariants] = useState(false)
   const [variants, setVariants] = useState<ProductVariantDraft[]>([createEmptyVariant()])
+  const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null)
 
   const parsedPrice = Number(price)
   const hasValidPrice = Number.isFinite(parsedPrice) && parsedPrice >= 0
@@ -196,6 +199,7 @@ export default function SellerProductsPage() {
     setImageUrl('')
     setUseVariants(false)
     setVariants([createEmptyVariant()])
+    setUploadingVariantIndex(null)
     setEditingId(null)
     setFormMode('create')
   }
@@ -239,6 +243,7 @@ export default function SellerProductsPage() {
             sku: variant.sku ?? '',
             price: String(basePrice),
             stock: String(variant.stock ?? 0),
+            image_url: variant.image_url ?? '',
             is_default: index === 0 ? true : variant.is_default,
             is_active: variant.is_active,
           }
@@ -285,6 +290,34 @@ export default function SellerProductsPage() {
 
   const setDefaultVariant = (index: number) => {
     setVariants((previous) => previous.map((variant, variantIndex) => ({ ...variant, is_default: variantIndex === index })))
+  }
+
+  const handleVariantImageSelect = async (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploadingVariantIndex(index)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/upload/product-image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Variant image upload failed')
+
+      updateVariantRow(index, 'image_url', String(data.url || ''))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Variant image upload failed')
+    } finally {
+      setUploadingVariantIndex(null)
+      event.target.value = ''
+    }
   }
 
   const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -343,7 +376,8 @@ export default function SellerProductsPage() {
                 const hasLabel = Boolean(variant.color.trim() || variant.size.trim() || variant.sku.trim())
                 const hasPrice = Number.isFinite(Number(variant.price))
                 const hasStock = Number.isFinite(Number(variant.stock))
-                return hasLabel || hasPrice || hasStock
+                const hasImage = Boolean(variant.image_url.trim())
+                return hasLabel || hasPrice || hasStock || hasImage
               })
               .map((variant, index) => ({
                 id: variant.id,
@@ -352,6 +386,7 @@ export default function SellerProductsPage() {
                 sku: variant.sku.trim() || null,
                 price: Number(variant.price),
                 stock: Math.max(0, Math.floor(Number(variant.stock))),
+                image_url: variant.image_url.trim() || null,
                 is_default: variant.is_default || index === 0,
                 is_active: variant.is_active,
               }))
@@ -625,6 +660,29 @@ export default function SellerProductsPage() {
                           </button>
                         </div>
                       </div>
+
+                      <div className="mt-2 flex items-center gap-2">
+                        <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                          {uploadingVariantIndex === index ? 'Uploading…' : 'Upload variant image'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={saving || uploadingVariantIndex !== null}
+                            onChange={(event) => handleVariantImageSelect(index, event)}
+                          />
+                        </label>
+                        {variant.image_url && (
+                          <button
+                            type="button"
+                            onClick={() => updateVariantRow(index, 'image_url', '')}
+                            className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                          >
+                            Remove image
+                          </button>
+                        )}
+                      </div>
+                      {variant.image_url && <img src={variant.image_url} alt="Variant preview" className="mt-2 h-20 w-20 rounded-lg border object-cover" />}
                     </div>
                   ))}
                 </div>

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { maskBidderEmail } from '@/lib/maskBidderEmail'
+import { queueBidNotifications } from '@/lib/whatsapp/events'
+import { queueWhatsAppNotification } from '@/lib/whatsapp/queue'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -83,7 +85,7 @@ export async function POST(req: Request) {
 
   const { data: auction, error: auctionError } = await supabase
     .from('auctions')
-    .select('id, status, starts_at, ends_at, current_price, reserve_price, min_increment, max_increment')
+    .select('id, title, created_by, status, starts_at, ends_at, current_price, reserve_price, min_increment, max_increment')
     .eq('id', auction_id)
     .single()
 
@@ -198,6 +200,15 @@ export async function POST(req: Request) {
     .limit(1)
     .maybeSingle()
 
+  const { data: previousTopBid } = await supabase
+    .from('bids')
+    .select('user_id, amount')
+    .eq('auction_id', auction_id)
+    .order('amount', { ascending: false })
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle<{ user_id: string; amount: number }>()
+
   if (latestBid?.user_id === user_id) {
     return NextResponse.json(
       { error: 'You cannot bid twice in a row. Wait for another bidder.' },
@@ -259,6 +270,41 @@ export async function POST(req: Request) {
     type: 'bid',
     reference: `bid:${auction_id}`,
   })
+
+  await Promise.allSettled([
+    queueBidNotifications({
+      auctionId: String(auction.id),
+      auctionTitle: String(auction.title || 'Auction'),
+      bidderUserId: String(user_id),
+      bidderAmount: bidAmount,
+      previousTopBidderUserId: previousTopBid?.user_id ?? null,
+      sellerUserId: (auction as { created_by?: string | null }).created_by ?? null,
+    }),
+    (async () => {
+      const { data: watchers } = await supabase
+        .from('auction_watchers')
+        .select('user_id')
+        .eq('auction_id', auction_id)
+
+      const watcherUserIds = Array.from(
+        new Set((watchers ?? []).map((row) => String(row.user_id || '')).filter(Boolean))
+      ).filter((watcherId) => watcherId !== String(user_id))
+
+      await Promise.allSettled(
+        watcherUserIds.map((watcherId) =>
+          queueWhatsAppNotification({
+            userId: watcherId,
+            templateKey: 'watchlist_new_bid',
+            params: {
+              auction_title: String(auction.title || 'Auction'),
+              amount: bidAmount,
+            },
+            dedupeKey: `watchlist-new-bid:${auction_id}:${watcherId}:${bidAmount}`,
+          })
+        )
+      )
+    })(),
+  ])
 
   return NextResponse.json({ success: true })
 }

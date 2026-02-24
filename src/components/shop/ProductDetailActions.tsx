@@ -66,8 +66,19 @@ export default function ProductDetailActions({ productId, title, price, imageUrl
             <select
               value={selectedVariant?.id ?? ''}
               onChange={(event) => {
-                setSelectedVariantId(event.target.value)
+                const nextVariantId = event.target.value
+                setSelectedVariantId(nextVariantId)
                 setQuantity(1)
+
+                const nextVariant = variants.find((option) => option.id === nextVariantId) ?? null
+                window.dispatchEvent(
+                  new CustomEvent('product-variant-image-change', {
+                    detail: {
+                      productId,
+                      imageUrl: nextVariant?.imageUrl ?? imageUrl,
+                    },
+                  })
+                )
               }}
               className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm text-gray-900 outline-none focus:border-gray-500"
             >

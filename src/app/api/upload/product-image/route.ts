@@ -10,11 +10,17 @@ const supabase = createClient(
 export async function POST(req: Request) {
   try {
     const formData = await req.formData()
-    const file = formData.get('file') as File
-
-    if (!file) {
-      return NextResponse.json({ error: 'Missing file' }, { status: 400 })
+    const files = formData.getAll('file')
+    if (files.length !== 1) {
+      return NextResponse.json({ error: 'Exactly one file is allowed' }, { status: 400 })
     }
+
+    const first = files[0]
+    if (!(first instanceof File)) {
+      return NextResponse.json({ error: 'Invalid file payload' }, { status: 400 })
+    }
+
+    const file = first
 
     const originalBuffer = Buffer.from(await file.arrayBuffer())
     const safeBaseName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9-_]/g, '_')

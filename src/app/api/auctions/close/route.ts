@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
+import { queueAuctionClosedNotifications } from '@/lib/whatsapp/events'
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -30,6 +31,23 @@ export async function POST(req: Request) {
 
   try {
     const resolution = await resolveAuctionPaymentCandidate(supabase, auction_id)
+
+    const { data: auctionMeta } = await supabase
+      .from('auctions')
+      .select('id, title, created_by')
+      .eq('id', auction_id)
+      .maybeSingle<{ id: string; title: string | null; created_by: string | null }>()
+
+    if (auctionMeta) {
+      await queueAuctionClosedNotifications({
+        auctionId: auctionMeta.id,
+        auctionTitle: auctionMeta.title || 'Auction',
+        sellerUserId: auctionMeta.created_by,
+        winnerUserId: resolution.activeCandidate?.userId ?? null,
+        winnerAmount: resolution.activeCandidate?.amount ?? null,
+        reserveMet: !!resolution.activeCandidate,
+      })
+    }
 
     if (resolution.reason === 'auction_not_ended') {
       return NextResponse.json({ error: 'Auction not ended yet' }, { status: 400 })

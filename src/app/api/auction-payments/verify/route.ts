@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
+import { queueAuctionPaymentReceivedNotifications } from '@/lib/whatsapp/events'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -135,6 +136,22 @@ export async function POST(req: Request) {
 
   if (paymentLogError) {
     console.error('Failed to log auction payment:', paymentLogError)
+  }
+
+  const { data: auctionMeta } = await supabase
+    .from('auctions')
+    .select('id, title, created_by')
+    .eq('id', String(auction_id))
+    .maybeSingle<{ id: string; title: string | null; created_by: string | null }>()
+
+  if (auctionMeta) {
+    await queueAuctionPaymentReceivedNotifications({
+      auctionId: auctionMeta.id,
+      auctionTitle: auctionMeta.title || 'Auction',
+      winnerUserId: resolution.activeCandidate.userId,
+      sellerUserId: auctionMeta.created_by,
+      amount: Number(json.data.amount) / 100,
+    })
   }
 
   console.log('Payment successful for auction:', auction_id)

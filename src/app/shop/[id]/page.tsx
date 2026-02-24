@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import ProductDetailActions from '@/components/shop/ProductDetailActions'
 import ShopProductCard from '@/components/shop/ShopProductCard'
 import ProductReviewsSection from '@/components/shop/ProductReviewsSection'
+import ProductImageGallery from '@/components/shop/ProductImageGallery'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -102,6 +103,17 @@ export default async function ShopProductDetailPage({ params }: Props) {
   const latest = (latestProducts ?? []) as RelatedProduct[]
   const reviews = (reviewsData ?? []) as ProductReview[]
   const variants = (variantRows ?? []) as ProductVariant[]
+  const galleryImages = Array.from(
+    new Set(
+      [
+        product.image_url,
+        ...variants
+          .map((variant) => variant.image_url)
+          .filter((value): value is string => Boolean(value && value.trim())),
+      ].filter((value): value is string => Boolean(value && value.trim()))
+    )
+  )
+  const mainImage = galleryImages[0] ?? null
   const hasVariants = variants.length > 0
   const minVariantPrice = hasVariants ? Math.min(...variants.map((variant) => Number(variant.price ?? 0))) : Number(product.price)
   const totalVariantStock = hasVariants ? variants.reduce((sum, variant) => sum + Number(variant.stock ?? 0), 0) : Number(product.stock)
@@ -119,7 +131,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
     name: product.title,
     description: product.description || undefined,
     sku: displaySku,
-    image: product.image_url ? [product.image_url] : undefined,
+    image: galleryImages.length > 0 ? galleryImages : undefined,
     category: product.category || undefined,
     brand: {
       '@type': 'Brand',
@@ -206,35 +218,12 @@ export default async function ShopProductDetailPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <section className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         <div>
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-sm">
-            {product.image_url ? (
-              <img
-                src={product.image_url}
-                alt={product.title}
-                className="h-full max-h-[620px] w-full object-contain"
-              />
-            ) : (
-              <div className="flex h-[520px] items-center justify-center text-sm text-gray-400">
-                No image available
-              </div>
-            )}
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            {[1, 2, 3].map((thumb) => (
-              <div key={thumb} className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                {product.image_url ? (
-                  <img
-                    src={product.image_url}
-                    alt={`${product.title} thumbnail ${thumb}`}
-                    className="h-24 w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-24 items-center justify-center text-xs text-gray-400">No image</div>
-                )}
-              </div>
-            ))}
-          </div>
+          <ProductImageGallery
+            productId={product.id}
+            title={product.title}
+            baseImageUrl={product.image_url}
+            variantImages={variants.map((variant) => variant.image_url)}
+          />
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:p-7">

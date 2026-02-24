@@ -9,9 +9,20 @@ type Props = {
   userId: string
   initialUsername?: string | null
   initialPhone?: string
+  initialWhatsAppPhone?: string
+  initialWhatsAppOptIn?: boolean
+  initialWhatsAppMarketingOptIn?: boolean
   initialAddress?: string
   initialAvatarUrl?: string | null
-  onSaved?: (data: { username?: string; phone?: string; address?: string; avatarUrl?: string | null }) => void
+  onSaved?: (data: {
+    username?: string
+    phone?: string
+    whatsappPhone?: string
+    whatsappOptIn?: boolean
+    whatsappMarketingOptIn?: boolean
+    address?: string
+    avatarUrl?: string | null
+  }) => void
 }
 
 export default function EditProfileModal({
@@ -20,12 +31,18 @@ export default function EditProfileModal({
   userId,
   initialUsername,
   initialPhone,
+  initialWhatsAppPhone,
+  initialWhatsAppOptIn,
+  initialWhatsAppMarketingOptIn,
   initialAddress,
   initialAvatarUrl,
   onSaved,
 }: Props) {
   const [username, setUsername] = useState(initialUsername ?? '')
   const [phone, setPhone] = useState(initialPhone ?? '')
+  const [whatsappPhone, setWhatsappPhone] = useState(initialWhatsAppPhone ?? '')
+  const [whatsappOptIn, setWhatsappOptIn] = useState(Boolean(initialWhatsAppOptIn))
+  const [whatsappMarketingOptIn, setWhatsappMarketingOptIn] = useState(Boolean(initialWhatsAppMarketingOptIn))
   const [address, setAddress] = useState(initialAddress ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
@@ -84,6 +101,10 @@ export default function EditProfileModal({
       const updates: any = {
         username: username || null,
         phone: phone || null,
+        whatsapp_phone: whatsappPhone || null,
+        whatsapp_opt_in: whatsappOptIn,
+        whatsapp_marketing_opt_in: whatsappMarketingOptIn,
+        whatsapp_opt_in_at: whatsappOptIn ? new Date().toISOString() : null,
         address: address || null,
       }
 
@@ -97,7 +118,15 @@ export default function EditProfileModal({
       }
 
       console.log('Profile updated successfully')
-      onSaved?.({ username, phone, address, avatarUrl })
+      onSaved?.({
+        username,
+        phone,
+        whatsappPhone,
+        whatsappOptIn,
+        whatsappMarketingOptIn,
+        address,
+        avatarUrl,
+      })
       onClose()
     } catch (err: any) {
       console.error('Profile save error:', err)
@@ -133,6 +162,34 @@ export default function EditProfileModal({
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+1 (555) 000-0000"
             />
+
+            <Input
+              label="WhatsApp Number"
+              type="tel"
+              value={whatsappPhone}
+              onChange={(e) => setWhatsappPhone(e.target.value)}
+              placeholder="+233 24 000 0000"
+            />
+          </div>
+
+          <div className="space-y-2 rounded-lg border border-gray-200 p-3">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={whatsappOptIn}
+                onChange={(event) => setWhatsappOptIn(event.target.checked)}
+              />
+              Receive auction/payment/delivery alerts on WhatsApp
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={whatsappMarketingOptIn}
+                onChange={(event) => setWhatsappMarketingOptIn(event.target.checked)}
+                disabled={!whatsappOptIn}
+              />
+              Receive marketing updates on WhatsApp
+            </label>
           </div>
 
           <Input

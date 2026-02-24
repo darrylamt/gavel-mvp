@@ -34,3 +34,32 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## WhatsApp Notifications Setup
+
+Run the latest Supabase migrations so WhatsApp tables/columns exist:
+
+```bash
+# Apply migrations with your existing workflow
+```
+
+Set these environment variables:
+
+- `WHATSAPP_ENABLED=true`
+- `WHATSAPP_PROVIDER=meta`
+- `WHATSAPP_ACCESS_TOKEN=...`
+- `WHATSAPP_PHONE_NUMBER_ID=...`
+- `WHATSAPP_GRAPH_API_VERSION=v21.0`
+- `WHATSAPP_TEMPLATE_LANGUAGE=en`
+- `WHATSAPP_DEFAULT_COUNTRY_CODE=233`
+- `WHATSAPP_DISPATCH_SECRET=...` (or use `CRON_SECRET`)
+
+Cron endpoints to call with `Authorization: Bearer <WHATSAPP_DISPATCH_SECRET>`:
+
+- `POST /api/whatsapp/auction-reminders` (enqueue scheduled reminders)
+- `POST /api/whatsapp/dispatch` (deliver queued WhatsApp messages)
+
+Recommended schedule:
+
+- `auction-reminders`: every minute
+- `dispatch`: every minute

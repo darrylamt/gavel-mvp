@@ -32,6 +32,15 @@ export default function AuthCallbackPage() {
         const { data: { session } } = await supabase.auth.getSession()
 
         if (session) {
+          if (session.access_token) {
+            await fetch('/api/whatsapp/account-created', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+            })
+          }
+
           if (isMounted) {
             if (window.history.replaceState) {
               window.history.replaceState({}, document.title, window.location.pathname)

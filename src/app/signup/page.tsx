@@ -94,6 +94,17 @@ export default function SignupPage() {
           },
           { onConflict: 'id' }
         )
+
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (accessToken) {
+        await fetch('/api/whatsapp/account-created', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+      }
     }
 
     setShowOtpModal(false)

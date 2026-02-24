@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { queueBuyerDeliveredNotification } from '@/lib/whatsapp/events'
 
 type SellerDeliveryRow = {
   item_id: string
@@ -165,6 +166,17 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'item_id is required' }, { status: 400 })
   }
 
+  const { data: existingItem } = await service
+    .from('shop_order_items')
+    .select('id, order_id, title_snapshot, seller_id')
+    .eq('id', itemId)
+    .eq('seller_id', user.id)
+    .maybeSingle<{ id: string; order_id: string; title_snapshot: string | null; seller_id: string }>()
+
+  if (!existingItem) {
+    return NextResponse.json({ error: 'Delivery item not found' }, { status: 404 })
+  }
+
   const { data: updated, error: updateError } = await service
     .from('shop_order_items')
     .update({
@@ -178,6 +190,20 @@ export async function PATCH(req: Request) {
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 })
+  }
+
+  const { data: order } = await service
+    .from('shop_orders')
+    .select('id, user_id')
+    .eq('id', existingItem.order_id)
+    .maybeSingle<{ id: string; user_id: string | null }>()
+
+  if (order?.user_id) {
+    await queueBuyerDeliveredNotification({
+      buyerUserId: order.user_id,
+      orderId: String(order.id),
+      productTitle: String(existingItem.title_snapshot || 'Product'),
+    })
   }
 
   return NextResponse.json({ item: updated })

@@ -23,6 +23,9 @@ type ProfileData = {
   username: string | null
   token_balance: number | null
   phone: string | null
+  whatsapp_phone: string | null
+  whatsapp_opt_in: boolean | null
+  whatsapp_marketing_opt_in: boolean | null
   address: string | null
   avatar_url: string | null
   role: string | null
@@ -63,6 +66,9 @@ export default function ProfilePage() {
   const [tokens, setTokens] = useState<number>(0)
 
   const [phone, setPhone] = useState('')
+  const [whatsappPhone, setWhatsappPhone] = useState('')
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false)
+  const [whatsappMarketingOptIn, setWhatsappMarketingOptIn] = useState(false)
   const [address, setAddress] = useState('')
 
   const [wonAuctions, setWonAuctions] = useState<WonAuction[]>([])
@@ -136,7 +142,7 @@ export default function ProfilePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, token_balance, phone, address, avatar_url, role')
+        .select('username, token_balance, phone, whatsapp_phone, whatsapp_opt_in, whatsapp_marketing_opt_in, address, avatar_url, role')
         .eq('id', authUser.id)
         .single()
 
@@ -152,6 +158,9 @@ export default function ProfilePage() {
       setUsername(profileData?.username ?? (metadataFullName || null))
       setTokens(profileData?.token_balance ?? 0)
       setPhone(profileData?.phone ?? '')
+      setWhatsappPhone(profileData?.whatsapp_phone ?? '')
+      setWhatsappOptIn(Boolean(profileData?.whatsapp_opt_in))
+      setWhatsappMarketingOptIn(Boolean(profileData?.whatsapp_marketing_opt_in))
       setAddress(profileData?.address ?? '')
       setAvatarUrl(profileData?.avatar_url ?? null)
 
@@ -270,11 +279,17 @@ export default function ProfilePage() {
         userId={userId!}
         initialUsername={username}
         initialPhone={phone}
+        initialWhatsAppPhone={whatsappPhone}
+        initialWhatsAppOptIn={whatsappOptIn}
+        initialWhatsAppMarketingOptIn={whatsappMarketingOptIn}
         initialAddress={address}
         initialAvatarUrl={avatarUrl}
         onSaved={(d) => {
           if (d.username) setUsername(d.username)
           if (typeof d.phone !== 'undefined') setPhone(d.phone)
+          if (typeof d.whatsappPhone !== 'undefined') setWhatsappPhone(d.whatsappPhone)
+          if (typeof d.whatsappOptIn !== 'undefined') setWhatsappOptIn(d.whatsappOptIn)
+          if (typeof d.whatsappMarketingOptIn !== 'undefined') setWhatsappMarketingOptIn(d.whatsappMarketingOptIn)
           if (typeof d.address !== 'undefined') setAddress(d.address)
           if (d.avatarUrl) setAvatarUrl(d.avatarUrl)
         }}

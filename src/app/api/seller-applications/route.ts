@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { queueSellerApplicationReceivedNotification } from '@/lib/whatsapp/events'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -164,6 +165,8 @@ export async function POST(req: Request) {
         : error.message
       return NextResponse.json({ error: message }, { status: 400 })
     }
+
+    await queueSellerApplicationReceivedNotification(auth.user.id, businessName)
 
     return NextResponse.json({ application: data }, { status: 201 })
   } catch (error: unknown) {

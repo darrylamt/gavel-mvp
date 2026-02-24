@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { queueShopOrderPaidNotifications } from '@/lib/whatsapp/events'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
         product_id: string
         variant_id?: string | null
         variant_label?: string | null
+        seller_id?: string | null
         title: string
         quantity: number
         unit_price: number
@@ -61,7 +63,7 @@ export async function POST(req: Request) {
 
     const paidAmount = Number(json.data.amount) / 100
 
-    const { error: processError } = await supabase.rpc('process_shop_payment', {
+    const { data: orderId, error: processError } = await supabase.rpc('process_shop_payment', {
       p_reference: String(json.data.reference),
       p_user_id: metadata.user_id,
       p_total_amount: paidAmount,
@@ -151,6 +153,23 @@ export async function POST(req: Request) {
       if (paymentLogError) {
         return NextResponse.json({ error: paymentLogError.message }, { status: 500 })
       }
+    }
+
+    const sellerIds = Array.from(
+      new Set(
+        (metadata.items ?? [])
+          .map((item) => String(item.seller_id || '').trim())
+          .filter((value) => value.length > 0)
+      )
+    )
+
+    if (orderId && metadata.user_id) {
+      await queueShopOrderPaidNotifications({
+        buyerUserId: metadata.user_id,
+        orderId: String(orderId),
+        totalAmount: paidAmount,
+        sellerIds,
+      })
     }
 
     return NextResponse.json({ success: true })

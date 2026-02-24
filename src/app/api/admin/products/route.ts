@@ -33,6 +33,7 @@ type ProductVariantInput = {
   color?: string | null
   size?: string | null
   sku?: string | null
+  image_url?: string | null
   price: number
   stock: number
   is_default?: boolean
@@ -45,6 +46,7 @@ type ProductVariantRow = {
   color: string | null
   size: string | null
   sku: string | null
+  image_url: string | null
   price: number
   seller_base_price: number | null
   stock: number
@@ -203,6 +205,7 @@ function normalizeVariantInput(rawVariants: unknown): ProductVariantInput[] | nu
     const color = typeof value.color === 'string' ? value.color.trim() : ''
     const size = typeof value.size === 'string' ? value.size.trim() : ''
     const sku = typeof value.sku === 'string' ? value.sku.trim() : ''
+    const imageUrl = typeof value.image_url === 'string' ? value.image_url.trim() : ''
     const price = Number(value.price)
     const stock = Number(value.stock)
 
@@ -219,6 +222,7 @@ function normalizeVariantInput(rawVariants: unknown): ProductVariantInput[] | nu
       color: color || null,
       size: size || null,
       sku: sku || null,
+      image_url: imageUrl || null,
       price,
       stock: Math.floor(stock),
       is_default: Boolean(value.is_default),
@@ -242,6 +246,7 @@ async function syncProductVariants(params: {
       color: variant.color ?? null,
       size: variant.size ?? null,
       sku: variant.sku ?? null,
+      image_url: variant.image_url ?? null,
       price: listingPrice,
       seller_base_price: sellerBasePrice,
       stock: Math.max(0, Math.floor(variant.stock)),
@@ -276,6 +281,7 @@ async function syncProductVariants(params: {
           color: variant.color,
           size: variant.size,
           sku: variant.sku,
+          image_url: variant.image_url,
           price: variant.price,
           seller_base_price: variant.seller_base_price,
           stock: variant.stock,
@@ -297,6 +303,7 @@ async function syncProductVariants(params: {
           color: variant.color,
           size: variant.size,
           sku: variant.sku,
+          image_url: variant.image_url,
           price: variant.price,
           seller_base_price: variant.seller_base_price,
           stock: variant.stock,
@@ -349,7 +356,7 @@ async function hydrateProductsWithVariants<T extends { id: string }>(products: T
   const productIds = products.map((product) => product.id)
   const { data: variants, error } = await service
     .from('shop_product_variants')
-    .select('id, product_id, color, size, sku, price, seller_base_price, stock, is_default, is_active')
+    .select('id, product_id, color, size, sku, image_url, price, seller_base_price, stock, is_default, is_active')
     .in('product_id', productIds)
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: true })

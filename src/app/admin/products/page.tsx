@@ -15,6 +15,20 @@ type ShopProduct = {
   image_url: string | null
   created_at: string
   shop_id: string | null
+  variants?: ShopProductVariant[]
+}
+
+type ShopProductVariant = {
+  id: string
+  product_id: string
+  color: string | null
+  size: string | null
+  sku: string | null
+  price: number
+  stock: number
+  image_url: string | null
+  is_default: boolean
+  is_active: boolean
 }
 
 type ShopOption = {
@@ -27,6 +41,31 @@ type ShopCategoryOption = {
   name: string
   slug: string
   image_url: string | null
+}
+
+type ProductVariantDraft = {
+  id?: string
+  color: string
+  size: string
+  sku: string
+  price: string
+  stock: string
+  image_url: string
+  is_default: boolean
+  is_active: boolean
+}
+
+function createEmptyVariant(): ProductVariantDraft {
+  return {
+    color: '',
+    size: '',
+    sku: '',
+    price: '',
+    stock: '',
+    image_url: '',
+    is_default: false,
+    is_active: true,
+  }
 }
 
 export default function AdminProductsPage() {
@@ -52,6 +91,9 @@ export default function AdminProductsPage() {
   const [shopId, setShopId] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [useVariants, setUseVariants] = useState(false)
+  const [variants, setVariants] = useState<ProductVariantDraft[]>([createEmptyVariant()])
+  const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null)
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -123,6 +165,9 @@ export default function AdminProductsPage() {
     setCategory(categories[0]?.name ?? 'Other')
     setShopId(shops[0]?.id ?? '')
     setImageUrl('')
+    setUseVariants(false)
+    setVariants([createEmptyVariant()])
+    setUploadingVariantIndex(null)
     setEditingId(null)
     setFormMode('create')
   }
@@ -145,6 +190,26 @@ export default function AdminProductsPage() {
     setCategory(product.category || categories[0]?.name || 'Other')
     setShopId(product.shop_id ?? shops[0]?.id ?? '')
     setImageUrl(product.image_url ?? '')
+    const activeVariants = (product.variants ?? []).filter((variant) => variant.is_active)
+    if (activeVariants.length > 0) {
+      setUseVariants(true)
+      setVariants(
+        activeVariants.map((variant, index) => ({
+          id: variant.id,
+          color: variant.color ?? '',
+          size: variant.size ?? '',
+          sku: variant.sku ?? '',
+          price: String(variant.price),
+          stock: String(variant.stock ?? 0),
+          image_url: variant.image_url ?? '',
+          is_default: index === 0 ? true : variant.is_default,
+          is_active: variant.is_active,
+        }))
+      )
+    } else {
+      setUseVariants(false)
+      setVariants([createEmptyVariant()])
+    }
     setFormOpen(true)
   }
 
@@ -181,6 +246,65 @@ export default function AdminProductsPage() {
     }
   }
 
+  const addVariantRow = () => {
+    setVariants((previous) => [...previous, createEmptyVariant()])
+  }
+
+  const updateVariantRow = (index: number, key: keyof ProductVariantDraft, value: string | boolean) => {
+    setVariants((previous) =>
+      previous.map((variant, variantIndex) =>
+        variantIndex === index ? { ...variant, [key]: value } : variant
+      )
+    )
+  }
+
+  const removeVariantRow = (index: number) => {
+    setVariants((previous) => {
+      const next = previous.filter((_, variantIndex) => variantIndex !== index)
+      if (next.length === 0) {
+        return [createEmptyVariant()]
+      }
+
+      if (!next.some((variant) => variant.is_default)) {
+        next[0] = { ...next[0], is_default: true }
+      }
+
+      return next
+    })
+  }
+
+  const setDefaultVariant = (index: number) => {
+    setVariants((previous) => previous.map((variant, variantIndex) => ({ ...variant, is_default: variantIndex === index })))
+  }
+
+  const handleVariantImageSelect = async (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploadingVariantIndex(index)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/upload/product-image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Variant image upload failed')
+
+      updateVariantRow(index, 'image_url', String(data.url || ''))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Variant image upload failed')
+    } finally {
+      setUploadingVariantIndex(null)
+      event.target.value = ''
+    }
+  }
+
   const submitProduct = async () => {
     setSaving(true)
     setError(null)
@@ -203,6 +327,27 @@ export default function AdminProductsPage() {
         category,
         shop_id: shopId,
         image_url: imageUrl,
+        variants: useVariants
+          ? variants
+              .filter((variant) => {
+                const hasLabel = Boolean(variant.color.trim() || variant.size.trim() || variant.sku.trim())
+                const hasPrice = Number.isFinite(Number(variant.price))
+                const hasStock = Number.isFinite(Number(variant.stock))
+                const hasImage = Boolean(variant.image_url.trim())
+                return hasLabel || hasPrice || hasStock || hasImage
+              })
+              .map((variant, index) => ({
+                id: variant.id,
+                color: variant.color.trim() || null,
+                size: variant.size.trim() || null,
+                sku: variant.sku.trim() || null,
+                price: Number(variant.price),
+                stock: Math.max(0, Math.floor(Number(variant.stock))),
+                image_url: variant.image_url.trim() || null,
+                is_default: variant.is_default || index === 0,
+                is_active: variant.is_active,
+              }))
+          : undefined,
       }
 
       const res = await fetch('/api/admin/products', {
@@ -398,17 +543,111 @@ export default function AdminProductsPage() {
                   />
                 </label>
                 {imageUrl && <span className="text-xs text-gray-500">Image uploaded</span>}
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl('')}
+                    className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    Remove image
+                  </button>
+                )}
               </div>
               {uploadingImage && <p className="mt-1 text-xs text-gray-600">Uploading image…</p>}
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Price (GHS)</label>
-              <input type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+            <div className="md:col-span-2">
+              <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={useVariants}
+                  onChange={(event) => setUseVariants(event.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                This product has variants (different colors/sizes/prices/images)
+              </label>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Stock</label>
-              <input type="number" value={stock} onChange={(event) => setStock(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
-            </div>
+            {!useVariants ? (
+              <>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Price (GHS)</label>
+                  <input type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Stock</label>
+                  <input type="number" value={stock} onChange={(event) => setStock(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+                </div>
+              </>
+            ) : (
+              <div className="md:col-span-2 rounded-xl border border-gray-200 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-800">Variants</p>
+                  <button type="button" onClick={addVariantRow} className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium hover:bg-gray-50">
+                    Add Variant
+                  </button>
+                </div>
+                <p className="mb-3 text-xs text-gray-500">Upload a variant image per row to support multiple product pictures.</p>
+                <div className="space-y-3">
+                  {variants.map((variant, index) => (
+                    <div key={`${variant.id ?? 'new'}-${index}`} className="rounded-lg border border-gray-200 p-3">
+                      <div className="grid gap-3 md:grid-cols-6">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">Color</label>
+                          <input value={variant.color} onChange={(event) => updateVariantRow(index, 'color', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">Size</label>
+                          <input value={variant.size} onChange={(event) => updateVariantRow(index, 'size', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">SKU</label>
+                          <input value={variant.sku} onChange={(event) => updateVariantRow(index, 'sku', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">Price (GHS)</label>
+                          <input type="number" value={variant.price} onChange={(event) => updateVariantRow(index, 'price', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">Stock</label>
+                          <input type="number" value={variant.stock} onChange={(event) => updateVariantRow(index, 'stock', event.target.value)} className="w-full rounded-md border px-2 py-1.5 text-sm" />
+                        </div>
+                        <div className="flex items-end gap-2 pb-1">
+                          <label className="inline-flex items-center gap-1 text-xs text-gray-600">
+                            <input type="radio" checked={variant.is_default} onChange={() => setDefaultVariant(index)} />
+                            Default
+                          </label>
+                          <button type="button" onClick={() => removeVariantRow(index)} className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50">
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 flex items-center gap-2">
+                        <label className="inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                          {uploadingVariantIndex === index ? 'Uploading…' : 'Upload variant image'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={saving || uploadingVariantIndex !== null}
+                            onChange={(event) => handleVariantImageSelect(index, event)}
+                          />
+                        </label>
+                        {variant.image_url && (
+                          <button
+                            type="button"
+                            onClick={() => updateVariantRow(index, 'image_url', '')}
+                            className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                          >
+                            Remove image
+                          </button>
+                        )}
+                      </div>
+                      {variant.image_url && <img src={variant.image_url} alt="Variant preview" className="mt-2 h-20 w-20 rounded-lg border object-cover" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Shop</label>
               <select value={shopId} onChange={(event) => setShopId(event.target.value)} className="w-full rounded-lg border px-3 py-2">
