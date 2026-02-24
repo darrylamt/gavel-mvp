@@ -22,6 +22,7 @@ type RelatedProduct = {
   price: number
   stock: number
   image_url: string | null
+  image_urls?: string[]
   category: string
 }
 
@@ -56,7 +57,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
 
   const { data: product } = await supabase
     .from('shop_products')
-    .select('id, title, description, price, stock, image_url, status, created_by, category, shop_id')
+    .select('id, title, description, price, stock, image_url, image_urls, status, created_by, category, shop_id')
     .eq('id', id)
     .eq('status', 'active')
     .maybeSingle()
