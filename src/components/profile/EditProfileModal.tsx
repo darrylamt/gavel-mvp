@@ -3,6 +3,28 @@ import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize, UploadedFile } from '@/components/base/file-upload/file-upload'
 
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  userId: string;
+  initialUsername?: string;
+  initialPhone?: string;
+  initialWhatsAppPhone?: string;
+  initialWhatsAppOptIn?: boolean;
+  initialWhatsAppMarketingOptIn?: boolean;
+  initialAddress?: string;
+  initialAvatarUrl?: string | null;
+  onSaved?: (d: {
+    username?: string;
+    phone?: string;
+    whatsappPhone?: string;
+    whatsappOptIn?: boolean;
+    whatsappMarketingOptIn?: boolean;
+    address?: string;
+    avatarUrl?: string;
+  }) => void;
+};
+
 export default function EditProfileModal({
   open,
   onClose,
