@@ -297,7 +297,7 @@ export default function ProfilePage() {
         open={editOpen}
         onClose={() => setEditOpen(false)}
         userId={userId!}
-        initialUsername={username}
+        initialUsername={username ?? undefined}
         initialPhone={phone}
         initialWhatsAppPhone={whatsappPhone}
         initialWhatsAppOptIn={whatsappOptIn}
