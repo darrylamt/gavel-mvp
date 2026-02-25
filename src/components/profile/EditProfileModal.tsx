@@ -1,29 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize, UploadedFile } from '@/components/base/file-upload/file-upload'
-
-type Props = {
-  open: boolean
-  onClose: () => void
-  userId: string
-  initialUsername?: string | null
-  initialPhone?: string
-  initialWhatsAppPhone?: string
-  initialWhatsAppOptIn?: boolean
-  initialWhatsAppMarketingOptIn?: boolean
-  initialAddress?: string
-  initialAvatarUrl?: string | null
-  onSaved?: (data: {
-    username?: string
-    phone?: string
-    whatsappPhone?: string
-    whatsappOptIn?: boolean
-    whatsappMarketingOptIn?: boolean
-    address?: string
-    avatarUrl?: string | null
-  }) => void
-}
 
 export default function EditProfileModal({
   open,
@@ -44,6 +22,17 @@ export default function EditProfileModal({
   const [whatsappOptIn, setWhatsappOptIn] = useState(Boolean(initialWhatsAppOptIn))
   const [whatsappMarketingOptIn, setWhatsappMarketingOptIn] = useState(Boolean(initialWhatsAppMarketingOptIn))
   const [address, setAddress] = useState(initialAddress ?? '')
+  const [browserNotifications, setBrowserNotifications] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('browserNotifications') === 'true';
+    }
+    return false;
+  });
+    useEffect(() => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('browserNotifications', browserNotifications ? 'true' : 'false');
+      }
+    }, [browserNotifications]);
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [saving, setSaving] = useState(false)
@@ -72,6 +61,12 @@ export default function EditProfileModal({
   }
 
   const handleSave = async () => {
+    // Optionally, request browser notification permission if enabling
+    if (browserNotifications && typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+    }
     setSaving(true)
 
     let avatarUrl = initialAvatarUrl ?? null
@@ -194,12 +189,28 @@ export default function EditProfileModal({
             </label>
           </div>
 
+
           <Input
             label="Home Address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Enter your Home address"
           />
+
+          {/* Notification preferences toggle */}
+          <div className="space-y-2 rounded-lg border border-gray-200 p-3">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={browserNotifications}
+                onChange={e => setBrowserNotifications(e.target.checked)}
+              />
+              Allow browser notifications (pop-up alerts)
+            </label>
+            {browserNotifications && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' && (
+              <p className="text-xs text-red-600">Notifications are blocked in your browser settings.</p>
+            )}
+          </div>
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Profile Picture</label>

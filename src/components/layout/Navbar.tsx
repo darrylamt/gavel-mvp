@@ -311,6 +311,12 @@ export default function Navbar() {
                     Buy Tokens
                   </button>
                   <button
+                    onClick={() => router.push('/profile/settings')}
+                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
+                  >
+                    Settings
+                  </button>
+                  <button
                     onClick={handleLogout}
                     className="px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
                   >

@@ -5,12 +5,15 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
+
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import ContactDetailsSection from '@/components/profile/ContactDetailsSection'
 import WonAuctionsSection from '@/components/profile/WonAuctionsSection'
 import SignOutButton from '@/components/profile/SignOutButton'
 import EditProfileModal from '@/components/profile/EditProfileModal'
 import BidAuctionsSection from '@/components/profile/BidAuctionsSection'
+
+// Add settings link
 
 type WonAuction = {
   auction_id: string
@@ -38,6 +41,23 @@ type BidAuctionItem = {
   currentPrice: number
   status: string
 }
+
+// ...existing code...
+
+// Add settings link to profile UI (top right for now)
+// Find the main return and add a link to /profile/settings
+
+// ...existing code...
+
+// In the main profile page component, add:
+
+// ...existing code...
+
+// Example insertion (adjust placement as needed):
+
+// <div className="flex justify-end mb-4">
+//   <Link href="/profile/settings" className="text-sm text-blue-600 hover:underline">Settings</Link>
+// </div>
 
 type UserBidRow = {
   auction_id: string
