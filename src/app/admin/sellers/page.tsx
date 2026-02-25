@@ -130,44 +130,44 @@ export default function AdminSellersPage() {
     setBusyId(null)
   }
 
+  const deleteSeller = async (application: SellerApplication) => {
+    const confirmed = window.confirm(`Delete seller account for ${application.shop_name || application.business_name}? This will permanently remove their account and all associated data. This action cannot be undone.`)
+    if (!confirmed) return
+
+    setBusyId(application.id)
+    setError(null)
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    const token = session?.access_token
+    if (!token) {
+      setError('Unauthorized')
+      setBusyId(null)
+      return
+    }
+
+    const res = await fetch(`/api/admin/sellers/${application.user_id}/delete`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    const payload = await res.json().catch(() => null)
+
+    if (!res.ok) {
+      setError(payload?.error || 'Failed to delete seller account')
+      setBusyId(null)
+      return
+    }
+
+    await loadApplications(statusFilter)
+    setSelected(null)
+    setBusyId(null)
+  }
   const banSeller = async (application: SellerApplication) => {
-      const deleteSeller = async (application: SellerApplication) => {
-        const confirmed = window.confirm(`Delete seller account for ${application.shop_name || application.business_name}? This will permanently remove their account and all associated data. This action cannot be undone.`)
-        if (!confirmed) return
-
-        setBusyId(application.id)
-        setError(null)
-
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
-        const token = session?.access_token
-        if (!token) {
-          setError('Unauthorized')
-          setBusyId(null)
-          return
-        }
-
-        const res = await fetch(`/api/admin/sellers/${application.user_id}/delete`, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-
-        const payload = await res.json().catch(() => null)
-
-        if (!res.ok) {
-          setError(payload?.error || 'Failed to delete seller account')
-          setBusyId(null)
-          return
-        }
-
-        await loadApplications(statusFilter)
-        setSelected(null)
-        setBusyId(null)
-      }
     const confirmed = window.confirm(`Ban seller ${application.shop_name || application.business_name}? This will remove their seller access and deactivate their shop.`)
     if (!confirmed) return
 
