@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import SellerTermsAndConditions from '@/components/seller/SellerTermsAndConditions'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -34,6 +35,7 @@ export default function SellerApplyPage() {
   const [nationalIdNumber, setNationalIdNumber] = useState('')
   const [ghanaCardFile, setGhanaCardFile] = useState<File | null>(null)
   const [selfieFile, setSelfieFile] = useState<File | null>(null)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -78,7 +80,8 @@ export default function SellerApplyPage() {
       address.trim() &&
       nationalIdNumber.trim() &&
       ghanaCardFile &&
-      selfieFile
+      selfieFile &&
+      acceptedTerms
     )
   }, [
     address,
@@ -90,6 +93,7 @@ export default function SellerApplyPage() {
     phone,
     selfieFile,
     submitting,
+    acceptedTerms,
   ])
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -226,6 +230,12 @@ export default function SellerApplyPage() {
                 required
               />
               <p className="mt-1 text-xs text-gray-500">Needed to confirm the ID belongs to you and reduce fraud.</p>
+            </div>
+            <div>
+              <SellerTermsAndConditions onAccept={() => setAcceptedTerms(true)} />
+              {!acceptedTerms && (
+                <p className="mt-2 text-xs text-red-600">You must accept the Seller Terms & Conditions to apply.</p>
+              )}
             </div>
             <button
               type="submit"
