@@ -6,6 +6,7 @@ import { Heart, Info } from 'lucide-react'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
 import { getOrCreateViewerKey } from '@/lib/engagement'
 import { buildAuctionPath } from '@/lib/seo'
+import { getSessionHeaders } from '@/lib/supabaseClient'
 
 type AuctionCardProps = {
   id: string
@@ -101,11 +102,14 @@ export default function AuctionCard({
       action: 'view',
     })
 
-    void fetch('/api/auctions/engagement', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-      keepalive: true,
+    void getSessionHeaders().then((headers) => {
+      headers['Content-Type'] = 'application/json'
+      return fetch('/api/auctions/engagement', {
+        method: 'POST',
+        headers,
+        body,
+        keepalive: true,
+      })
     }).catch(() => {
       if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
         const payload = new Blob([body], { type: 'application/json' })

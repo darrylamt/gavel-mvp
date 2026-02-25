@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getOrCreateViewerKey } from '@/lib/engagement'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 
 const STARRED_AUCTIONS_KEY = 'gavel:starred-auctions'
 const STARRED_AUCTIONS_EVENT = 'gavel:starred-auctions-changed'
@@ -55,14 +55,14 @@ export function useStarredAuctions() {
 
     const viewerKey = getOrCreateViewerKey()
     if (viewerKey) {
-      void supabase.auth.getUser().then(({ data }) => {
+      void getSessionHeaders().then((headers) => {
+        headers['Content-Type'] = 'application/json'
         void fetch('/api/auctions/engagement', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             auction_id: auctionId,
             viewer_key: viewerKey,
-            user_id: data.user?.id ?? null,
             action: 'star',
             starred: !isStarred,
           }),

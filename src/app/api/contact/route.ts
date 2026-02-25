@@ -26,9 +26,45 @@ function sanitize(value: string) {
   return value.replace(/\s+/g, ' ').trim()
 }
 
+const contactRateLimit = new Map<string, { count: number; resetAt: number }>()
+const CONTACT_LIMIT = 5
+const CONTACT_WINDOW_MS = 60_000
+
+function getClientIp(req: Request): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip')?.trim() ||
+    'unknown'
+  )
+}
+
+function checkContactRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = contactRateLimit.get(ip)
+  if (!entry) {
+    contactRateLimit.set(ip, { count: 1, resetAt: now + CONTACT_WINDOW_MS })
+    return true
+  }
+  if (now >= entry.resetAt) {
+    contactRateLimit.set(ip, { count: 1, resetAt: now + CONTACT_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= CONTACT_LIMIT) return false
+  entry.count += 1
+  return true
+}
+
 export async function POST(req: Request) {
   if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
     return NextResponse.json({ error: 'Server configuration missing' }, { status: 500 })
+  }
+
+  const ip = getClientIp(req)
+  if (!checkContactRateLimit(ip)) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429 }
+    )
   }
 
   let payload: ContactPayload

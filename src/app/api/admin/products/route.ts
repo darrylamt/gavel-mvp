@@ -397,7 +397,7 @@ export async function GET(request: Request) {
 
   const query = service
     .from('shop_products')
-    .select('id, title, description, price, seller_base_price, stock, status, category, image_url, created_at, created_by, shop_id')
+    .select('id, title, description, price, seller_base_price, stock, status, category, image_url, image_urls, created_at, created_by, shop_id')
     .order('created_at', { ascending: false })
     .limit(300)
 
@@ -530,6 +530,7 @@ export async function PATCH(request: Request) {
     const status = typeof body.status === 'string' ? body.status : 'active'
     const category = typeof body.category === 'string' ? body.category.trim() : 'Other'
     const imageUrl = typeof body.image_url === 'string' ? body.image_url.trim() : ''
+    const imageUrls = Array.isArray(body.image_urls) ? body.image_urls.filter((u: unknown) => typeof u === 'string' && (u as string).trim() !== '') : []
     const price = Number(body.price)
     const stock = Number(body.stock)
     const variants = normalizeVariantInput(body.variants)
@@ -585,6 +586,7 @@ export async function PATCH(request: Request) {
       status: string
       category: string
       image_url: string | null
+      image_urls?: string[]
       shop_id: string
       created_by: string
       seller_base_price?: number
@@ -595,7 +597,8 @@ export async function PATCH(request: Request) {
       stock: effectiveStock,
       status,
       category,
-      image_url: imageUrl || null,
+      image_url: imageUrl || (imageUrls[0] ?? null),
+      image_urls: imageUrls,
       shop_id: selectedShop.id,
       created_by: selectedShop.owner_id,
     }
@@ -614,7 +617,7 @@ export async function PATCH(request: Request) {
     }
 
     const { data, error } = await updateQuery
-      .select('id, title, description, price, seller_base_price, stock, status, category, image_url, created_at, created_by, shop_id')
+      .select('id, title, description, price, seller_base_price, stock, status, category, image_url, image_urls, created_at, created_by, shop_id')
       .single()
 
     if (error) {

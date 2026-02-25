@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import sharp from 'sharp'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getAuthUserWithRole, createServiceClient } from '@/lib/apiAuth'
 
 export async function POST(req: Request) {
   try {
+    const auth = await getAuthUserWithRole(req)
+    if ('error' in auth) return auth.error
+    if (auth.role !== 'seller' && auth.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const formData = await req.formData()
     const files = formData.getAll('file')
     if (files.length !== 1) {
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
 
     const filename = `products/${Date.now()}-${safeBaseName}.${uploadExtension}`
 
+    const supabase = createServiceClient()
     const { error } = await supabase.storage
       .from('auction-images')
       .upload(filename, uploadBuffer, {

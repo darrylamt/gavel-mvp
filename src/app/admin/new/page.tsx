@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize } from '@/components/base/file-upload/file-upload'
@@ -173,7 +173,8 @@ export default function AdminNewAuction() {
         formData.append('file', file.fileObject)
         formData.append('auctionId', auction.id)
 
-        const res = await fetch('/api/upload/auction-image', { method: 'POST', body: formData })
+        const headers = await getSessionHeaders()
+        const res = await fetch('/api/upload/auction-image', { method: 'POST', headers, body: formData })
         if (!res.ok) {
           const errData = await res.json()
           throw new Error(errData.error || 'Image upload failed')

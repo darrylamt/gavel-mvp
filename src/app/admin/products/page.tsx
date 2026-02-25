@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
 
 type ShopProduct = {
@@ -231,8 +231,10 @@ export default function AdminProductsPage() {
         const file = files[i]
         const formData = new FormData()
         formData.append('file', file)
+        const headers = await getSessionHeaders()
         const res = await fetch('/api/upload/product-image', {
           method: 'POST',
+          headers,
           body: formData,
         })
         const data = await res.json()
@@ -289,8 +291,10 @@ export default function AdminProductsPage() {
       const formData = new FormData()
       formData.append('file', file)
 
+      const headers = await getSessionHeaders()
       const res = await fetch('/api/upload/product-image', {
         method: 'POST',
+        headers,
         body: formData,
       })
 

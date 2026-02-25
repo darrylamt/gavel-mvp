@@ -5,10 +5,19 @@ import { maskBidderEmail } from '@/lib/maskBidderEmail'
 import { queueBidNotifications } from '@/lib/whatsapp/events'
 import { queueWhatsAppNotification } from '@/lib/whatsapp/queue'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+function createServiceClient() {
+  if (!supabaseUrl || !serviceRoleKey) throw new Error('Missing Supabase env')
+  return createClient(supabaseUrl, serviceRoleKey)
+}
+
+function createAnonClient() {
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Missing Supabase env')
+  return createClient(supabaseUrl, supabaseAnonKey)
+}
 
 const BID_TOKEN_COST = 1
 
@@ -27,6 +36,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Missing auction_id' }, { status: 400 })
   }
 
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('bids')
     .select('id, amount, user_id, profiles (username)')
@@ -72,20 +82,44 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { auction_id, user_id, amount } = await req.json()
+  const authHeader = req.headers.get('authorization') || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!token) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  if (!auction_id || !user_id || !amount) {
+  const anon = createAnonClient()
+  const {
+    data: { user: authUser },
+    error: authError,
+  } = await anon.auth.getUser(token)
+  if (authError || !authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const user_id = authUser.id
+
+  let body: { auction_id?: string; amount?: unknown }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  const { auction_id, amount } = body
+
+  if (!auction_id || amount === undefined || amount === null) {
     return NextResponse.json(
-      { error: 'Missing required fields' },
+      { error: 'Missing required fields: auction_id, amount' },
       { status: 400 }
     )
   }
+
+  const supabase = createServiceClient()
 
   /* ---------------- AUCTION CHECK ---------------- */
 
   const { data: auction, error: auctionError } = await supabase
     .from('auctions')
-    .select('id, title, created_by, status, starts_at, ends_at, current_price, reserve_price, min_increment, max_increment')
+    .select('id, title, seller_id, status, starts_at, ends_at, current_price, reserve_price, min_increment, max_increment')
     .eq('id', auction_id)
     .single()
 
@@ -278,7 +312,7 @@ export async function POST(req: Request) {
       bidderUserId: String(user_id),
       bidderAmount: bidAmount,
       previousTopBidderUserId: previousTopBid?.user_id ?? null,
-      sellerUserId: (auction as { created_by?: string | null }).created_by ?? null,
+      sellerUserId: (auction as { seller_id?: string | null }).seller_id ?? null,
     }),
     (async () => {
       const { data: watchers } = await supabase

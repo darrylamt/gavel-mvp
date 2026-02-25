@@ -1,23 +1,37 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import sharp from 'sharp'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getAuthUserWithRole, createServiceClient } from '@/lib/apiAuth'
 
 export async function POST(req: Request) {
   try {
+    const auth = await getAuthUserWithRole(req)
+    if ('error' in auth) return auth.error
+
     const formData = await req.formData()
     const file = formData.get('file') as File
-    const auctionId = formData.get('auctionId') as string
+    const auctionId = typeof formData.get('auctionId') === 'string' ? formData.get('auctionId') as string : ''
 
     if (!file || !auctionId) {
       return NextResponse.json(
         { error: 'Missing file or auctionId' },
         { status: 400 }
       )
+    }
+
+    const supabase = createServiceClient()
+    const { data: auction, error: auctionError } = await supabase
+      .from('auctions')
+      .select('seller_id')
+      .eq('id', auctionId)
+      .maybeSingle()
+
+    if (auctionError || !auction) {
+      return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
+    }
+    const isOwner = auction.seller_id === auth.user.id
+    const isAdmin = auth.role === 'admin'
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const originalBuffer = Buffer.from(await file.arrayBuffer())

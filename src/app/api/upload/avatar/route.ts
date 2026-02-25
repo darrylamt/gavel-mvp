@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getAuthUser, createServiceClient } from '@/lib/apiAuth'
 
 export async function POST(req: Request) {
   try {
+    const auth = await getAuthUser(req)
+    if ('error' in auth) return auth.error
+
     const formData = await req.formData()
     const file = formData.get('file') as File
-    const userId = formData.get('userId') as string
+    const userId = typeof formData.get('userId') === 'string' ? formData.get('userId') as string : ''
 
     if (!file || !userId) {
       return NextResponse.json(
@@ -18,7 +16,11 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
+    if (userId !== auth.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
+    const supabase = createServiceClient()
     const filename = `${userId}/${Date.now()}-${file.name}`
     const buffer = await file.arrayBuffer()
 
@@ -49,10 +51,11 @@ export async function POST(req: Request) {
       url: publicUrl.publicUrl,
       path: filename,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Upload failed'
     console.error('Upload error:', err)
     return NextResponse.json(
-      { error: `Upload failed: ${err.message}` },
+      { error: `Upload failed: ${message}` },
       { status: 500 }
     )
   }

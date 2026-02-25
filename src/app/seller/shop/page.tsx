@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 
 type SellerShop = {
   id: string
@@ -86,8 +86,10 @@ export default function SellerShopPage() {
       const formData = new FormData()
       formData.append('file', file)
 
+      const headers = await getSessionHeaders()
       const res = await fetch('/api/upload/product-image', {
         method: 'POST',
+        headers,
         body: formData,
       })
 

@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
 import { createHash } from 'node:crypto'
+import { getAuthUser } from '@/lib/apiAuth'
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+function createAdminClient() {
+  if (!supabaseUrl || !serviceRoleKey) throw new Error('Missing Supabase env')
+  return createClient(supabaseUrl, serviceRoleKey)
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -53,7 +57,9 @@ export async function POST(request: Request) {
     let viewerKey = typeof body.viewer_key === 'string' ? body.viewer_key.trim() : ''
     const action = body.action === 'star' ? 'star' : body.action === 'view' ? 'view' : null
     const starred = typeof body.starred === 'boolean' ? body.starred : null
-    const userId = typeof body.user_id === 'string' ? body.user_id.trim() : null
+
+    const authResult = await getAuthUser(request)
+    const userId = 'user' in authResult ? authResult.user.id : null
 
     if (!viewerKey) {
       if (userId) {
@@ -70,6 +76,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'auction_id, viewer_key and action are required' }, { status: 400 })
     }
 
+    const admin = createAdminClient()
     const { data: existingByViewer } = await admin
       .from('auction_watchers')
       .select('starred, viewed')

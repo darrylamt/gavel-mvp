@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import type { Metadata } from 'next'
 import ProductDetailActions from '@/components/shop/ProductDetailActions'
 import ShopProductCard from '@/components/shop/ShopProductCard'
 import ProductReviewsSection from '@/components/shop/ProductReviewsSection'
@@ -51,9 +52,52 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const { data: product } = await supabase
+    .from('shop_products')
+    .select('id, title, description, image_url, image_urls, status')
+    .eq('id', id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (!product) {
+    return { title: 'Product' }
+  }
+
+  const description = (product.description || `Buy ${product.title} on Gavel Ghana.`)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 160)
+  const imageUrl = Array.isArray(product.image_urls) && product.image_urls[0]
+    ? product.image_urls[0]
+    : product.image_url
+  const productUrl = `${siteUrl}/shop/${product.id}`
+
+  return {
+    title: product.title,
+    description,
+    alternates: { canonical: `/shop/${product.id}` },
+    openGraph: {
+      type: 'website',
+      url: productUrl,
+      title: product.title,
+      description,
+      images: imageUrl ? [{ url: imageUrl }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: product.title,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  }
+}
+
 export default async function ShopProductDetailPage({ params }: Props) {
   const { id } = await params
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
   const { data: product } = await supabase
     .from('shop_products')

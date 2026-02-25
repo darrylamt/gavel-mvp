@@ -282,7 +282,7 @@ export default function AdminSellersPage() {
                   <a
                     href={selected.id_document_signed_url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium hover:bg-gray-50"
                   >
                     Open Document
@@ -298,7 +298,7 @@ export default function AdminSellersPage() {
                   <a
                     href={selected.selfie_with_card_signed_url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium hover:bg-gray-50"
                   >
                     Open Photo

@@ -7,19 +7,21 @@ import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-const supabase = createClient(supabaseUrl, serviceRoleKey)
+const paystackSecret = process.env.PAYSTACK_SECRET_KEY
 
 export async function POST(req: Request) {
+  if (!supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json({ error: 'Server configuration missing' }, { status: 503 })
+  }
+  if (!paystackSecret) {
+    return NextResponse.json({ error: 'Payment webhook not configured' }, { status: 503 })
+  }
+
   const body = await req.text()
   const signature = req.headers.get('x-paystack-signature') || ''
 
   const hash = crypto
-    .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
+    .createHmac('sha512', paystackSecret)
     .update(body)
     .digest('hex')
 
@@ -27,6 +29,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
+  const supabase = createClient(supabaseUrl, serviceRoleKey)
   const event = JSON.parse(body)
 
   if (event.event === 'charge.success') {

@@ -57,9 +57,24 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const organizationLogoUrl = `${siteUrl}${gavelTabIcon.src.startsWith('/') ? '' : '/'}${gavelTabIcon.src}`
+
   return (
     <html lang="en">
       <body className={poppins.className}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'Gavel Ghana',
+              url: siteUrl,
+              logo: organizationLogoUrl,
+              description: 'Bid on trusted online auctions in Ghana using Gavel.',
+            }),
+          }}
+        />
         <Providers>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}

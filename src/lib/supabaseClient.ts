@@ -19,3 +19,15 @@ export const supabase = globalThis.__gavelSupabaseClient ?? createBrowserSupabas
 if (typeof window !== 'undefined') {
   globalThis.__gavelSupabaseClient = supabase
 }
+
+/** Returns headers with Authorization Bearer token for authenticated API requests (e.g. uploads). */
+export async function getSessionHeaders(): Promise<Record<string, string>> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const headers: Record<string, string> = {}
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`
+  }
+  return headers
+}

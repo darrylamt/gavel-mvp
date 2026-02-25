@@ -1,8 +1,27 @@
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import ShopCatalogClient from '@/components/shop/ShopCatalogClient'
+import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+
+export const metadata: Metadata = {
+  title: 'Buy Now',
+  description: 'Shop fixed-price products on Gavel Ghana. Buy now from trusted sellers alongside live auctions.',
+  alternates: { canonical: '/shop' },
+  openGraph: {
+    url: `${siteUrl}/shop`,
+    title: 'Buy Now | Gavel Ghana',
+    description: 'Shop fixed-price products on Gavel Ghana. Buy now from trusted sellers alongside live auctions.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Buy Now | Gavel Ghana',
+    description: 'Shop fixed-price products on Gavel Ghana.',
+  },
+}
 
 type ShopProduct = {
   id: string
@@ -26,8 +45,6 @@ export default async function ShopPage({
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined
   const initialCategory = (resolvedSearchParams?.category || '').trim()
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
   const { data } = await supabase
     .from('shop_products')

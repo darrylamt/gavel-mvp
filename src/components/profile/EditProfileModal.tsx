@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize, UploadedFile } from '@/components/base/file-upload/file-upload'
 
@@ -83,8 +83,10 @@ export default function EditProfileModal({
         formData.append('file', avatarFile)
         formData.append('userId', userId)
 
+        const headers = await getSessionHeaders()
         const res = await fetch('/api/upload/avatar', {
           method: 'POST',
+          headers,
           body: formData,
         })
 

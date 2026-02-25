@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { supabasePublic } from '@/lib/supabasePublicClient'
 
 import AuctionHeader from '@/components/auction/AuctionHeader'
@@ -395,12 +395,19 @@ export default function AuctionDetailPage() {
       setIsPlacingBid(true)
       setBidError(null)
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const res = await fetch('/api/bids', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           auction_id: auction!.id,
-          user_id: userId,
           amount,
         }),
       })
@@ -447,22 +454,18 @@ export default function AuctionDetailPage() {
     const viewerKey = getOrCreateViewerKey()
 
     const trackView = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (viewerKey) {
-        await fetch('/api/auctions/engagement', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            auction_id: auctionId,
-            viewer_key: viewerKey,
-            user_id: user?.id ?? null,
-            action: 'view',
-          }),
-        })
-      }
+      if (!viewerKey) return
+      const headers = await getSessionHeaders()
+      headers['Content-Type'] = 'application/json'
+      await fetch('/api/auctions/engagement', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          auction_id: auctionId,
+          viewer_key: viewerKey,
+          action: 'view',
+        }),
+      })
 
       await loadEngagement()
     }

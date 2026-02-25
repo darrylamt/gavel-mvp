@@ -9,6 +9,7 @@ export default function InitStoragePage() {
   useEffect(() => {
     const initStorage = async () => {
       try {
+        // API requires x-init-storage-secret header (server-side only). From browser this will 403.
         const res = await fetch('/api/init/storage', { method: 'POST' })
         const data = await res.json()
 

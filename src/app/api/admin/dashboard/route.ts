@@ -88,7 +88,7 @@ export async function GET(req: Request) {
         .select('id, username, phone')
         .in('id', sellerUserIds),
       service
-        .from('active_seller_shops')
+        .from('shops')
         .select('owner_id, name')
         .in('owner_id', sellerUserIds)
         .eq('status', 'active'),
@@ -121,28 +121,24 @@ export async function GET(req: Request) {
     productCountMap.set(product.created_by, (productCountMap.get(product.created_by) ?? 0) + 1)
   }
 
-  const sellers: SellerSummary[] = sellerUserIds.flatMap((userId) => {
+  const sellers: SellerSummary[] = sellerUserIds.map((userId) => {
     const approved = latestApprovedByUser.get(userId)
     const profile = profileMap.get(userId)
-    if (!shopNameMap.has(userId)) return []
-
     const name =
       (shopNameMap.get(userId) ?? '').trim() ||
       (profile?.username ?? '').trim() ||
       (approved?.business_name ?? '').trim() ||
       'Seller'
-
     const phone =
       (profile?.phone ?? '').trim() ||
       (approved?.phone ?? '').trim() ||
       '-'
-
-    return [{
+    return {
       userId,
       name,
       phone,
       totalProducts: productCountMap.get(userId) ?? 0,
-    }]
+    }
   })
 
   return NextResponse.json({

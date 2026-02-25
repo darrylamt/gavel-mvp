@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import PieChartCard from '@/components/base/PieChartCard'
 
 type ShopProduct = {
@@ -312,8 +312,10 @@ export default function SellerProductsPage() {
       const formData = new FormData()
       formData.append('file', file)
 
+      const headers = await getSessionHeaders()
       const res = await fetch('/api/upload/product-image', {
         method: 'POST',
+        headers,
         body: formData,
       })
 
@@ -342,8 +344,10 @@ export default function SellerProductsPage() {
         const file = files[i];
         const formData = new FormData();
         formData.append('file', file);
+        const headers = await getSessionHeaders()
         const res = await fetch('/api/upload/product-image', {
           method: 'POST',
+          headers,
           body: formData,
         });
         const data = await res.json();
