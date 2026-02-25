@@ -144,7 +144,7 @@ export default function EditProfileModal({
         whatsappOptIn,
         whatsappMarketingOptIn,
         address,
-        avatarUrl,
+        avatarUrl: avatarUrl ?? undefined,
       })
       onClose()
     } catch (err: any) {
