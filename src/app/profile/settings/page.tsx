@@ -94,7 +94,7 @@ export default function ProfileSettingsPage() {
                 Change
               </button>
             </div> */}
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <span className="text-sm text-gray-800">Delete Account</span>
               <button
                 className="inline-flex items-center justify-center rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
@@ -106,7 +106,7 @@ export default function ProfileSettingsPage() {
               >
                 Delete
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

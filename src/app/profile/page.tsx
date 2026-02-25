@@ -304,7 +304,15 @@ export default function ProfilePage() {
         initialWhatsAppMarketingOptIn={whatsappMarketingOptIn}
         initialAddress={address}
         initialAvatarUrl={avatarUrl}
-        onSaved={(d) => {
+        onSaved={(d: {
+          username?: string;
+          phone?: string;
+          whatsappPhone?: string;
+          whatsappOptIn?: boolean;
+          whatsappMarketingOptIn?: boolean;
+          address?: string;
+          avatarUrl?: string;
+        }) => {
           if (d.username) setUsername(d.username)
           if (typeof d.phone !== 'undefined') setPhone(d.phone)
           if (typeof d.whatsappPhone !== 'undefined') setWhatsappPhone(d.whatsappPhone)
