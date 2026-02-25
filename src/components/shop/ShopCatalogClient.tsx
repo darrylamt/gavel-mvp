@@ -1,5 +1,22 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
+
+function CollapsibleSection({ title, children, defaultOpen = true }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="mb-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex justify-between items-center font-semibold py-2 text-left"
+      >
+        {title}
+        <span>{open ? '−' : '+'}</span>
+      </button>
+      {open && <div>{children}</div>}
+    </div>
+  );
+}
 import ShopProductCard from '@/components/shop/ShopProductCard'
 
 type ShopProduct = {
@@ -27,6 +44,7 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
   const [priceFilter, setPriceFilter] = useState<PriceFilter>('all')
   const [inStockOnly, setInStockOnly] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('featured')
+  const [showFilters, setShowFilters] = useState(false)
 
   const productsWithCategory = useMemo(
     () => products.map((product) => ({ ...product, category: product.category || 'Other' })),
@@ -104,6 +122,7 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10">
+      {/* Products first on mobile */}
       <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-8">
         <p className="pointer-events-none absolute right-4 top-1 text-6xl font-extrabold leading-none text-gray-100 md:right-8 md:text-8xl">
           SHOP
@@ -112,50 +131,44 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
         <p className="relative mt-2 max-w-2xl text-sm text-gray-600 md:text-base">
           Browse fixed-price products and buy instantly.
         </p>
-
-        <div className="relative mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search products"
-            className="h-10 w-full rounded-full border border-gray-300 px-4 text-sm outline-none focus:border-gray-500"
-          />
-          <select
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value as SortOption)}
-            className="h-10 rounded-full border border-gray-300 bg-white px-4 text-sm outline-none focus:border-gray-500"
-          >
-            <option value="featured">Sort: Featured</option>
-            <option value="priceAsc">Price: Low to High</option>
-            <option value="priceDesc">Price: High to Low</option>
-            <option value="name">Name: A to Z</option>
-          </select>
-        </div>
       </section>
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="h-fit rounded-2xl border border-gray-200 bg-white p-4 shadow-sm lg:sticky lg:top-24">
-          <h2 className="text-base font-semibold text-gray-900">Category</h2>
-          <nav className="mt-3 space-y-1">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition ${
-                  selectedCategory === category
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <span>{category}</span>
-                {selectedCategory === category && <span className="text-xs">✓</span>}
-              </button>
-            ))}
-          </nav>
+      {/* Filters button for mobile */}
+      <div className="block lg:hidden mb-4">
+        <button
+          className="w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-semibold shadow-sm flex items-center justify-center"
+          onClick={() => setShowFilters((v) => !v)}
+        >
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </button>
+      </div>
 
-          <div className="mt-5 border-t border-gray-100 pt-4">
-            <h3 className="text-sm font-semibold text-gray-900">Filters</h3>
-
+      <section className="grid gap-4 lg:grid-cols-[240px_1fr]">
+        {/* Sidebar: hidden on mobile unless toggled */}
+        <aside
+          className={`h-fit rounded-2xl border border-gray-200 bg-white p-4 shadow-sm lg:sticky lg:top-24 z-20 transition-transform duration-200 ${
+            showFilters ? 'block' : 'hidden'
+          } lg:block`}
+        >
+          <CollapsibleSection title="Category" defaultOpen={false}>
+            <nav className="mt-3 space-y-1">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition ${
+                    selectedCategory === category
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <span>{category}</span>
+                  {selectedCategory === category && <span className="text-xs">✓</span>}
+                </button>
+              ))}
+            </nav>
+          </CollapsibleSection>
+          <CollapsibleSection title="Filters" defaultOpen={false}>
             <label className="mt-3 flex items-center gap-2 text-sm text-gray-700">
               <input
                 type="checkbox"
@@ -165,7 +178,8 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
               />
               In stock only
             </label>
-
+          </CollapsibleSection>
+          <CollapsibleSection title="Prices" defaultOpen={false}>
             <div className="mt-3 space-y-2 text-sm">
               <button
                 onClick={() => setPriceFilter('all')}
@@ -200,10 +214,30 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
                 Above GHS 200
               </button>
             </div>
-          </div>
+          </CollapsibleSection>
         </aside>
 
+        {/* Products grid always visible, first on mobile */}
         <div>
+          {/* Search and sort controls above products on all screens */}
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search products"
+              className="h-10 w-full sm:w-auto rounded-full border border-gray-300 px-4 text-sm outline-none focus:border-gray-500"
+            />
+            <select
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value as SortOption)}
+              className="h-10 rounded-full border border-gray-300 bg-white px-4 text-sm outline-none focus:border-gray-500"
+            >
+              <option value="featured">Sort: Featured</option>
+              <option value="priceAsc">Price: Low to High</option>
+              <option value="priceDesc">Price: High to Low</option>
+              <option value="name">Name: A to Z</option>
+            </select>
+          </div>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm text-gray-600">
               Showing <span className="font-semibold text-gray-900">{filteredProducts.length}</span> product(s)
