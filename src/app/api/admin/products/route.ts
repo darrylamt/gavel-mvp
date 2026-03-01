@@ -97,12 +97,16 @@ function toSlug(input: string): string {
 }
 
 async function ensureSellerShop(userId: string): Promise<ShopRow> {
-  const { data: existingShops } = await service
+  const { data: existingShops, error: fetchError } = await service
     .from('shops')
     .select('id, owner_id, name, slug, status')
     .eq('owner_id', userId)
     .order('created_at', { ascending: false })
     .limit(1)
+
+  if (fetchError) {
+    console.error('[ensureSellerShop] Error fetching existing shops:', fetchError)
+  }
 
   const existing = ((existingShops ?? [])[0] as ShopRow | undefined) ?? null
   if (existing) {
@@ -132,8 +136,11 @@ async function ensureSellerShop(userId: string): Promise<ShopRow> {
       .single()
 
     if (!error && createdShop) {
+      console.log('[ensureSellerShop] Successfully created shop:', createdShop.id)
       return createdShop as ShopRow
     }
+
+    console.error(`[ensureSellerShop] Insert attempt ${index + 1} failed:`, error)
 
     if (!String(error?.message || '').toLowerCase().includes('duplicate')) {
       break
@@ -149,7 +156,8 @@ async function ensureSellerShop(userId: string): Promise<ShopRow> {
 
   const fallback = ((fallbackShops ?? [])[0] as ShopRow | undefined) ?? null
   if (!fallback || fallbackError) {
-    throw new Error('Failed to create or load seller shop')
+    console.error('[ensureSellerShop] No fallback shop found, error:', fallbackError)
+    throw new Error(`Failed to create or load seller shop. Last error: ${String(fallbackError?.message || 'unknown')}`)
   }
 
   return fallback
@@ -387,9 +395,11 @@ export async function GET(request: Request) {
   let categories: CategoryRow[] = []
   try {
     shops = await getAccessibleShops(auth)
+    console.log('[GET /api/admin/products] Accessible shops:', shops.length, 'for role:', auth.role)
     categories = await getActiveCategories()
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load shops'
+    console.error('[GET /api/admin/products] Error loading shops/categories:', error)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 
@@ -406,20 +416,24 @@ export async function GET(request: Request) {
   }
 
   if (auth.role === 'seller' && sellerShopIds.length === 0) {
-    return NextResponse.json({ products: [], shops: [] })
+    console.log('[GET /api/admin/products] Seller has no shops, returning empty')
+    return NextResponse.json({ products: [], shops: [], categories })
   }
 
   const { data, error } = await query
 
   if (error) {
+    console.error('[GET /api/admin/products] Error fetching products:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   try {
     const hydrated = await hydrateProductsWithVariants((data ?? []) as Array<{ id: string }>)
+    console.log('[GET /api/admin/products] Returning', hydrated.length, 'products')
     return NextResponse.json({ products: hydrated, shops, categories })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load product variants'
+    console.error('[GET /api/admin/products] Error hydrating products:', error)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
