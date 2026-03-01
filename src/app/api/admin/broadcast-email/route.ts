@@ -46,26 +46,42 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Get all users with emails using service role
-  const { data: profiles, error: profilesError } = await serviceSupabase
-    .from('profiles')
+  // Get all users with emails from auth.users using admin access
+  const adminSupabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false }
+  })
+
+  const { data: authUsers, error: authError } = await adminSupabase
+    .from('auth.users')
     .select('email')
     .not('email', 'is', null)
 
-  if (profilesError) {
-    console.error('Error fetching profiles:', profilesError)
+  if (authError) {
+    console.error('Error fetching users:', {
+      message: authError.message,
+      code: authError.code,
+      hint: authError.hint,
+      details: authError.details
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch users', details: profilesError.message },
+      { 
+        error: 'Failed to fetch users',
+        message: authError.message,
+        code: authError.code
+      },
+      { status: 500 }
+    )
+  }
+
+  if (!authUsers || authUsers.length === 0) {
+    return NextResponse.json(
+      { error: 'No users found with email addresses' },
       { status: 400 }
     )
   }
 
-  if (!profiles || profiles.length === 0) {
-    return NextResponse.json(
-      { error: 'No users found' },
-      { status: 400 }
-    )
-  }
+  console.log(`[Broadcast] Found ${authUsers.length} users with emails`)
+
 
   // Check if Resend is available
   const resendApiKey = process.env.RESEND_API_KEY
@@ -75,7 +91,7 @@ export async function POST(request: NextRequest) {
       {
         error: 'Email service not configured',
         message: 'Please set RESEND_API_KEY environment variable and install resend package',
-        recipientCount: profiles.length
+        recipientCount: authUsers.length
       },
       { status: 503 }
     )
@@ -89,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
     const resend = new Resend(resendApiKey)
 
-    const emails = profiles.map((p) => p.email).filter(Boolean) as string[]
+    const emails = authUsers.map((u) => u.email).filter(Boolean) as string[]
 
     // Send in batches of 100 (Resend limit)
     const batchSize = 100
@@ -128,7 +144,7 @@ export async function POST(request: NextRequest) {
         {
           error: 'Resend package not installed',
           message: 'Run: npm install resend',
-          recipientCount: profiles.length
+          recipientCount: authUsers.length
         },
         { status: 503 }
       )

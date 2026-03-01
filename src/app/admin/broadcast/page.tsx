@@ -60,6 +60,14 @@ export default function BroadcastEmailPage() {
       const data = await response.json()
       setResult(data)
 
+      if (!response.ok) {
+        console.error('Broadcast API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          data
+        })
+      }
+
       if (data.success) {
         setSubject('')
         setContent('')
