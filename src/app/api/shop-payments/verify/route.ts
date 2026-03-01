@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { queueShopOrderPaidNotifications } from '@/lib/whatsapp/events'
+import { sendNotificationEmail } from '@/lib/resend-service'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -235,6 +236,38 @@ export async function POST(req: Request) {
         totalAmount: paidAmount,
         sellerIds,
       })
+
+      // Send order confirmation email
+      const { data: buyer } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', metadata.user_id)
+        .single()
+
+      if (buyer?.email) {
+        const deliveryAddress = [
+          metadata.delivery?.address,
+          metadata.delivery?.city,
+        ]
+          .filter(Boolean)
+          .join(', ') || 'Not provided'
+
+        const deliveryLocation = metadata.delivery?.city || 'Not specified'
+
+        await sendNotificationEmail(buyer.email, 'orderConfirmation', {
+          userName: buyer.full_name || metadata.delivery?.full_name || 'there',
+          orderRef: paymentReference,
+          total: paidAmount,
+          items: metadata.items.map((item) => ({
+            name: item.variant_label ? `${item.title} (${item.variant_label})` : item.title,
+            quantity: item.quantity,
+            price: item.unit_price * item.quantity,
+          })),
+          deliveryAddress,
+          deliveryLocation,
+          estimatedDelivery: undefined,
+        })
+      }
     }
 
     return NextResponse.json({ success: true })

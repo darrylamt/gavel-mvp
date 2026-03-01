@@ -4,6 +4,7 @@ import 'server-only'
 import { maskBidderEmail } from '@/lib/maskBidderEmail'
 import { queueBidNotifications } from '@/lib/whatsapp/events'
 import { queueWhatsAppNotification } from '@/lib/whatsapp/queue'
+import { sendNotificationEmail } from '@/lib/resend-service'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -305,6 +306,11 @@ export async function POST(req: Request) {
     reference: `bid:${auction_id}`,
   })
 
+  /* ---------------- EMAIL NOTIFICATIONS ---------------- */
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+  const auctionUrl = `${siteUrl}/auctions/${auction_id}`
+
   await Promise.allSettled([
     queueBidNotifications({
       auctionId: String(auction.id),
@@ -314,6 +320,50 @@ export async function POST(req: Request) {
       previousTopBidderUserId: previousTopBid?.user_id ?? null,
       sellerUserId: (auction as { seller_id?: string | null }).seller_id ?? null,
     }),
+    (async () => {
+      // Send outbid email to previous top bidder
+      if (previousTopBid?.user_id) {
+        const { data: previousBidder } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', previousTopBid.user_id)
+          .single()
+
+        if (previousBidder?.email) {
+          await sendNotificationEmail(previousBidder.email, 'outbid', {
+            userName: previousBidder.full_name || 'there',
+            auctionTitle: String(auction.title || 'Auction'),
+            currentBid: bidAmount,
+            auctionUrl,
+          })
+        }
+      }
+
+      // Send new bid email to seller
+      if (auction.seller_id) {
+        const { data: seller } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', auction.seller_id)
+          .single()
+
+        // Count total bids for this auction
+        const { count: bidsCount } = await supabase
+          .from('bids')
+          .select('*', { count: 'exact', head: true })
+          .eq('auction_id', auction_id)
+
+        if (seller?.email) {
+          await sendNotificationEmail(seller.email, 'newBid', {
+            sellerName: seller.full_name || 'there',
+            auctionTitle: String(auction.title || 'Auction'),
+            bidAmount: bidAmount,
+            auctionUrl,
+            bidsCount: bidsCount || 1,
+          })
+        }
+      }
+    })(),
     (async () => {
       const { data: watchers } = await supabase
         .from('auction_watchers')

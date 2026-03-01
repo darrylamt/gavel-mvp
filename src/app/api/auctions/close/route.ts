@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 import { queueAuctionClosedNotifications } from '@/lib/whatsapp/events'
+import { sendNotificationEmail } from '@/lib/resend-service'
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -47,6 +48,49 @@ export async function POST(req: Request) {
         winnerAmount: resolution.activeCandidate?.amount ?? null,
         reserveMet: !!resolution.activeCandidate,
       })
+
+      // Send email notifications
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+      const auctionUrl = `${siteUrl}/auctions/${auction_id}`
+
+      // If auction has a winner, send emails
+      if (resolution.activeCandidate && resolution.activeCandidate.userId) {
+        // Email to winner
+        const { data: winner } = await supabase
+          .from('profiles')
+          .select('email, full_name, phone')
+          .eq('id', resolution.activeCandidate.userId)
+          .single()
+
+        if (winner?.email) {
+          await sendNotificationEmail(winner.email, 'auctionWon', {
+            userName: winner.full_name || 'there',
+            auctionTitle: auctionMeta.title || 'Auction',
+            winningBid: resolution.activeCandidate.amount,
+            auctionUrl,
+          })
+        }
+
+        // Email to seller
+        if (auctionMeta.created_by) {
+          const { data: seller } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', auctionMeta.created_by)
+            .single()
+
+          if (seller?.email) {
+            await sendNotificationEmail(seller.email, 'auctionEnded', {
+              sellerName: seller.full_name || 'there',
+              auctionTitle: auctionMeta.title || 'Auction',
+              winningBid: resolution.activeCandidate.amount,
+              winnerEmail: winner?.email || 'N/A',
+              winnerPhone: winner?.phone || undefined,
+              auctionUrl,
+            })
+          }
+        }
+      }
     }
 
     if (resolution.reason === 'auction_not_ended') {

@@ -69,14 +69,6 @@ export default function AdminShell({ children }: Props) {
               )
             })}
           </nav>
-
-          <Link
-            href="/admin/new"
-            title="New Auction"
-            className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-          >
-            {collapsed ? 'New' : 'New Auction'}
-          </Link>
         </aside>
 
         <section className="space-y-4">{children}</section>
