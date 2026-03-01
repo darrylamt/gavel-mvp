@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { calculateDiscountAmount, resolveDiscountCode } from '@/lib/discounts'
 
 type CheckoutItemInput = {
   product_id: string
@@ -25,11 +26,12 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { user_id, email, items, delivery } = (await req.json()) as {
+    const { user_id, email, items, delivery, discount_code } = (await req.json()) as {
       user_id?: string
       email?: string
       items?: CheckoutItemInput[]
       delivery?: DeliveryInput
+      discount_code?: string
     }
 
     if (!user_id || !email || !Array.isArray(items) || items.length === 0) {
@@ -309,9 +311,26 @@ export async function POST(req: Request) {
       (max, fee) => Math.max(max, Number(fee.delivery_time_days || 0)),
       0
     )
+
+    let discountCode: string | null = null
+    let discountPercent = 0
+    let discountAmount = 0
+
+    if (String(discount_code || '').trim()) {
+      const discount = await resolveDiscountCode(supabase, discount_code)
+      if (!discount.ok || !discount.row) {
+        return NextResponse.json({ error: discount.error || 'Invalid discount code' }, { status: 400 })
+      }
+
+      discountCode = discount.row.code
+      discountPercent = Number(discount.row.percent_off ?? 0)
+      discountAmount = calculateDiscountAmount(totalAmount, discountPercent)
+    }
+
     const delivery_city_id = null
     const delivery_region_id = null
-    const grandTotal = totalAmount + totalDeliveryFee
+    const subtotalAfterDiscount = Math.max(0, totalAmount - discountAmount)
+    const grandTotal = subtotalAfterDiscount + totalDeliveryFee
 
     const initRes = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
@@ -334,6 +353,11 @@ export async function POST(req: Request) {
             delivery_fees: deliveryFees,
             total_delivery_fee: totalDeliveryFee,
             estimated_delivery_time_days: maxDeliveryTimeDays || null,
+          },
+          discount: {
+            code: discountCode,
+            percent_off: discountPercent,
+            amount: discountAmount,
           },
           items: paystackItems,
         },

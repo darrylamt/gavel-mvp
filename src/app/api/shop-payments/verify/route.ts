@@ -46,6 +46,11 @@ export async function POST(req: Request) {
         city?: string
         notes?: string
       }
+      discount?: {
+        code?: string | null
+        percent_off?: number | null
+        amount?: number | null
+      }
       items?: Array<{
         product_id: string
         variant_id?: string | null
@@ -108,6 +113,13 @@ export async function POST(req: Request) {
     }
 
     const paymentReference = String(json.data.reference)
+    const discountCode = String(metadata.discount?.code || '').trim().toUpperCase()
+    const discountPercent = Number(metadata.discount?.percent_off ?? 0)
+    const discountAmount = Math.max(0, Number(metadata.discount?.amount ?? 0))
+    const orderSubtotal = (metadata.items ?? []).reduce(
+      (sum, item) => sum + Number(item.unit_price ?? 0) * Number(item.quantity ?? 0),
+      0
+    )
 
     let existingPayment: { id: string } | null = null
 
@@ -164,6 +176,59 @@ export async function POST(req: Request) {
     )
 
     if (orderId && metadata.user_id) {
+      if (discountCode && discountAmount > 0) {
+        const { data: discountRow } = await supabase
+          .from('discount_codes')
+          .select('id')
+          .eq('code', discountCode)
+          .maybeSingle()
+
+        const discountId = String((discountRow as { id?: string } | null)?.id || '')
+
+        if (discountId) {
+          const usageUpsert = await supabase
+            .from('discount_code_usages')
+            .upsert(
+              {
+                discount_code_id: discountId,
+                user_id: metadata.user_id,
+                paystack_reference: paymentReference,
+                shop_order_id: String(orderId),
+                discount_amount: discountAmount,
+                order_subtotal: Math.max(0, orderSubtotal),
+              },
+              {
+                onConflict: 'paystack_reference',
+                ignoreDuplicates: true,
+              }
+            )
+            .select('id')
+            .maybeSingle()
+
+          if (!usageUpsert.error && usageUpsert.data) {
+            const { data: currentDiscount } = await supabase
+              .from('discount_codes')
+              .select('used_count')
+              .eq('id', discountId)
+              .single()
+
+            await supabase
+              .from('discount_codes')
+              .update({ used_count: Number((currentDiscount as { used_count?: number } | null)?.used_count ?? 0) + 1 })
+              .eq('id', discountId)
+          }
+        }
+
+        await supabase
+          .from('shop_orders')
+          .update({
+            discount_code: discountCode,
+            discount_percent: Number.isFinite(discountPercent) && discountPercent > 0 ? discountPercent : null,
+            discount_amount: discountAmount,
+          })
+          .eq('id', String(orderId))
+      }
+
       await queueShopOrderPaidNotifications({
         buyerUserId: metadata.user_id,
         orderId: String(orderId),

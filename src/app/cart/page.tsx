@@ -22,7 +22,13 @@ export default function CartPage() {
   const [estimatedDeliveryDays, setEstimatedDeliveryDays] = useState<number | null>(null)
   const [deliveryWarning, setDeliveryWarning] = useState<string | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
-  const total = subtotal + deliveryFee
+  const [discountCode, setDiscountCode] = useState('')
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | null>(null)
+  const [discountPercent, setDiscountPercent] = useState<number | null>(null)
+  const [discountAmount, setDiscountAmount] = useState(0)
+  const [discountLoading, setDiscountLoading] = useState(false)
+  const [discountError, setDiscountError] = useState<string | null>(null)
+  const total = Math.max(0, subtotal + deliveryFee - discountAmount)
 
   useEffect(() => {
     const loadDefaults = async () => {
@@ -149,6 +155,7 @@ export default function CartPage() {
         body: JSON.stringify({
           user_id: auth.user.id,
           email: auth.user.email,
+          discount_code: appliedDiscountCode || undefined,
           delivery: {
             full_name: fullName.trim(),
             phone: phone.trim(),
@@ -180,6 +187,65 @@ export default function CartPage() {
       setIsCheckingOut(false)
     }
   }
+
+  const handleApplyDiscount = async () => {
+    const code = discountCode.trim().toUpperCase()
+
+    if (!code) {
+      setAppliedDiscountCode(null)
+      setDiscountPercent(null)
+      setDiscountAmount(0)
+      setDiscountError(null)
+      return
+    }
+
+    setDiscountLoading(true)
+    setDiscountError(null)
+
+    try {
+      const res = await fetch('/api/shop-payments/discount-validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discount_code: code,
+          items: items.map((item) => ({
+            product_id: item.productId,
+            variant_id: item.variantId ?? null,
+            quantity: item.quantity,
+          })),
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setAppliedDiscountCode(null)
+        setDiscountPercent(null)
+        setDiscountAmount(0)
+        setDiscountError(data.error || 'Invalid discount code')
+        return
+      }
+
+      setAppliedDiscountCode(String(data.code || code))
+      setDiscountPercent(Number(data.percent_off || 0))
+      setDiscountAmount(Number(data.discount_amount || 0))
+      setDiscountError(null)
+    } catch {
+      setAppliedDiscountCode(null)
+      setDiscountPercent(null)
+      setDiscountAmount(0)
+      setDiscountError('Unable to validate discount code right now.')
+    } finally {
+      setDiscountLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    setAppliedDiscountCode(null)
+    setDiscountPercent(null)
+    setDiscountAmount(0)
+    setDiscountError(null)
+  }, [items])
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
@@ -359,10 +425,42 @@ export default function CartPage() {
             </div>
 
             <div className="mt-4 space-y-2 text-sm">
+              <div className="space-y-2 border-b pb-3">
+                <p className="text-sm font-semibold text-gray-900">Discount Code</p>
+                <div className="flex gap-2">
+                  <input
+                    value={discountCode}
+                    onChange={(event) => setDiscountCode(event.target.value.toUpperCase())}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    placeholder="Enter discount code"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyDiscount}
+                    disabled={discountLoading}
+                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {discountLoading ? 'Applying…' : 'Apply'}
+                  </button>
+                </div>
+                {appliedDiscountCode && discountPercent ? (
+                  <p className="text-xs text-green-700">
+                    {appliedDiscountCode} applied ({discountPercent}% off)
+                  </p>
+                ) : null}
+                {discountError ? <p className="text-xs text-red-600">{discountError}</p> : null}
+              </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Sub Total</span>
                 <span className="font-medium">GHS {subtotal.toLocaleString()}</span>
               </div>
+              {discountAmount > 0 ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Discount</span>
+                  <span className="font-medium text-green-700">- GHS {discountAmount.toLocaleString()}</span>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Delivery Fee</span>
                 <span className="font-medium">

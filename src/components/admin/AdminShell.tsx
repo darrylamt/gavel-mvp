@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Gavel, LayoutDashboard, Mail, MessageSquare, Package, Store, Truck, Users, Wallet } from 'lucide-react'
+import { BadgePercent, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Gavel, LayoutDashboard, Mail, MessageSquare, Package, Store, Truck, Users, Wallet } from 'lucide-react'
 
 type Props = {
   children: React.ReactNode
@@ -18,6 +18,8 @@ const tabs = [
   { href: '/admin/auctions', label: 'Auctions', icon: Gavel },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/revenue', label: 'Revenue', icon: Wallet },
+  { href: '/admin/payouts', label: 'Seller Payouts', icon: Wallet },
+  { href: '/admin/discounts', label: 'Discounts', icon: BadgePercent },
   { href: '/admin/sellers', label: 'Sellers', icon: Store },
 ]
 
