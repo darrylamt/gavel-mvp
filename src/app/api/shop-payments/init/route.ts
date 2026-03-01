@@ -23,70 +23,6 @@ const supabase = createClient(
 )
 
 export async function POST(req: Request) {
-
-      // --- PHASE 2: SERVER-SIDE SHIPPING FEE ENFORCEMENT ---
-      // 1. Fetch city and region
-      const { data: cityRow, error: cityError } = await supabase
-        .from('cities')
-        .select('id, name, region_id, region:regions(id, name)')
-        .eq('name', deliveryPayload.city)
-        .single();
-      if (cityError || !cityRow) {
-        return NextResponse.json({ error: 'Delivery city not found' }, { status: 400 });
-      }
-      const delivery_city_id = cityRow.id;
-      const delivery_region_id = cityRow.region_id;
-
-      // 2. Fetch shipping profiles for all products
-      const { data: shippingProfiles, error: shippingProfilesError } = await supabase
-        .from('shipping_profiles')
-        .select('id, free_shipping_threshold')
-        .in('id', (products ?? []).map((p) => p.shipping_profile_id).filter(Boolean));
-      if (shippingProfilesError) {
-        return NextResponse.json({ error: shippingProfilesError.message }, { status: 500 });
-      }
-      const shippingProfileById = new Map((shippingProfiles ?? []).map((sp) => [sp.id, sp]));
-
-      // 3. Fetch shipping rates for all profiles/city
-      const shippingProfileIds = (products ?? []).map((p) => p.shipping_profile_id).filter(Boolean);
-      const { data: shippingRates, error: shippingRatesError } = await supabase
-        .from('shipping_rates')
-        .select('id, shipping_profile_id, city_id, price, delivery_estimate_min_days, delivery_estimate_max_days')
-        .in('shipping_profile_id', shippingProfileIds)
-        .eq('city_id', delivery_city_id);
-      if (shippingRatesError) {
-        return NextResponse.json({ error: shippingRatesError.message }, { status: 500 });
-      }
-      const shippingRateByProfile = new Map((shippingRates ?? []).map((r) => [r.shipping_profile_id, r]));
-
-      // 4. Calculate delivery fee per item and sum
-      let totalDeliveryFee = 0;
-      const deliveryFees: any[] = [];
-      for (const item of normalizedItems) {
-        const product = productById.get(item.product_id);
-        if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 400 });
-        const shipping_profile_id = product.shipping_profile_id;
-        if (!shipping_profile_id) return NextResponse.json({ error: 'Product missing shipping profile' }, { status: 400 });
-        const shippingProfile = shippingProfileById.get(shipping_profile_id);
-        if (!shippingProfile) return NextResponse.json({ error: 'Shipping profile not found' }, { status: 400 });
-        const shippingRate = shippingRateByProfile.get(shipping_profile_id);
-        if (!shippingRate) return NextResponse.json({ error: 'No shipping rate for this city' }, { status: 400 });
-        // Apply free shipping threshold
-        const itemTotal = (item.quantity || 1) * Number(product.price);
-        let fee = Number(shippingRate.price);
-        if (shippingProfile.free_shipping_threshold && itemTotal >= Number(shippingProfile.free_shipping_threshold)) {
-          fee = 0;
-        }
-        totalDeliveryFee += fee;
-        deliveryFees.push({
-          product_id: product.id,
-          shipping_profile_id,
-          shipping_rate_id: shippingRate.id,
-          delivery_fee: fee,
-          delivery_estimate_min_days: shippingRate.delivery_estimate_min_days,
-          delivery_estimate_max_days: shippingRate.delivery_estimate_max_days,
-        });
-      }
   try {
     const { user_id, email, items, delivery } = (await req.json()) as {
       user_id?: string
@@ -137,7 +73,7 @@ export async function POST(req: Request) {
 
     const { data: products, error: productsError } = await supabase
       .from('shop_products')
-      .select('id, title, price, stock, status, shop_id')
+      .select('id, title, price, stock, status, shop_id, shipping_profile_id')
       .in('id', productIds)
 
     if (productsError) {
@@ -261,6 +197,69 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid checkout total' }, { status: 400 })
     }
 
+    // --- PHASE 2: SERVER-SIDE SHIPPING FEE ENFORCEMENT ---
+    // 1. Fetch city and region
+    const { data: cityRow, error: cityError } = await supabase
+      .from('cities')
+      .select('id, name, region_id, region:regions(id, name)')
+      .eq('name', deliveryPayload.city)
+      .single();
+    if (cityError || !cityRow) {
+      return NextResponse.json({ error: 'Delivery city not found' }, { status: 400 });
+    }
+    const delivery_city_id = cityRow.id;
+    const delivery_region_id = cityRow.region_id;
+
+    // 2. Fetch shipping profiles for all products
+    const { data: shippingProfiles, error: shippingProfilesError } = await supabase
+      .from('shipping_profiles')
+      .select('id, free_shipping_threshold')
+      .in('id', (products ?? []).map((p: any) => p.shipping_profile_id).filter(Boolean));
+    if (shippingProfilesError) {
+      return NextResponse.json({ error: shippingProfilesError.message }, { status: 500 });
+    }
+    const shippingProfileById = new Map((shippingProfiles ?? []).map((sp: any) => [sp.id, sp]));
+
+    // 3. Fetch shipping rates for all profiles/city
+    const shippingProfileIds = (products ?? []).map((p: any) => p.shipping_profile_id).filter(Boolean);
+    const { data: shippingRates, error: shippingRatesError } = await supabase
+      .from('shipping_rates')
+      .select('id, shipping_profile_id, city_id, price, delivery_estimate_min_days, delivery_estimate_max_days')
+      .in('shipping_profile_id', shippingProfileIds)
+      .eq('city_id', delivery_city_id);
+    if (shippingRatesError) {
+      return NextResponse.json({ error: shippingRatesError.message }, { status: 500 });
+    }
+    const shippingRateByProfile = new Map((shippingRates ?? []).map((r: any) => [r.shipping_profile_id, r]));
+
+    // 4. Calculate delivery fee per item and sum
+    let totalDeliveryFee = 0;
+    const deliveryFees: any[] = [];
+    for (const item of normalizedItems) {
+      const product = productById.get(item.product_id);
+      if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 400 });
+      const shipping_profile_id = (product as any).shipping_profile_id;
+      if (!shipping_profile_id) return NextResponse.json({ error: 'Product missing shipping profile' }, { status: 400 });
+      const shippingProfile = shippingProfileById.get(shipping_profile_id);
+      if (!shippingProfile) return NextResponse.json({ error: 'Shipping profile not found' }, { status: 400 });
+      const shippingRate = shippingRateByProfile.get(shipping_profile_id);
+      if (!shippingRate) return NextResponse.json({ error: 'No shipping rate for this city' }, { status: 400 });
+      // Apply free shipping threshold
+      const itemTotal = (item.quantity || 1) * Number(product.price);
+      let fee = Number(shippingRate.price);
+      if (shippingProfile.free_shipping_threshold && itemTotal >= Number(shippingProfile.free_shipping_threshold)) {
+        fee = 0;
+      }
+      totalDeliveryFee += fee;
+      deliveryFees.push({
+        product_id: product.id,
+        shipping_profile_id,
+        shipping_rate_id: shippingRate.id,
+        delivery_fee: fee,
+        delivery_estimate_min_days: shippingRate.delivery_estimate_min_days,
+        delivery_estimate_max_days: shippingRate.delivery_estimate_max_days,
+      });
+    }
 
     // Add delivery fee to total amount
     const grandTotal = totalAmount + totalDeliveryFee;
