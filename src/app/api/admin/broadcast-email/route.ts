@@ -46,34 +46,29 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Get all users with emails from auth.users using admin access
+  // Get all users with emails using Supabase Admin API
   const adminSupabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false }
   })
 
-  const { data: authUsers, error: fetchUsersError } = await adminSupabase
-    .from('auth.users')
-    .select('email')
-    .not('email', 'is', null)
+  const { data: { users }, error: fetchUsersError } = await adminSupabase.auth.admin.listUsers()
 
   if (fetchUsersError) {
     console.error('Error fetching users:', {
-      message: fetchUsersError.message,
-      code: fetchUsersError.code,
-      hint: fetchUsersError.hint,
-      details: fetchUsersError.details
+      message: fetchUsersError.message
     })
     return NextResponse.json(
       { 
         error: 'Failed to fetch users',
-        message: fetchUsersError.message,
-        code: fetchUsersError.code
+        message: fetchUsersError.message
       },
       { status: 500 }
     )
   }
 
-  if (!authUsers || authUsers.length === 0) {
+  const authUsers = users?.filter(u => u.email) ?? []
+
+  if (authUsers.length === 0) {
     return NextResponse.json(
       { error: 'No users found with email addresses' },
       { status: 400 }
