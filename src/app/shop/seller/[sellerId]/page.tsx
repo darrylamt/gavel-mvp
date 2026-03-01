@@ -27,7 +27,7 @@ type ShopProduct = {
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export default async function SellerShopPage({ params }: Props) {
@@ -36,7 +36,7 @@ export default async function SellerShopPage({ params }: Props) {
 
   const [{ data: shop }, { data: products }] = await Promise.all([
     supabase
-      .from('active_seller_shops')
+      .from('shops')
       .select('id, name, description, logo_url, cover_image_url')
       .eq('id', sellerId)
       .maybeSingle(),

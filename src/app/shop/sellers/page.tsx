@@ -19,13 +19,13 @@ type ProductRow = {
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export default async function SellerShopsPage() {
   const [{ data: shopsData }, { data: productRows }] = await Promise.all([
     supabase
-      .from('active_seller_shops')
+      .from('shops')
       .select('id, name, logo_url, cover_image_url, status, owner_id')
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
@@ -64,6 +64,7 @@ export default async function SellerShopsPage() {
       coverImage: coverImageByShop.get(shop.id) ?? shop.cover_image_url,
       topCategories: Array.from(categoriesByShop.get(shop.id) ?? []).slice(0, 3),
     }))
+    .filter((shop) => shop.productCount > 0)
     .sort((a, b) => b.productCount - a.productCount)
 
   return (

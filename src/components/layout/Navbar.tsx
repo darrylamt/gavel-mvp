@@ -507,7 +507,7 @@ export default function Navbar() {
                   <>
                     <button
                       onClick={() => {
-                        router.push('/profile')
+                        router.push('/profile/settings')
                         setMobileMenuOpen(false)
                       }}
                       className="flex items-center gap-2 font-medium text-gray-900 transition hover:text-black"
