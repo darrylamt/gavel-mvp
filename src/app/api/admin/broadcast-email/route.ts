@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     for (const batch of batches) {
       try {
         await resend.emails.send({
-          from: 'Gavel Ghana <no-reply@gavelghana.com>',
+          from: 'Gavel Ghana <no-reply@gavelgh.com>',
           to: batch,
           subject,
           html: htmlContent
