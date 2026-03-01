@@ -323,15 +323,16 @@ export async function POST(req: Request) {
     (async () => {
       // Send outbid email to previous top bidder
       if (previousTopBid?.user_id) {
-        const { data: previousBidder } = await supabase
+        const { data: { user: previousBidderAuth } } = await supabase.auth.admin.getUserById(previousTopBid.user_id)
+        const { data: previousBidderProfile } = await supabase
           .from('profiles')
-          .select('email, full_name')
+          .select('username')
           .eq('id', previousTopBid.user_id)
           .single()
 
-        if (previousBidder?.email) {
-          await sendNotificationEmail(previousBidder.email, 'outbid', {
-            userName: previousBidder.full_name || 'there',
+        if (previousBidderAuth?.email) {
+          await sendNotificationEmail(previousBidderAuth.email, 'outbid', {
+            userName: previousBidderProfile?.username || previousBidderAuth.email.split('@')[0] || 'there',
             auctionTitle: String(auction.title || 'Auction'),
             currentBid: bidAmount,
             auctionUrl,
@@ -341,9 +342,10 @@ export async function POST(req: Request) {
 
       // Send new bid email to seller
       if (auction.seller_id) {
-        const { data: seller } = await supabase
+        const { data: { user: sellerAuth } } = await supabase.auth.admin.getUserById(auction.seller_id)
+        const { data: sellerProfile } = await supabase
           .from('profiles')
-          .select('email, full_name')
+          .select('username')
           .eq('id', auction.seller_id)
           .single()
 
@@ -353,9 +355,9 @@ export async function POST(req: Request) {
           .select('*', { count: 'exact', head: true })
           .eq('auction_id', auction_id)
 
-        if (seller?.email) {
-          await sendNotificationEmail(seller.email, 'newBid', {
-            sellerName: seller.full_name || 'there',
+        if (sellerAuth?.email) {
+          await sendNotificationEmail(sellerAuth.email, 'newBid', {
+            sellerName: sellerProfile?.username || sellerAuth.email.split('@')[0] || 'there',
             auctionTitle: String(auction.title || 'Auction'),
             bidAmount: bidAmount,
             auctionUrl,

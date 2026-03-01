@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { queueSellerApplicationReviewedNotification } from '@/lib/whatsapp/events'
+import { sendNotificationEmail } from '@/lib/resend-service'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -76,9 +77,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   const { data: reviewedApplication } = await service
     .from('seller_applications')
-    .select('user_id')
+    .select('user_id, business_name')
     .eq('id', id)
-    .maybeSingle<{ user_id: string }>()
+    .maybeSingle<{ user_id: string; business_name: string | null }>()
 
   if (reviewedApplication?.user_id) {
     await queueSellerApplicationReviewedNotification({
@@ -86,6 +87,36 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       status: action,
       reason: action === 'rejected' ? rejectionReason : null,
     })
+
+    // Send email notification
+    const { data: { user: applicantAuth } } = await service.auth.admin.getUserById(reviewedApplication.user_id)
+    const { data: applicantProfile } = await service
+      .from('profiles')
+      .select('username')
+      .eq('id', reviewedApplication.user_id)
+      .single()
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+
+    if (applicantAuth?.email) {
+      const userName = applicantProfile?.username || applicantAuth.email.split('@')[0] || 'there'
+      const businessName = reviewedApplication.business_name || 'Your business'
+
+      if (action === 'approved') {
+        await sendNotificationEmail(applicantAuth.email, 'sellerApplicationApproved', {
+          userName,
+          businessName,
+          dashboardUrl: `${siteUrl}/seller`,
+        })
+      } else if (action === 'rejected' && rejectionReason) {
+        await sendNotificationEmail(applicantAuth.email, 'sellerApplicationRejected', {
+          userName,
+          businessName,
+          reason: rejectionReason,
+          supportUrl: `${siteUrl}/contact`,
+        })
+      }
+    }
   }
 
   if (action === 'approved') {

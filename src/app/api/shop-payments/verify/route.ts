@@ -238,13 +238,14 @@ export async function POST(req: Request) {
       })
 
       // Send order confirmation email
-      const { data: buyer } = await supabase
+      const { data: { user: buyerAuth } } = await supabase.auth.admin.getUserById(metadata.user_id)
+      const { data: buyerProfile } = await supabase
         .from('profiles')
-        .select('email, full_name')
+        .select('username')
         .eq('id', metadata.user_id)
         .single()
 
-      if (buyer?.email) {
+      if (buyerAuth?.email) {
         const deliveryAddress = [
           metadata.delivery?.address,
           metadata.delivery?.city,
@@ -254,8 +255,8 @@ export async function POST(req: Request) {
 
         const deliveryLocation = metadata.delivery?.city || 'Not specified'
 
-        await sendNotificationEmail(buyer.email, 'orderConfirmation', {
-          userName: buyer.full_name || metadata.delivery?.full_name || 'there',
+        await sendNotificationEmail(buyerAuth.email, 'orderConfirmation', {
+          userName: buyerProfile?.username || metadata.delivery?.full_name || buyerAuth.email.split('@')[0] || 'there',
           orderRef: paymentReference,
           total: paidAmount,
           items: metadata.items.map((item) => ({

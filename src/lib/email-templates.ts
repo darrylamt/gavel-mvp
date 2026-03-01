@@ -249,6 +249,129 @@ export const emailTemplates = {
       </div>
     `,
   }),
+
+  sellerApplicationApproved: (data: {
+    userName: string
+    businessName: string
+    dashboardUrl: string
+  }) => ({
+    subject: `Seller Application Approved - Welcome to Gavel Ghana`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; padding: 32px; margin-bottom: 24px; text-align: center;">
+          <h2 style="color: #ffffff; margin: 0 0 8px 0; font-size: 28px;">Application Approved</h2>
+          <p style="color: #d1fae5; margin: 0; font-size: 16px;">Welcome to Gavel Ghana</p>
+        </div>
+        <div style="background: #f9fafb; border-radius: 12px; padding: 32px; margin-bottom: 24px;">
+          <p style="color: #6b7280; margin: 0; font-size: 16px; line-height: 1.5;">Hi ${data.userName},</p>
+          <p style="color: #374151; margin: 16px 0; font-size: 16px; line-height: 1.5;">
+            Great news! Your seller application for <strong>${data.businessName}</strong> has been approved.
+          </p>
+          <div style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 24px 0;">
+            <h3 style="color: #111827; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">Next Steps</h3>
+            <ul style="color: #374151; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+              <li>Set up your seller profile and shop</li>
+              <li>Add your first products</li>
+              <li>Configure delivery zones and pricing</li>
+              <li>Start selling to customers across Ghana</li>
+            </ul>
+          </div>
+          <p style="color: #6b7280; margin: 0; font-size: 14px; line-height: 1.5;">
+            You can now access your seller dashboard to manage your products, view orders, and track your sales.
+          </p>
+        </div>
+        <div style="text-align: center;">
+          <a href="${data.dashboardUrl}" style="background: #111827; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
+            Go to Seller Dashboard
+          </a>
+        </div>
+        <p style="color: #9ca3af; font-size: 14px; text-align: center; margin-top: 32px;">
+          Gavel Ghana - Online Marketplace<br>
+          <a href="https://gavelgh.com" style="color: #6b7280; text-decoration: none;">gavelgh.com</a>
+        </p>
+      </div>
+    `,
+  }),
+
+  sellerApplicationRejected: (data: {
+    userName: string
+    businessName: string
+    reason: string
+    supportUrl: string
+  }) => ({
+    subject: `Seller Application Update - ${data.businessName}`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #f9fafb; border-radius: 12px; padding: 32px; margin-bottom: 24px;">
+          <h2 style="color: #111827; margin: 0 0 16px 0; font-size: 24px;">Application Update</h2>
+          <p style="color: #6b7280; margin: 0; font-size: 16px; line-height: 1.5;">Hi ${data.userName},</p>
+          <p style="color: #374151; margin: 16px 0; font-size: 16px; line-height: 1.5;">
+            Thank you for your interest in becoming a seller on Gavel Ghana. After reviewing your application for <strong>${data.businessName}</strong>, we're unable to approve it at this time.
+          </p>
+          <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px; margin: 24px 0;">
+            <h3 style="color: #991b1b; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Reason</h3>
+            <p style="color: #7f1d1d; margin: 0; font-size: 14px; line-height: 1.5;">${data.reason}</p>
+          </div>
+          <p style="color: #374151; margin: 16px 0; font-size: 14px; line-height: 1.5;">
+            If you believe this was an error or would like to discuss your application further, please contact our support team.
+          </p>
+          <p style="color: #6b7280; margin: 0; font-size: 14px; line-height: 1.5;">
+            You're welcome to submit a new application once you've addressed the issues mentioned above.
+          </p>
+        </div>
+        <div style="text-align: center;">
+          <a href="${data.supportUrl}" style="background: #111827; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
+            Contact Support
+          </a>
+        </div>
+        <p style="color: #9ca3af; font-size: 14px; text-align: center; margin-top: 32px;">
+          Gavel Ghana - Online Marketplace<br>
+          <a href="https://gavelgh.com" style="color: #6b7280; text-decoration: none;">gavelgh.com</a>
+        </p>
+      </div>
+    `,
+  }),
+
+  paymentReminder: (data: {
+    userName: string
+    auctionTitle: string
+    winningBid: number
+    dueDate: string
+    auctionUrl: string
+  }) => ({
+    subject: `Payment Reminder - ${data.auctionTitle}`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #f9fafb; border-radius: 12px; padding: 32px; margin-bottom: 24px;">
+          <h2 style="color: #111827; margin: 0 0 16px 0; font-size: 24px;">Payment Reminder</h2>
+          <p style="color: #6b7280; margin: 0; font-size: 16px; line-height: 1.5;">Hi ${data.userName},</p>
+          <p style="color: #374151; margin: 16px 0; font-size: 16px; line-height: 1.5;">
+            This is a reminder that payment is pending for your winning bid on <strong>${data.auctionTitle}</strong>.
+          </p>
+          <div style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 24px 0;">
+            <p style="color: #6b7280; margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Amount Due</p>
+            <p style="color: #111827; margin: 0 0 16px 0; font-size: 24px; font-weight: 700;">GHS ${data.winningBid.toFixed(2)}</p>
+            <p style="color: #6b7280; margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Payment Due</p>
+            <p style="color: #dc2626; margin: 0; font-size: 14px; font-weight: 600;">${data.dueDate}</p>
+          </div>
+          <div style="background: #fef3c7; border-radius: 8px; padding: 16px; margin-top: 24px;">
+            <p style="color: #78350f; margin: 0; font-size: 14px; line-height: 1.6;">
+              <strong>Important:</strong> Please complete your payment by the due date to avoid cancellation of your order. The seller is waiting to process your delivery.
+            </p>
+          </div>
+        </div>
+        <div style="text-align: center;">
+          <a href="${data.auctionUrl}" style="background: #111827; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
+            Complete Payment
+          </a>
+        </div>
+        <p style="color: #9ca3af; font-size: 14px; text-align: center; margin-top: 32px;">
+          Gavel Ghana - Online Auctions<br>
+          <a href="https://gavelgh.com" style="color: #6b7280; text-decoration: none;">gavelgh.com</a>
+        </p>
+      </div>
+    `,
+  }),
 }
 
 export type EmailTemplateKey = keyof typeof emailTemplates

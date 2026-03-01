@@ -56,15 +56,16 @@ export async function POST(req: Request) {
       // If auction has a winner, send emails
       if (resolution.activeCandidate && resolution.activeCandidate.userId) {
         // Email to winner
-        const { data: winner } = await supabase
+        const { data: { user: winnerAuth } } = await supabase.auth.admin.getUserById(resolution.activeCandidate.userId)
+        const { data: winnerProfile } = await supabase
           .from('profiles')
-          .select('email, full_name, phone')
+          .select('username, phone')
           .eq('id', resolution.activeCandidate.userId)
           .single()
 
-        if (winner?.email) {
-          await sendNotificationEmail(winner.email, 'auctionWon', {
-            userName: winner.full_name || 'there',
+        if (winnerAuth?.email) {
+          await sendNotificationEmail(winnerAuth.email, 'auctionWon', {
+            userName: winnerProfile?.username || winnerAuth.email.split('@')[0] || 'there',
             auctionTitle: auctionMeta.title || 'Auction',
             winningBid: resolution.activeCandidate.amount,
             auctionUrl,
@@ -73,19 +74,20 @@ export async function POST(req: Request) {
 
         // Email to seller
         if (auctionMeta.created_by) {
-          const { data: seller } = await supabase
+          const { data: { user: sellerAuth } } = await supabase.auth.admin.getUserById(auctionMeta.created_by)
+          const { data: sellerProfile } = await supabase
             .from('profiles')
-            .select('email, full_name')
+            .select('username')
             .eq('id', auctionMeta.created_by)
             .single()
 
-          if (seller?.email) {
-            await sendNotificationEmail(seller.email, 'auctionEnded', {
-              sellerName: seller.full_name || 'there',
+          if (sellerAuth?.email) {
+            await sendNotificationEmail(sellerAuth.email, 'auctionEnded', {
+              sellerName: sellerProfile?.username || sellerAuth.email.split('@')[0] || 'there',
               auctionTitle: auctionMeta.title || 'Auction',
               winningBid: resolution.activeCandidate.amount,
-              winnerEmail: winner?.email || 'N/A',
-              winnerPhone: winner?.phone || undefined,
+              winnerEmail: winnerAuth?.email || 'N/A',
+              winnerPhone: winnerProfile?.phone || undefined,
               auctionUrl,
             })
           }
