@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
+import SellerDeliveryZones from '@/components/seller/SellerDeliveryZonesNew'
 
 type SellerShop = {
   id: string
@@ -318,6 +319,10 @@ export default function SellerShopPage() {
               {description && <p className="line-clamp-2 text-sm text-gray-600">{description}</p>}
             </div>
           </div>
+        </div>
+
+        <div className="mt-8 border-t border-gray-200 pt-8">
+          <SellerDeliveryZones />
         </div>
       </section>
     </main>

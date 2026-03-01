@@ -50,16 +50,28 @@ const sections = [
     id: 'retention',
     title: 'Data Retention',
     content: [
-      'We retain account, bid, token, payment, and support records for operational, legal, security, and dispute-handling purposes. Retention periods may vary by data type and applicable law.',
+      'We retain account, bid, token, payment, and support records for operational, legal, security, and dispute-handling purposes. Retention periods may vary by data type and applicable law, and we are not liable for data retained beyond your request if retention is required by law, security obligations, fraud prevention, or legitimate business purposes.',
+      'Some data may be retained indefinitely where necessary to investigate past fraud, resolve disputes, comply with legal obligations, or maintain audit trails for security purposes. You acknowledge that deletion requests may not result in immediate removal of all copies.',
     ],
   },
   {
     id: 'security',
-    title: 'Data Security',
+    title: 'Data Security and Limitations',
     content: [
-      'We use reasonable technical and organizational safeguards to protect personal data. No system is completely secure, and users are responsible for protecting account credentials.',
+      'We use reasonable technical and organizational safeguards to protect personal data, including encryption, access controls, and regular monitoring. However, no system is completely secure. We do not guarantee absolute protection against data breaches, unauthorized access, or cyber attacks, even with industry-standard safeguards in place.',
+      'Users are responsible for protecting their own account credentials, passwords, and devices. You acknowledge that any compromise of these items may result in unauthorized access to your account and the Platform. Gavel is not liable for unauthorized access or transactions resulting from your failure to protect your credentials.',
+      'In the event of a confirmed data breach affecting personal data, we will notify affected users and cooperate with law enforcement as required by law. However, Gavel is not liable for losses, damages, or consequences resulting from data breaches, including identity theft, fraud, or financial losses caused by unauthorized access to your data, even where we have notified you of the breach.',
     ],
   },
+  {
+    id: 'disclaimer-liability',
+    title: 'Disclaimer of Liability for Data Practices',
+    content: [
+      'To the maximum extent permitted by law, Gavel is not liable for unauthorized disclosure of personal data, data breaches, cyber attacks, or third-party compromise of data, even if such occur due to negligence or security failures. Users assume all risk related to the collection, processing, and retention of personal data on our systems.',
+      'Gavel makes no warranty that data practices comply with any particular standard or law beyond what is explicitly required in this policy or by applicable law. You agree that data security is a shared responsibility and that you must take additional steps (such as using strong passwords, enabling two-factor authentication, and monitoring your account) to protect your personal information.',
+    ],
+  },
+
   {
     id: 'rights',
     title: 'Your Rights',

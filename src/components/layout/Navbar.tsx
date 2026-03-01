@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, LogOut, Heart, ShoppingCart, X, ChevronDown } from 'lucide-react'
+import { Menu, LogOut, Heart, ShoppingCart, X, ChevronDown, Settings } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -505,6 +505,16 @@ export default function Navbar() {
               <div className="mt-10 flex flex-col items-center gap-3 text-sm text-gray-700">
                 {user ? (
                   <>
+                    <button
+                      onClick={() => {
+                        router.push('/profile')
+                        setMobileMenuOpen(false)
+                      }}
+                      className="flex items-center gap-2 font-medium text-gray-900 transition hover:text-black"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </button>
                     <button
                       onClick={() => {
                         handleLogout()

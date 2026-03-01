@@ -124,10 +124,36 @@ const sections = [
     id: 'liability',
     title: 'Disclaimer of Warranties and Limitation of Liability',
     content: [
-      'The Platform is provided “as is” and “as available,” without warranties of merchantability, fitness for a particular purpose, or guaranteed listing accuracy.',
-      'To the maximum extent permitted by law, Gavel is not liable for indirect damages, lost profits, lost data, auction outcome losses, or shipping disputes. Our total liability is limited to amounts paid by you in the prior 30 days.',
+      'The Platform is provided "as is" and "as available," without warranties of merchantability, fitness for a particular purpose, or guaranteed listing accuracy. We do not warrant that the Platform will be error-free, uninterrupted, or secure at all times. Items listed may be inaccurate, misrepresented, or unavailable, and Gavel is not liable for the accuracy, completeness, or legitimacy of any listing.',
+      'To the maximum extent permitted by law, Gavel, its owners, employees, and agents are not liable for indirect, incidental, special, consequential, or punitive damages, including lost profits, lost data, lost savings, lost business opportunities, auction outcome losses, or shipping disputes, even if advised of the possibility of such damages.',
+      'Your sole and exclusive remedy for dissatisfaction with the Platform is to discontinue your use of the Platform. If you are not satisfied with the Platform or any service, your only recourse is to stop using the Platform.',
+      'Our total liability under these Terms is limited to the lesser of: (a) the amount of fees paid by you in the 30 days prior to the claim, or (b) fifty thousand Ghana cedis (GHS 50,000). This limit applies to all claims regardless of cause, including breach of contract, warranty, tort, negligence, or any other theory of liability.',
     ],
   },
+  {
+    id: 'user-responsibility',
+    title: 'User Assumption of Risk and Responsibility',
+    content: [
+      'Your use of the Platform and all transactions conducted through it are at your sole risk. You assume total and complete responsibility for all outcomes of your participation in auctions, including losing bids, winning high-priced items, and failing to complete payments. You also assume responsibility for your own due diligence regarding auction items, seller credibility, item value, and delivery arrangements.',
+      'You are responsible for verifying all item descriptions, seller information, photographs, and auction terms before placing a bid. Once a winning bid is placed, you are contractually bound to complete payment. Gavel is not liable if an item does not meet your expectations, differs from its described condition, or arrives damaged due to shipping negligence by sellers or third-party couriers.',
+      'You agree to assess your own risk tolerance and financial capacity before participating in any auction. You accept full responsibility for market fluctuations in item values and shall not hold Gavel liable for losing bids on items that appreciate or depreciate in value after auction conclusion.',
+    ],
+  },
+  {
+    id: 'indemnification',
+    title: 'Indemnification',
+    content: [
+      'You agree to indemnify, defend, and hold harmless Gavel, its owners, employees, agents, and service providers from and against any claims, damages, losses, costs, liabilities, and expenses (including reasonable legal fees) arising from: your use of the Platform, your violations of these Terms, your violations of applicable laws, any disputes with sellers or buyers, auction outcomes, disputes with payment processors, disputes with delivery services, and any false or misleading content or transactions you initiate on the Platform.',
+    ],
+  },
+  {
+    id: 'release',
+    title: 'Release of Claims',
+    content: [
+      'By participating in auctions or using Gavel for purchases, you hereby release and discharge Gavel from all claims arising from auction outcomes, item conditions, delivery failures, seller actions, payment processing delays, and disputes with other users. This release applies whether or not you have discovered all facts and circumstances giving rise to a claim, and applies even if those facts would be known to you or discoverable with reasonable diligence.',
+    ],
+  },
+
   {
     id: 'fraud',
     title: 'Fraud Prevention and Enforcement',
