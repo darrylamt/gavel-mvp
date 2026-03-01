@@ -20,6 +20,7 @@ const tabs = [
   { href: '/admin/revenue', label: 'Revenue', icon: Wallet },
   { href: '/admin/payouts', label: 'Seller Payouts', icon: Wallet },
   { href: '/admin/discounts', label: 'Discounts', icon: BadgePercent },
+  { href: '/admin/broadcast', label: 'Broadcast Email', icon: Mail },
   { href: '/admin/sellers', label: 'Sellers', icon: Store },
 ]
 

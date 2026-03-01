@@ -104,9 +104,7 @@ export default function CartPage() {
         )
         setDeliveryWarning(
           unsupportedSellers.length
-            ? `Some sellers currently do not deliver to this location: ${unsupportedSellers
-                .map((seller: { seller_name?: string }) => seller.seller_name || 'Seller')
-                .join(', ')}`
+            ? 'Some items in your cart cannot be delivered to this location.'
             : null
         )
       } catch {
