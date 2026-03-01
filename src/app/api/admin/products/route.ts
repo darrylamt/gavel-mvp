@@ -489,6 +489,8 @@ export async function POST(request: Request) {
         stock: effectiveStock,
         status,
         category,
+        // Keep legacy image_url in sync so public shop views always have a primary image
+        image_url: imageUrls[0] ?? null,
         image_urls: imageUrls,
         created_by: selectedShop.owner_id,
         shop_id: selectedShop.id,

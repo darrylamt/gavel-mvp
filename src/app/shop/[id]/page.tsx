@@ -267,7 +267,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
           <ProductImageGallery
             productId={product.id}
             title={product.title}
-            baseImageUrl={null}
+            baseImageUrl={mainImage}
             variantImages={galleryImages}
           />
         </div>

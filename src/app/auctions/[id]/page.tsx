@@ -531,7 +531,13 @@ export default function AuctionDetailPage() {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
   const productUrl = `${siteUrl}${buildAuctionPath(auction.id, auction.title)}`
-  const imageUrl = auction.images?.[0] || auction.image_url || `${siteUrl}/share/auction/${auction.id}/opengraph-image`
+  const galleryImages = (auction.images ?? []).filter((img) => typeof img === 'string' && img.trim() !== '')
+  const fallbackImages = galleryImages.length > 0
+    ? galleryImages
+    : auction.image_url && auction.image_url.trim()
+    ? [auction.image_url]
+    : []
+  const imageUrl = fallbackImages[0] || `${siteUrl}/share/auction/${auction.id}/opengraph-image`
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -553,13 +559,7 @@ export default function AuctionDetailPage() {
       <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
         <section className="space-y-6">
           <ImageGallery
-            images={
-              auction.images && auction.images.length > 0
-                ? auction.images
-                : auction.image_url
-                ? [auction.image_url]
-                : []
-            }
+            images={fallbackImages}
           />
 
           <div className="space-y-4">

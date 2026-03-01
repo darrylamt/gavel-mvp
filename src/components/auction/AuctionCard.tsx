@@ -48,6 +48,8 @@ export default function AuctionCard({
   const { isStarred, toggleStarred } = useStarredAuctions()
   const starred = isStarred(id)
   const [nowMs, setNowMs] = useState(() => Date.now())
+  const galleryImages = (images ?? []).filter((img) => typeof img === 'string' && img.trim() !== '')
+  const primaryImage = galleryImages[0] ?? (imageUrl && imageUrl.trim() ? imageUrl : null)
 
   useEffect(() => {
     const ticker = setInterval(() => setNowMs(Date.now()), 1000)
@@ -150,17 +152,9 @@ export default function AuctionCard({
           </button>
         )}
 
-        {images && images.length > 0 ? (
+        {primaryImage ? (
           <img
-            src={images[0]}
-            alt={title}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover group-hover:scale-105 transition-transform"
-          />
-        ) : imageUrl ? (
-          <img
-            src={imageUrl}
+            src={primaryImage}
             alt={title}
             loading="lazy"
             decoding="async"
@@ -172,8 +166,8 @@ export default function AuctionCard({
           </div>
         )}
 
-        {images && images.length > 1 && (
-          <div className="absolute right-2 top-2 bg-black text-white text-xs px-2 py-1 rounded">{images.length} images</div>
+        {galleryImages.length > 1 && (
+          <div className="absolute right-2 top-2 bg-black text-white text-xs px-2 py-1 rounded">{galleryImages.length} images</div>
         )}
       </div>
 

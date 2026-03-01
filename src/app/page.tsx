@@ -1,19 +1,30 @@
-// src/app/page.tsx
-
-import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
-import AuctionCard from '@/components/auction/AuctionCard'
-import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
-import HeroShowcaseCarousel from '@/components/home/HeroShowcaseCarousel'
-
-export const dynamic = 'force-dynamic'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+import Link from 'next/link'
+import { createClient } from '@supabase/supabase-js'
+import AuctionCard from '@/components/auction/AuctionCard'
+import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
+import HeroShowcaseCarousel from '@/components/home/HeroShowcaseCarousel'
+import ShopProductCard from '@/components/shop/ShopProductCard'
+
+export const dynamic = 'force-dynamic'
+
+
+
 export default async function HomePage() {
+    // Fetch latest buy now products
+    const { data: productsRaw } = await supabase
+      .from('shop_products')
+      .select('id, title, description, price, stock, category, image_url, image_urls')
+      .eq('status', 'active')
+      .gt('stock', 0)
+      .order('created_at', { ascending: false })
+      .limit(8)
+    const products = productsRaw ?? [];
   const nowIso = new Date().toISOString()
   const next24HoursIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
@@ -252,6 +263,31 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* NEW PRODUCTS SECTION */}
+      {products && products.length > 0 && (
+        <section className="mt-12 mb-12">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-gray-900">New Products (Buy Now)</h2>
+            <Link href="/shop" className="text-sm font-semibold underline underline-offset-2">See all products</Link>
+          </div>
+          <div className="no-scrollbar mt-4 -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+            {products.map((product: any) => (
+              <div key={product.id} className="snap-start w-[72%] max-w-[232px] flex-none sm:w-auto sm:max-w-none">
+                <ShopProductCard
+                  id={product.id}
+                  title={product.title}
+                  description={product.description}
+                  price={product.price}
+                  imageUrl={product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : product.image_url}
+                  stock={product.stock}
+                  categoryLabel={product.category}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   )
 }

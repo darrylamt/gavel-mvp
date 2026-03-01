@@ -8,7 +8,7 @@ import { DashboardPayload } from '@/components/admin/AdminTypes'
 import PieChartCard from '@/components/base/PieChartCard'
 
 export default function AdminPage() {
-  const [data, setData] = useState<DashboardPayload>({ users: [], auctions: [], sellers: [] })
+  const [data, setData] = useState<DashboardPayload>({ users: [], auctions: [], sellers: [], purchases: [] })
   const [loading, setLoading] = useState(true)
   const [userSearch, setUserSearch] = useState('')
   const [userRoleFilter, setUserRoleFilter] = useState('all')
@@ -212,6 +212,48 @@ export default function AdminPage() {
           )}
         </Card>
       </div>
+
+      <Card title="Recent Purchases">
+        {data.purchases.length === 0 ? (
+          <p className="text-sm text-gray-500">No purchases yet.</p>
+        ) : (
+          <div className="overflow-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-gray-500">
+                <tr>
+                  <th className="py-2">Date</th>
+                  <th className="py-2">Product</th>
+                  <th className="py-2">Seller</th>
+                  <th className="py-2">Payout</th>
+                  <th className="py-2">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.purchases.slice(0, 20).map((purchase) => (
+                  <tr key={`${purchase.orderId}-${purchase.productTitle}`} className="border-t align-top">
+                    <td className="py-2 whitespace-nowrap">{purchase.orderCreatedAt ? new Date(purchase.orderCreatedAt).toLocaleString() : '-'}</td>
+                    <td className="py-2">
+                      <div className="font-medium text-gray-900">{purchase.productTitle}</div>
+                      <div className="text-xs text-gray-500">Qty: {purchase.quantity}</div>
+                      <div className="text-xs text-gray-500">Order {purchase.orderId.slice(0, 8)}…</div>
+                    </td>
+                    <td className="py-2">
+                      <div className="font-medium text-gray-900">{purchase.sellerName || 'Seller'}</div>
+                      <div className="text-xs text-gray-500">{purchase.sellerShopName || 'No shop name'}</div>
+                    </td>
+                    <td className="py-2">
+                      <div className="font-medium text-gray-900">{purchase.sellerPayoutProvider || 'N/A'}</div>
+                      <div className="text-xs text-gray-500">{purchase.sellerPayoutAccountName || 'No account name'}</div>
+                      <div className="text-xs text-gray-500">{purchase.sellerPayoutAccountNumber || 'No account number'}</div>
+                    </td>
+                    <td className="py-2 whitespace-nowrap">GHS {Number(purchase.orderTotalAmount).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
       <Card title="Auctions">
         <div className="mb-3 flex flex-wrap items-center gap-2">

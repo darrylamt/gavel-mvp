@@ -47,7 +47,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const [{ data: users }, { data: auctions }, { data: approvedApplications }] = await Promise.all([
+  const [
+    { data: users },
+    { data: auctions },
+    { data: approvedApplications },
+  ] = await Promise.all([
     service
       .from('profiles')
       .select('id, username, phone, token_balance, role')
@@ -141,9 +145,63 @@ export async function GET(req: Request) {
     }
   })
 
+  // Recent purchases with seller payout details
+  const purchases: Array<{
+    orderId: string
+    orderCreatedAt: string
+    orderTotalAmount: number
+    productTitle: string
+    quantity: number
+    sellerName: string | null
+    sellerShopName: string | null
+    sellerPayoutProvider: string | null
+    sellerPayoutAccountName: string | null
+    sellerPayoutAccountNumber: string | null
+  }> = []
+
+  const { data: orders, error: ordersError } = await service
+    .from('shop_orders')
+    .select('id, created_at, total_amount')
+    .eq('status', 'paid')
+    .order('created_at', { ascending: false })
+    .limit(60)
+
+  if (!ordersError && orders && orders.length > 0) {
+    const orderIds = orders.map((order) => String(order.id))
+    const orderById = new Map(orders.map((order) => [String(order.id), order]))
+
+    const { data: items, error: itemsError } = await service
+      .from('shop_order_items')
+      .select('order_id, title_snapshot, quantity, seller_name, seller_shop_name, seller_payout_provider, seller_payout_account_name, seller_payout_account_number')
+      .in('order_id', orderIds)
+      .order('created_at', { ascending: false })
+      .limit(160)
+
+    if (!itemsError) {
+      for (const item of items ?? []) {
+        const order = orderById.get(String(item.order_id))
+        if (!order) continue
+
+        purchases.push({
+          orderId: String(item.order_id),
+          orderCreatedAt: String(order.created_at ?? ''),
+          orderTotalAmount: Number(order.total_amount ?? 0),
+          productTitle: String(item.title_snapshot || 'Product'),
+          quantity: Number(item.quantity ?? 0) || 1,
+          sellerName: (item.seller_name as string | null) ?? null,
+          sellerShopName: (item.seller_shop_name as string | null) ?? null,
+          sellerPayoutProvider: (item.seller_payout_provider as string | null) ?? null,
+          sellerPayoutAccountName: (item.seller_payout_account_name as string | null) ?? null,
+          sellerPayoutAccountNumber: (item.seller_payout_account_number as string | null) ?? null,
+        })
+      }
+    }
+  }
+
   return NextResponse.json({
     users: users ?? [],
     auctions: auctions ?? [],
     sellers,
+    purchases,
   })
 }

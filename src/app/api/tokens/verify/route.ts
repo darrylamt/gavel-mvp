@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     )
   }
 
-  const { metadata, reference: ref } = json.data
+  const { metadata, reference: ref, amount: paystackAmount, currency } = json.data
 
   if (metadata?.type !== 'token_purchase') {
     return NextResponse.json(
@@ -81,6 +81,8 @@ export async function POST(req: Request) {
     amount: tokens,
     type: 'purchase',
     reference: ref,
+    purchase_amount: paystackAmount != null ? Number(paystackAmount) / 100 : null,
+    purchase_currency: currency || 'GHS',
   })
 
   return NextResponse.json({ success: true })

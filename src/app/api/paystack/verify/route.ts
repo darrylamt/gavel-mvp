@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     )
   }
 
-  const { metadata } = json.data
+  const { metadata, amount: paystackAmount, currency } = json.data
 
   // 2️⃣ HARD CHECK — token purchases ONLY
   if (metadata?.type !== 'token_purchase') {
@@ -80,6 +80,8 @@ export async function POST(req: Request) {
     amount: tokens,
     type: 'purchase',
     reference: referenceId,
+    purchase_amount: paystackAmount != null ? Number(paystackAmount) / 100 : null,
+    purchase_currency: currency || 'GHS',
   })
 
   return NextResponse.json({ success: true })

@@ -8,6 +8,7 @@ import PieChartCard from '@/components/base/PieChartCard'
 type RevenueSummary = {
   productSales: number
   auctionSales: number
+  tokenSales: number
   websiteRevenue: number
   gavelRevenue: number
   paystackFee: number
@@ -21,6 +22,7 @@ export default function AdminRevenuePage() {
   const [summary, setSummary] = useState<RevenueSummary>({
     productSales: 0,
     auctionSales: 0,
+    tokenSales: 0,
     websiteRevenue: 0,
     gavelRevenue: 0,
     paystackFee: 0,
@@ -54,7 +56,16 @@ export default function AdminRevenuePage() {
         return
       }
 
-      setSummary((payload?.summary ?? {}) as RevenueSummary)
+      const incoming = (payload?.summary ?? {}) as Partial<RevenueSummary>
+      setSummary({
+        productSales: incoming.productSales ?? 0,
+        auctionSales: incoming.auctionSales ?? 0,
+        tokenSales: incoming.tokenSales ?? 0,
+        websiteRevenue: incoming.websiteRevenue ?? 0,
+        gavelRevenue: incoming.gavelRevenue ?? 0,
+        paystackFee: incoming.paystackFee ?? 0,
+        gavelProfit: incoming.gavelProfit ?? 0,
+      })
       setLoading(false)
     }
 
@@ -65,14 +76,15 @@ export default function AdminRevenuePage() {
     () => [
       { label: 'Product Sales', value: summary.productSales },
       { label: 'Auction Sales', value: summary.auctionSales },
+      { label: 'Token Sales', value: summary.tokenSales },
     ],
-    [summary.auctionSales, summary.productSales]
+    [summary.auctionSales, summary.productSales, summary.tokenSales]
   )
 
   const gavelPie = useMemo(
     () => [
-      { label: 'Gavel Revenue (10%)', value: summary.gavelRevenue },
-      { label: 'Paystack Fee (1.95% of 10%)', value: summary.paystackFee },
+      { label: 'Gavel Revenue', value: summary.gavelRevenue },
+      { label: 'Paystack Fee (~1.95%)', value: summary.paystackFee },
       { label: 'Gavel Profit', value: summary.gavelProfit },
     ],
     [summary.gavelProfit, summary.gavelRevenue, summary.paystackFee]
@@ -84,7 +96,7 @@ export default function AdminRevenuePage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">Revenue</h2>
-            <p className="mt-1 text-sm text-gray-500">Website revenue and Gavel profit metrics based on product markup and paystack costs.</p>
+            <p className="mt-1 text-sm text-gray-500">Website revenue and Gavel profit across product markups, token sales, and paystack costs.</p>
           </div>
           <select
             value={period}
@@ -111,8 +123,9 @@ export default function AdminRevenuePage() {
             <MetricCard label="Total Website Revenue" value={summary.websiteRevenue} highlight />
             <MetricCard label="Product Sales" value={summary.productSales} />
             <MetricCard label="Auction Sales" value={summary.auctionSales} />
-            <MetricCard label="Gavel Revenue (10%)" value={summary.gavelRevenue} />
-            <MetricCard label="Paystack Cost (1.95% of 10%)" value={summary.paystackFee} />
+            <MetricCard label="Token Sales" value={summary.tokenSales} />
+            <MetricCard label="Gavel Revenue (markup + tokens)" value={summary.gavelRevenue} />
+            <MetricCard label="Paystack Cost (~1.95%)" value={summary.paystackFee} />
             <MetricCard label="Gavel Profit" value={summary.gavelProfit} highlight />
           </div>
 

@@ -131,8 +131,49 @@ export async function GET(request: Request) {
     }
   }
 
-  const websiteRevenue = productSales + auctionSales
-  const gavelRevenue = productSales * 0.1
+  // Token purchases
+  const tokenPackMap = new Map<number, number>([
+    [35, 10],
+    [120, 30],
+    [250, 55],
+  ])
+
+  let tokenQuery = service
+    .from('token_transactions')
+    .select('amount, purchase_amount, purchase_currency, created_at, type')
+    .eq('type', 'purchase')
+    .limit(5000)
+
+  if (periodStart) {
+    tokenQuery = tokenQuery.gte('created_at', periodStart)
+  }
+
+  const { data: tokenTransactions, error: tokenError } = await tokenQuery
+
+  if (tokenError) {
+    return NextResponse.json({ error: tokenError.message }, { status: 500 })
+  }
+
+  const tokenSales = (tokenTransactions ?? []).reduce((sum, txn) => {
+    // Prefer persisted purchase_amount, otherwise derive from known packs
+    const recordedAmount = Number((txn as { purchase_amount?: number | null }).purchase_amount ?? 0)
+    if (Number.isFinite(recordedAmount) && recordedAmount > 0) {
+      return sum + recordedAmount
+    }
+
+    const tokens = Number((txn as { amount?: number | null }).amount ?? 0)
+    const mapped = tokenPackMap.get(tokens)
+    if (mapped != null) {
+      return sum + mapped
+    }
+
+    const fallbackRate = 10 / 35 // use smallest pack rate as conservative default
+    return sum + Number((tokens * fallbackRate).toFixed(2))
+  }, 0)
+
+  const websiteRevenue = productSales + auctionSales + tokenSales
+  const productMarkup = productSales * 0.1
+  const gavelRevenue = productMarkup + tokenSales
   const paystackFee = gavelRevenue * 0.0195
   const gavelProfit = gavelRevenue - paystackFee
 
@@ -140,6 +181,7 @@ export async function GET(request: Request) {
     summary: {
       productSales,
       auctionSales,
+      tokenSales,
       websiteRevenue,
       gavelRevenue,
       paystackFee,

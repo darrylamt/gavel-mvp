@@ -28,8 +28,22 @@ export type DashboardSeller = {
   totalProducts: number
 }
 
+export type DashboardPurchase = {
+  orderId: string
+  orderCreatedAt: string
+  orderTotalAmount: number
+  productTitle: string
+  quantity: number
+  sellerName: string | null
+  sellerShopName: string | null
+  sellerPayoutProvider: string | null
+  sellerPayoutAccountName: string | null
+  sellerPayoutAccountNumber: string | null
+}
+
 export type DashboardPayload = {
   users: DashboardUser[]
   auctions: DashboardAuction[]
   sellers: DashboardSeller[]
+  purchases: DashboardPurchase[]
 }
