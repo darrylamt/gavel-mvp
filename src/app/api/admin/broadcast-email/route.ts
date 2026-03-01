@@ -3,26 +3,31 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false }
-  })
-
-  // Verify admin
+  // Verify admin first using anon client with token
   const authHeader = request.headers.get('authorization')
   if (!authHeader) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const token = authHeader.replace('Bearer ', '')
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+  
+  // Verify user with anon client
+  const anonSupabase = createClient(supabaseUrl, supabaseAnonKey!)
+  const { data: { user }, error: authError } = await anonSupabase.auth.getUser(token)
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: profile } = await supabase
+  // Check admin role with service role client
+  const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false }
+  })
+
+  const { data: profile } = await serviceSupabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
@@ -41,15 +46,23 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Get all users with emails
-  const { data: profiles, error: profilesError } = await supabase
+  // Get all users with emails using service role
+  const { data: profiles, error: profilesError } = await serviceSupabase
     .from('profiles')
     .select('email')
     .not('email', 'is', null)
 
-  if (profilesError || !profiles || profiles.length === 0) {
+  if (profilesError) {
+    console.error('Error fetching profiles:', profilesError)
     return NextResponse.json(
-      { error: 'No users found or error fetching users' },
+      { error: 'Failed to fetch users', details: profilesError.message },
+      { status: 400 }
+    )
+  }
+
+  if (!profiles || profiles.length === 0) {
+    return NextResponse.json(
+      { error: 'No users found' },
       { status: 400 }
     )
   }
