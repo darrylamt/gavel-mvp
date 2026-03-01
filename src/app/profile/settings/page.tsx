@@ -9,13 +9,15 @@ export default function ProfileSettingsPage() {
 
   const [browserNotifications, setBrowserNotifications] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("browserNotifications") === "true";
+      const stored = localStorage.getItem("browserNotifications");
+      // Default to true if not set, otherwise use stored value
+      return stored === null ? true : stored === "true";
     }
-    return false;
+    return true;
   });
   const [emailNotifications, setEmailNotifications] = useState<boolean>(true);
-  const [smsNotifications, setSmsNotifications] = useState<boolean>(false);
-  const [marketingOptIn, setMarketingOptIn] = useState<boolean>(false);
+  const [smsNotifications, setSmsNotifications] = useState<boolean>(true);
+  const [marketingOptIn, setMarketingOptIn] = useState<boolean>(true);
   const [privacyPublicProfile, setPrivacyPublicProfile] = useState<boolean>(true);
   const router = useRouter();
 
