@@ -51,23 +51,23 @@ export async function POST(request: NextRequest) {
     auth: { persistSession: false }
   })
 
-  const { data: authUsers, error: authError } = await adminSupabase
+  const { data: authUsers, error: fetchUsersError } = await adminSupabase
     .from('auth.users')
     .select('email')
     .not('email', 'is', null)
 
-  if (authError) {
+  if (fetchUsersError) {
     console.error('Error fetching users:', {
-      message: authError.message,
-      code: authError.code,
-      hint: authError.hint,
-      details: authError.details
+      message: fetchUsersError.message,
+      code: fetchUsersError.code,
+      hint: fetchUsersError.hint,
+      details: fetchUsersError.details
     })
     return NextResponse.json(
       { 
         error: 'Failed to fetch users',
-        message: authError.message,
-        code: authError.code
+        message: fetchUsersError.message,
+        code: fetchUsersError.code
       },
       { status: 500 }
     )
