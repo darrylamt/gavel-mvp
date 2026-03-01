@@ -15,6 +15,7 @@ type DeliveryInput = {
   address?: string
   city?: string
   notes?: string
+  delivery_location?: string
 }
 
 const supabase = createClient(
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
       address: String(delivery?.address || '').trim(),
       city: String(delivery?.city || '').trim(),
       notes: String(delivery?.notes || '').trim(),
+      delivery_location: String(delivery?.delivery_location || '').trim(),
     }
 
     if (!deliveryPayload.full_name || !deliveryPayload.phone || !deliveryPayload.address || !deliveryPayload.city) {
@@ -121,6 +123,30 @@ export async function POST(req: Request) {
     const shopById = new Map((shops ?? []).map((shop) => [String(shop.id), shop]))
     const sellerById = new Map((sellerProfiles ?? []).map((seller) => [String(seller.id), seller]))
 
+    const { data: buyerProfile, error: buyerProfileError } = await supabase
+      .from('profiles')
+      .select('id, delivery_location')
+      .eq('id', user_id)
+      .maybeSingle()
+
+    if (buyerProfileError) {
+      return NextResponse.json({ error: buyerProfileError.message }, { status: 500 })
+    }
+
+    const buyerDeliveryLocation = String(
+      deliveryPayload.delivery_location ||
+      ((buyerProfile as { delivery_location?: string | null } | null)?.delivery_location ?? '')
+    ).trim()
+
+    if (!buyerDeliveryLocation) {
+      return NextResponse.json(
+        { error: 'Please set your default delivery location in your profile before checkout.' },
+        { status: 400 }
+      )
+    }
+
+    deliveryPayload.delivery_location = buyerDeliveryLocation
+
     let totalAmount = 0
 
     const paystackItems = normalizedItems.map((item) => {
@@ -197,13 +223,95 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid checkout total' }, { status: 400 })
     }
 
-    // TODO: Implement shipping calculation when shipping_profiles table is ready
-    // For now, use totalAmount without delivery fees
-    const totalDeliveryFee = 0;
-    const deliveryFees: any[] = [];
-    const delivery_city_id = null;
-    const delivery_region_id = null;
-    const grandTotal = totalAmount;
+    const sellerIdsInCart = Array.from(
+      new Set(
+        paystackItems
+          .map((item) => String(item.seller_id || '').trim())
+          .filter((value) => value.length > 0)
+      )
+    )
+
+    // Extract region for fallback matching (e.g., "Greater Accra:Osu" -> "Greater Accra")
+    const buyerRegion = buyerDeliveryLocation.includes(':') ? buyerDeliveryLocation.split(':')[0] : ''
+    const regionalFallback = buyerRegion === 'Greater Accra' 
+      ? 'Greater Accra:Greater Accra (All)'
+      : buyerRegion === 'Ashanti'
+      ? 'Ashanti:Kumasi (All)'
+      : ''
+
+    // Query for zones matching either exact location OR regional fallback
+    const locationValues = regionalFallback ? [buyerDeliveryLocation, regionalFallback] : [buyerDeliveryLocation]
+
+    const { data: matchedZones, error: matchedZonesError } = sellerIdsInCart.length
+      ? await supabase
+          .from('seller_delivery_zones')
+          .select('seller_id, location_value, delivery_price, delivery_time_days')
+          .in('seller_id', sellerIdsInCart)
+          .eq('is_enabled', true)
+          .in('location_value', locationValues)
+      : { data: [], error: null }
+
+    if (matchedZonesError) {
+      return NextResponse.json({ error: matchedZonesError.message }, { status: 500 })
+    }
+
+    // Build map prioritizing exact match over regional fallback
+    const zoneBySeller = new Map<string, typeof matchedZones extends (infer U)[] ? U : never>()
+    for (const zone of matchedZones ?? []) {
+      const sellerId = String(zone.seller_id)
+      const existing = zoneBySeller.get(sellerId)
+      
+      // Prioritize exact location match over regional fallback
+      if (!existing || (zone.location_value === buyerDeliveryLocation && existing.location_value !== buyerDeliveryLocation)) {
+        zoneBySeller.set(sellerId, zone)
+      }
+    }
+
+    const unsupportedSellerIds = sellerIdsInCart.filter((sellerId) => !zoneBySeller.has(sellerId))
+
+    if (unsupportedSellerIds.length > 0) {
+      const unsupportedSellerNames = unsupportedSellerIds.map(
+        (sellerId) => String(sellerById.get(sellerId)?.username || 'a seller')
+      )
+      return NextResponse.json(
+        {
+          error: `Some sellers do not deliver to your selected location (${buyerDeliveryLocation}): ${unsupportedSellerNames.join(', ')}`,
+        },
+        { status: 400 }
+      )
+    }
+
+    const deliveryFees = sellerIdsInCart
+      .map((sellerId) => {
+        const zone = zoneBySeller.get(sellerId)
+        if (!zone) return null
+
+        return {
+          seller_id: sellerId,
+          seller_name: String(sellerById.get(sellerId)?.username || 'Seller'),
+          location_value: String(zone.location_value),
+          delivery_price: Number(zone.delivery_price ?? 0),
+          delivery_time_days: Number(zone.delivery_time_days ?? 0),
+        }
+      })
+      .filter(
+        (fee): fee is {
+          seller_id: string
+          seller_name: string
+          location_value: string
+          delivery_price: number
+          delivery_time_days: number
+        } => !!fee
+      )
+
+    const totalDeliveryFee = deliveryFees.reduce((sum, fee) => sum + Number(fee.delivery_price || 0), 0)
+    const maxDeliveryTimeDays = deliveryFees.reduce(
+      (max, fee) => Math.max(max, Number(fee.delivery_time_days || 0)),
+      0
+    )
+    const delivery_city_id = null
+    const delivery_region_id = null
+    const grandTotal = totalAmount + totalDeliveryFee
 
     const initRes = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
@@ -222,8 +330,10 @@ export async function POST(req: Request) {
             ...deliveryPayload,
             delivery_region_id,
             delivery_city_id,
+            delivery_location: buyerDeliveryLocation,
             delivery_fees: deliveryFees,
             total_delivery_fee: totalDeliveryFee,
+            estimated_delivery_time_days: maxDeliveryTimeDays || null,
           },
           items: paystackItems,
         },

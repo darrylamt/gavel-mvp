@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize, UploadedFile } from '@/components/base/file-upload/file-upload'
+import LocationDropdown from '@/components/ui/LocationDropdown'
+import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
 
 type Props = {
   open: boolean;
@@ -13,6 +15,7 @@ type Props = {
   initialWhatsAppOptIn?: boolean;
   initialWhatsAppMarketingOptIn?: boolean;
   initialAddress?: string;
+  initialDeliveryLocation?: string | null;
   initialAvatarUrl?: string | null;
   onSaved?: (d: {
     username?: string;
@@ -21,6 +24,7 @@ type Props = {
     whatsappOptIn?: boolean;
     whatsappMarketingOptIn?: boolean;
     address?: string;
+    deliveryLocation?: string;
     avatarUrl?: string;
   }) => void;
 };
@@ -35,6 +39,7 @@ export default function EditProfileModal({
   initialWhatsAppOptIn,
   initialWhatsAppMarketingOptIn,
   initialAddress,
+  initialDeliveryLocation,
   initialAvatarUrl,
   onSaved,
 }: Props) {
@@ -44,17 +49,7 @@ export default function EditProfileModal({
   const [whatsappOptIn, setWhatsappOptIn] = useState(Boolean(initialWhatsAppOptIn))
   const [whatsappMarketingOptIn, setWhatsappMarketingOptIn] = useState(Boolean(initialWhatsAppMarketingOptIn))
   const [address, setAddress] = useState(initialAddress ?? '')
-  const [browserNotifications, setBrowserNotifications] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('browserNotifications') === 'true';
-    }
-    return false;
-  });
-    useEffect(() => {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('browserNotifications', browserNotifications ? 'true' : 'false');
-      }
-    }, [browserNotifications]);
+  const [deliveryLocation, setDeliveryLocation] = useState(initialDeliveryLocation ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [saving, setSaving] = useState(false)
@@ -83,12 +78,6 @@ export default function EditProfileModal({
   }
 
   const handleSave = async () => {
-    // Optionally, request browser notification permission if enabling
-    if (browserNotifications && typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'default') {
-        await Notification.requestPermission();
-      }
-    }
     setSaving(true)
 
     let avatarUrl = initialAvatarUrl ?? null
@@ -117,7 +106,7 @@ export default function EditProfileModal({
         console.log('Avatar uploaded successfully:', avatarUrl)
       }
 
-      const updates: any = {
+      const updates: Record<string, string | boolean | null> = {
         username: username || null,
         phone: phone || null,
         whatsapp_phone: whatsappPhone || null,
@@ -125,6 +114,7 @@ export default function EditProfileModal({
         whatsapp_marketing_opt_in: whatsappMarketingOptIn,
         whatsapp_opt_in_at: whatsappOptIn ? new Date().toISOString() : null,
         address: address || null,
+        delivery_location: deliveryLocation || null,
       }
 
       if (avatarUrl) updates.avatar_url = avatarUrl
@@ -144,12 +134,14 @@ export default function EditProfileModal({
         whatsappOptIn,
         whatsappMarketingOptIn,
         address,
+        deliveryLocation,
         avatarUrl: avatarUrl ?? undefined,
       })
       onClose()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Profile save error:', err)
-      alert(`Failed to save profile: ${err.message}`)
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      alert(`Failed to save profile: ${message}`)
     } finally {
       setSaving(false)
     }
@@ -219,19 +211,14 @@ export default function EditProfileModal({
             placeholder="Enter your Home address"
           />
 
-          {/* Notification preferences toggle */}
-          <div className="space-y-2 rounded-lg border border-gray-200 p-3">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={browserNotifications}
-                onChange={e => setBrowserNotifications(e.target.checked)}
-              />
-              Allow browser notifications (pop-up alerts)
-            </label>
-            {browserNotifications && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' && (
-              <p className="text-xs text-red-600">Notifications are blocked in your browser settings.</p>
-            )}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Default Delivery Location</label>
+            <LocationDropdown
+              locations={ALL_LOCATIONS}
+              value={deliveryLocation || null}
+              onChange={setDeliveryLocation}
+              placeholder="Select your default location"
+            />
           </div>
 
           <div className="space-y-2">
@@ -241,7 +228,7 @@ export default function EditProfileModal({
                 maxSize={5 * 1024 * 1024}
                 hint="Upload an image (max 5MB)"
                 onDropFiles={handleDropFiles}
-                onSizeLimitExceed={(files) => {
+                onSizeLimitExceed={() => {
                   alert(`File too large. Max size: ${getReadableFileSize(5 * 1024 * 1024)}`)
                 }}
               />

@@ -6,6 +6,7 @@ import ProductDetailActions from '@/components/shop/ProductDetailActions'
 import ShopProductCard from '@/components/shop/ShopProductCard'
 import ProductReviewsSection from '@/components/shop/ProductReviewsSection'
 import ProductImageGallery from '@/components/shop/ProductImageGallery'
+import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -14,6 +15,13 @@ type Props = {
 type ShopInfo = {
   id: string
   name: string
+  owner_id: string
+}
+
+type SellerDeliveryZone = {
+  location_value: string
+  delivery_price: number
+  delivery_time_days: number
 }
 
 type RelatedProduct = {
@@ -114,7 +122,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
   if (product.shop_id) {
     const { data: shopData } = await supabase
       .from('shops')
-      .select('id, name')
+      .select('id, name, owner_id')
       .eq('id', product.shop_id)
       .maybeSingle()
 
@@ -148,6 +156,23 @@ export default async function ShopProductDetailPage({ params }: Props) {
   const latest = (latestProducts ?? []) as RelatedProduct[]
   const reviews = (reviewsData ?? []) as ProductReview[]
   const variants = (variantRows ?? []) as ProductVariant[]
+  const { data: sellerDeliveryZonesData } = shop?.owner_id
+    ? await supabase
+        .from('seller_delivery_zones')
+        .select('location_value, delivery_price, delivery_time_days')
+        .eq('seller_id', shop.owner_id)
+        .eq('is_enabled', true)
+        .order('delivery_price', { ascending: true })
+    : { data: [] }
+  const sellerDeliveryZones = (sellerDeliveryZonesData ?? []) as SellerDeliveryZone[]
+  const deliveryDays = sellerDeliveryZones
+    .map((zone) => Number(zone.delivery_time_days ?? 0))
+    .filter((value) => Number.isFinite(value) && value > 0)
+  const deliveryTimeMinDays = deliveryDays.length ? Math.min(...deliveryDays) : null
+  const deliveryTimeMaxDays = deliveryDays.length ? Math.max(...deliveryDays) : null
+  const minDeliveryPrice = sellerDeliveryZones.length
+    ? Math.min(...sellerDeliveryZones.map((zone) => Number(zone.delivery_price ?? 0)))
+    : 0
   const galleryImages = Array.from(
     new Set(
       [
@@ -165,8 +190,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
   const totalVariantStock = hasVariants ? variants.reduce((sum, variant) => sum + Number(variant.stock ?? 0), 0) : Number(product.stock)
   const displaySku = product.id.slice(0, 8).toUpperCase()
   const productUrl = `${siteUrl}/shop/${product.id}`
-  const priceValidUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString().split('T')[0]
-  const reviewCount = reviews.length
+  const priceValidUntil = '2099-12-31'
   const averageRating =
     reviews.length > 0
       ? Number((reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length).toFixed(1))
@@ -199,21 +223,21 @@ export default async function ShopProductDetailPage({ params }: Props) {
         },
         shippingRate: {
           '@type': 'MonetaryAmount',
-          value: '0',
+          value: String(minDeliveryPrice || 0),
           currency: 'GHS',
         },
         deliveryTime: {
           '@type': 'ShippingDeliveryTime',
           handlingTime: {
             '@type': 'QuantitativeValue',
-            minValue: 1,
-            maxValue: 2,
+            minValue: deliveryTimeMinDays || 1,
+            maxValue: deliveryTimeMinDays || 2,
             unitCode: 'DAY',
           },
           transitTime: {
             '@type': 'QuantitativeValue',
-            minValue: 1,
-            maxValue: 5,
+            minValue: deliveryTimeMinDays || 1,
+            maxValue: deliveryTimeMaxDays || 5,
             unitCode: 'DAY',
           },
         },
@@ -331,6 +355,35 @@ export default async function ShopProductDetailPage({ params }: Props) {
                 )}
               </p>
             </div>
+          </div>
+
+          <div className="mt-5 border-t border-gray-200 pt-4 text-sm text-gray-700">
+            <p className="font-semibold text-gray-900">Delivery Information</p>
+            {sellerDeliveryZones.length > 0 ? (
+              <>
+                <p className="mt-1 text-gray-600">
+                  Available locations and prices from this seller.
+                  {deliveryTimeMinDays && deliveryTimeMaxDays
+                    ? ` Estimated delivery: ${deliveryTimeMinDays}${deliveryTimeMaxDays !== deliveryTimeMinDays ? `-${deliveryTimeMaxDays}` : ''} day(s).`
+                    : ''}
+                </p>
+                <ul className="mt-3 space-y-1">
+                  {sellerDeliveryZones.slice(0, 8).map((zone) => {
+                    const locationLabel = ALL_LOCATIONS.find((location) => location.value === zone.location_value)?.label || zone.location_value
+                    return (
+                      <li key={`${zone.location_value}-${zone.delivery_price}`} className="flex items-center justify-between gap-3">
+                        <span className="truncate">{locationLabel}</span>
+                        <span className="whitespace-nowrap">
+                          GHS {Number(zone.delivery_price).toLocaleString()} · {zone.delivery_time_days} day(s)
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </>
+            ) : (
+              <p className="mt-1 text-gray-600">This seller has not published delivery zones yet.</p>
+            )}
           </div>
 
         </div>

@@ -19,6 +19,7 @@ type SellerAuction = {
 export default function SellerDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [auctions, setAuctions] = useState<SellerAuction[]>([])
+  const [needsDeliveryZones, setNeedsDeliveryZones] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -38,7 +39,14 @@ export default function SellerDashboardPage() {
         .eq('seller_id', user.id)
         .order('created_at', { ascending: false })
 
+      const { count } = await supabase
+        .from('seller_delivery_zones')
+        .select('id', { count: 'exact', head: true })
+        .eq('seller_id', user.id)
+        .eq('is_enabled', true)
+
       setAuctions((data as SellerAuction[] | null) ?? [])
+      setNeedsDeliveryZones((count ?? 0) === 0)
       setLoading(false)
     }
 
@@ -132,6 +140,15 @@ export default function SellerDashboardPage() {
           </Link>
         </div>
       </section>
+
+      {needsDeliveryZones && (
+        <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          You have not set your seller delivery zones.{' '}
+          <Link href="/seller/shop" className="font-semibold underline underline-offset-2">
+            Click here to set delivery locations, prices, and estimated time.
+          </Link>
+        </section>
+      )}
 
       <section className="grid gap-4 lg:grid-cols-2">
         <PieChartCard title="Auction Lifecycle" points={lifecyclePie} emptyLabel="No auctions yet" />

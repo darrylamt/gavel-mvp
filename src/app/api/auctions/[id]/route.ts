@@ -28,7 +28,7 @@ export async function GET(
 
   const client = createClient(supabaseUrl, serviceRoleKey || anonKey)
   const selectFields =
-    'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at'
+    'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, seller_id, ends_at, status, paid, winning_bid_id, image_url, images, starts_at'
 
   const { data, error } = await client
     .from('auctions')
@@ -44,11 +44,26 @@ export async function GET(
     return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
   }
 
+  const sellerId = String((data as { seller_id?: string | null }).seller_id || '').trim()
+  const { data: deliveryZones, error: deliveryZonesError } = sellerId
+    ? await client
+        .from('seller_delivery_zones')
+        .select('location_value, delivery_price, delivery_time_days')
+        .eq('seller_id', sellerId)
+        .eq('is_enabled', true)
+        .order('delivery_price', { ascending: true })
+    : { data: [], error: null }
+
+  if (deliveryZonesError) {
+    return NextResponse.json({ error: deliveryZonesError.message }, { status: 500 })
+  }
+
   return NextResponse.json({
     auction: {
       ...data,
       auction_payment_due_at:
         (data as { auction_payment_due_at?: string | null }).auction_payment_due_at ?? null,
+      delivery_zones: deliveryZones ?? [],
     },
   })
 }

@@ -1,26 +1,135 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { supabase } from '@/lib/supabaseClient'
+import LocationDropdown from '@/components/ui/LocationDropdown'
+import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
 
 export default function CartPage() {
   const { items, subtotal, removeFromCart, clearCart, incrementItem, decrementItem } = useCart()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [notes, setNotes] = useState('')
-  const total = subtotal
+  const [deliveryLocation, setDeliveryLocation] = useState('')
+  const [deliveryFee, setDeliveryFee] = useState(0)
+  const [estimatedDeliveryDays, setEstimatedDeliveryDays] = useState<number | null>(null)
+  const [deliveryWarning, setDeliveryWarning] = useState<string | null>(null)
+  const [quoteLoading, setQuoteLoading] = useState(false)
+  const total = subtotal + deliveryFee
+
+  useEffect(() => {
+    const loadDefaults = async () => {
+      const { data: auth } = await supabase.auth.getUser()
+      if (!auth.user) return
+
+      setUserId(auth.user.id)
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, phone, address, delivery_location')
+        .eq('id', auth.user.id)
+        .maybeSingle()
+
+      const profileRow = (profile as {
+        username?: string | null
+        phone?: string | null
+        address?: string | null
+        delivery_location?: string | null
+      } | null) ?? null
+
+      if (profileRow?.username) setFullName((previous) => previous || profileRow.username || '')
+      if (profileRow?.phone) setPhone((previous) => previous || profileRow.phone || '')
+      if (profileRow?.address) setAddress((previous) => previous || profileRow.address || '')
+      if (profileRow?.delivery_location) {
+        setDeliveryLocation(profileRow.delivery_location)
+      }
+    }
+
+    loadDefaults()
+  }, [])
+
+  useEffect(() => {
+    const fetchDeliveryQuote = async () => {
+      if (!userId || items.length === 0 || !deliveryLocation) {
+        setDeliveryFee(0)
+        setEstimatedDeliveryDays(null)
+        setDeliveryWarning(null)
+        return
+      }
+
+      setQuoteLoading(true)
+      try {
+        const res = await fetch('/api/shop-payments/delivery-quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            delivery_location: deliveryLocation,
+            items: items.map((item) => ({
+              product_id: item.productId,
+              quantity: item.quantity,
+            })),
+          }),
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          setDeliveryFee(0)
+          setEstimatedDeliveryDays(null)
+          setDeliveryWarning(data.error || 'Unable to calculate delivery fees')
+          return
+        }
+
+        const unsupportedSellers = Array.isArray(data.unsupported_sellers) ? data.unsupported_sellers : []
+
+        setDeliveryFee(Number(data.total_delivery_fee || 0))
+        setEstimatedDeliveryDays(
+          Number.isFinite(Number(data.estimated_delivery_time_days))
+            ? Number(data.estimated_delivery_time_days)
+            : null
+        )
+        setDeliveryWarning(
+          unsupportedSellers.length
+            ? `Some sellers currently do not deliver to this location: ${unsupportedSellers
+                .map((seller: { seller_name?: string }) => seller.seller_name || 'Seller')
+                .join(', ')}`
+            : null
+        )
+      } catch {
+        setDeliveryFee(0)
+        setEstimatedDeliveryDays(null)
+        setDeliveryWarning('Unable to calculate delivery fees right now.')
+      } finally {
+        setQuoteLoading(false)
+      }
+    }
+
+    fetchDeliveryQuote()
+  }, [deliveryLocation, items, userId])
 
   const handleCheckout = async () => {
     if (items.length === 0 || isCheckingOut) return
 
     if (!fullName.trim() || !phone.trim() || !address.trim() || !city.trim()) {
       alert('Please complete your delivery details before checkout.')
+      return
+    }
+
+    if (!deliveryLocation.trim()) {
+      alert('Please select your delivery location before checkout.')
+      return
+    }
+
+    if (deliveryWarning) {
+      alert(deliveryWarning)
       return
     }
 
@@ -46,6 +155,7 @@ export default function CartPage() {
             address: address.trim(),
             city: city.trim(),
             notes: notes.trim(),
+            delivery_location: deliveryLocation.trim(),
           },
           items: items.map((item) => ({
             product_id: item.productId,
@@ -222,6 +332,17 @@ export default function CartPage() {
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 placeholder="Delivery address"
               />
+              <LocationDropdown
+                locations={ALL_LOCATIONS}
+                value={deliveryLocation || null}
+                onChange={setDeliveryLocation}
+                placeholder="Select delivery location"
+              />
+              {!deliveryLocation && (
+                <p className="text-xs text-amber-700">
+                  You have not set a default delivery location. <Link href="/profile" className="underline">Click here to set it</Link>.
+                </p>
+              )}
               <input
                 value={city}
                 onChange={(event) => setCity(event.target.value)}
@@ -242,6 +363,21 @@ export default function CartPage() {
                 <span className="text-gray-600">Sub Total</span>
                 <span className="font-medium">GHS {subtotal.toLocaleString()}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Delivery Fee</span>
+                <span className="font-medium">
+                  {quoteLoading ? 'Calculating…' : `GHS ${deliveryFee.toLocaleString()}`}
+                </span>
+              </div>
+              {estimatedDeliveryDays ? (
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Estimated delivery</span>
+                  <span>{estimatedDeliveryDays} day(s)</span>
+                </div>
+              ) : null}
+              {deliveryWarning ? (
+                <p className="text-xs text-amber-700">{deliveryWarning}</p>
+              ) : null}
             </div>
 
             <div className="mt-4 border-t pt-3">

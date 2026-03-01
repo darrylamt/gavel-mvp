@@ -1,6 +1,7 @@
 // Ghana delivery locations
 export const GHANA_LOCATIONS = {
   'Greater Accra': [
+    'Greater Accra (All)',
     'Accra Central',
     'Osu',
     'Labone',
@@ -63,6 +64,7 @@ export const GHANA_LOCATIONS = {
     'Pantang',
   ],
   'Ashanti': [
+    'Kumasi (All)',
     'Kumasi',
     'Adum',
     'Asafo',

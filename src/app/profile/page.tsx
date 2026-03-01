@@ -30,6 +30,7 @@ type ProfileData = {
   whatsapp_opt_in: boolean | null
   whatsapp_marketing_opt_in: boolean | null
   address: string | null
+  delivery_location: string | null
   avatar_url: string | null
   role: string | null
 }
@@ -90,6 +91,7 @@ export default function ProfilePage() {
   const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   const [whatsappMarketingOptIn, setWhatsappMarketingOptIn] = useState(false)
   const [address, setAddress] = useState('')
+  const [deliveryLocation, setDeliveryLocation] = useState('')
 
   const [wonAuctions, setWonAuctions] = useState<WonAuction[]>([])
   const [bidAuctions, setBidAuctions] = useState<BidAuctionItem[]>([])
@@ -162,7 +164,7 @@ export default function ProfilePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, token_balance, phone, whatsapp_phone, whatsapp_opt_in, whatsapp_marketing_opt_in, address, avatar_url, role')
+        .select('username, token_balance, phone, whatsapp_phone, whatsapp_opt_in, whatsapp_marketing_opt_in, address, delivery_location, avatar_url, role')
         .eq('id', authUser.id)
         .single()
 
@@ -182,6 +184,7 @@ export default function ProfilePage() {
       setWhatsappOptIn(Boolean(profileData?.whatsapp_opt_in))
       setWhatsappMarketingOptIn(Boolean(profileData?.whatsapp_marketing_opt_in))
       setAddress(profileData?.address ?? '')
+      setDeliveryLocation(profileData?.delivery_location ?? '')
       setAvatarUrl(profileData?.avatar_url ?? null)
 
       const isSellerRole = profileData?.role === 'seller'
@@ -214,9 +217,13 @@ export default function ProfilePage() {
       return
     }
 
-    setEditOpen(true)
-    setOnboardingHandled(true)
-    router.replace('/profile')
+    const timer = window.setTimeout(() => {
+      setEditOpen(true)
+      setOnboardingHandled(true)
+      router.replace('/profile')
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [loading, onboardingHandled, router, searchParams])
 
   const payNow = async (auctionId: string) => {
@@ -262,19 +269,45 @@ export default function ProfilePage() {
         onEdit={() => setEditOpen(true)}
       />
 
+      {!deliveryLocation && (
+        <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm text-amber-900">
+            You have not set your default delivery location.{' '}
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="font-semibold underline underline-offset-2"
+            >
+              Click here to set it.
+            </button>
+          </p>
+        </section>
+      )}
+
       {canAccessSellerDashboard && (
         <section className="rounded-xl border border-gray-200 bg-white p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-gray-900">Seller access available</p>
               <p className="text-sm text-gray-600">Manage your auctions, products, earnings, and deliveries.</p>
+              <p className="mt-1 text-xs text-amber-700">
+                Also update your seller delivery zones so buyers can get accurate delivery fees.
+              </p>
             </div>
-            <Link
-              href="/seller"
-              className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-            >
-              Seller Dashboard
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/seller"
+                className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+              >
+                Seller Dashboard
+              </Link>
+              <Link
+                href="/seller/shop"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+              >
+                Update Delivery Zones
+              </Link>
+            </div>
           </div>
         </section>
       )}
@@ -303,6 +336,7 @@ export default function ProfilePage() {
         initialWhatsAppOptIn={whatsappOptIn}
         initialWhatsAppMarketingOptIn={whatsappMarketingOptIn}
         initialAddress={address}
+        initialDeliveryLocation={deliveryLocation}
         initialAvatarUrl={avatarUrl}
         onSaved={(d: {
           username?: string;
@@ -311,6 +345,7 @@ export default function ProfilePage() {
           whatsappOptIn?: boolean;
           whatsappMarketingOptIn?: boolean;
           address?: string;
+          deliveryLocation?: string;
           avatarUrl?: string;
         }) => {
           if (d.username) setUsername(d.username)
@@ -319,6 +354,7 @@ export default function ProfilePage() {
           if (typeof d.whatsappOptIn !== 'undefined') setWhatsappOptIn(d.whatsappOptIn)
           if (typeof d.whatsappMarketingOptIn !== 'undefined') setWhatsappMarketingOptIn(d.whatsappMarketingOptIn)
           if (typeof d.address !== 'undefined') setAddress(d.address)
+          if (typeof d.deliveryLocation !== 'undefined') setDeliveryLocation(d.deliveryLocation)
           if (d.avatarUrl) setAvatarUrl(d.avatarUrl)
         }}
       />

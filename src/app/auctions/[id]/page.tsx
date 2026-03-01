@@ -16,6 +16,7 @@ import ShareAuctionButton from '@/components/auction/ShareAuctionButton'
 import { parseAuctionMeta } from '@/lib/auctionMeta'
 import { buildAuctionPath } from '@/lib/seo'
 import { getOrCreateViewerKey } from '@/lib/engagement'
+import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
 
 type AuctionRecord = {
   id: string
@@ -36,6 +37,11 @@ type AuctionRecord = {
   auction_payment_due_at: string | null
   image_url: string | null
   images: string[] | null
+  delivery_zones?: Array<{
+    location_value: string
+    delivery_price: number
+    delivery_time_days: number
+  }>
 }
 
 type BidRecord = {
@@ -528,6 +534,12 @@ export default function AuctionDetailPage() {
 
   const shouldShowReadMore =
     formattedDescription.length > 220 || formattedDescription.split('\n').length > 3
+  const deliveryZones = Array.isArray(auction.delivery_zones) ? auction.delivery_zones : []
+  const deliveryDays = deliveryZones
+    .map((zone) => Number(zone.delivery_time_days ?? 0))
+    .filter((value) => Number.isFinite(value) && value > 0)
+  const minDeliveryDays = deliveryDays.length ? Math.min(...deliveryDays) : null
+  const maxDeliveryDays = deliveryDays.length ? Math.max(...deliveryDays) : null
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
   const productUrl = `${siteUrl}${buildAuctionPath(auction.id, auction.title)}`
@@ -585,6 +597,36 @@ export default function AuctionDetailPage() {
                   <div className="font-medium text-gray-900">Ends</div>
                   <div>{new Date(auction.ends_at).toLocaleString()}</div>
                 </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border bg-gray-50/60 p-4 text-sm text-gray-700">
+              <h2 className="mb-1 text-base font-semibold text-gray-900">Delivery Information</h2>
+              {deliveryZones.length > 0 ? (
+                <>
+                  <p className="text-gray-600">
+                    Available delivery locations and prices from this seller.
+                    {minDeliveryDays && maxDeliveryDays
+                      ? ` Estimated delivery: ${minDeliveryDays}${maxDeliveryDays !== minDeliveryDays ? `-${maxDeliveryDays}` : ''} day(s).`
+                      : ''}
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {deliveryZones.slice(0, 8).map((zone) => {
+                      const locationLabel =
+                        ALL_LOCATIONS.find((location) => location.value === zone.location_value)?.label || zone.location_value
+                      return (
+                        <li key={`${zone.location_value}-${zone.delivery_price}`} className="flex items-center justify-between gap-3">
+                          <span className="truncate">{locationLabel}</span>
+                          <span className="whitespace-nowrap">
+                            GHS {Number(zone.delivery_price).toLocaleString()} · {zone.delivery_time_days} day(s)
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
+              ) : (
+                <p className="text-gray-600">Seller delivery zones are not configured yet.</p>
               )}
             </div>
 
