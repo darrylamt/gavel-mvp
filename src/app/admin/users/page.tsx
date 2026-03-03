@@ -62,6 +62,7 @@ export default function AdminUsersPage() {
     const confirmed = confirm(`Ban user ${email}? Their account will be suspended.`)
     if (!confirmed) return
 
+    console.log('[BAN-FRONTEND] Banning user:', { userId, email })
     setBusyId(userId)
     setError(null)
 
@@ -71,24 +72,33 @@ export default function AdminUsersPage() {
 
     const token = session?.access_token
     if (!token) {
+      console.error('[BAN-FRONTEND] No token found')
       setError('Unauthorized')
       setBusyId(null)
       return
     }
 
     try {
+      console.log('[BAN-FRONTEND] Making request to /api/admin/users/' + userId + '/ban')
       const res = await fetch(`/api/admin/users/${userId}/ban`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
 
+      console.log('[BAN-FRONTEND] Response status:', res.status)
       const data = await res.json()
+      console.log('[BAN-FRONTEND] Response data:', data)
+      
       if (!res.ok) {
+        console.error('[BAN-FRONTEND] Ban failed:', data.error)
         setError(data.error || 'Failed to ban user')
       } else {
+        console.log('[BAN-FRONTEND] Ban successful, reloading users')
         await loadUsers()
+        setError(null)
       }
     } catch (err) {
+      console.error('[BAN-FRONTEND] Exception:', err)
       setError(err instanceof Error ? err.message : 'Failed to ban user')
     } finally {
       setBusyId(null)
