@@ -1,0 +1,11 @@
+appId: com.gavel.mobile
+---
+- launchApp
+- tapOn: "Sign In"
+- inputText: "qa@example.com"
+- tapOn: "Password"
+- inputText: "Password123!"
+- tapOn: "Sign In"
+- tapOn: "Buy tokens"
+- tapOn: "Buy"
+- assertVisible: "Status"

@@ -12,6 +12,7 @@ type Props = {
 const tabs = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/bids', label: 'Bids', icon: Gavel },
   { href: '/admin/messages', label: 'Messages', icon: Mail },
   { href: '/admin/deliveries', label: 'Deliveries', icon: Truck },
   { href: '/admin/reviews', label: 'Reviews', icon: MessageSquare },

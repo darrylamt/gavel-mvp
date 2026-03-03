@@ -1,117 +1,192 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
-import MiniBarChart from '@/components/admin/MiniBarChart'
-import { DashboardPayload } from '@/components/admin/AdminTypes'
+
+type User = {
+  id: string
+  email: string
+  username: string | null
+  full_name: string | null
+  role: string | null
+  banned_at: string | null
+  created_at: string
+}
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<DashboardPayload['users']>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState('all')
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [showBannedOnly, setShowBannedOnly] = useState(false)
 
-  useEffect(() => {
-    const load = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+  const loadUsers = async () => {
+    setLoading(true)
+    setError(null)
 
-      const token = session?.access_token
-      if (!token) {
-        setLoading(false)
-        return
-      }
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-      const res = await fetch('/api/admin/dashboard', {
+    const token = session?.access_token
+    if (!token) {
+      setLoading(false)
+      return
+    }
+
+    try {
+      const res = await fetch('/api/admin/users', {
         headers: { Authorization: `Bearer ${token}` },
       })
 
+      const data = await res.json()
       if (res.ok) {
-        const data = (await res.json()) as DashboardPayload
-        setUsers(data.users)
+        setUsers(data.users || [])
+      } else {
+        setError(data.error || 'Failed to load users')
       }
-      setLoading(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load users')
     }
 
-    load()
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadUsers()
   }, [])
 
-  const roleGraph = useMemo(() => {
-    const grouped = new Map<string, number>()
-    for (const user of users) {
-      const role = user.role || 'user'
-      grouped.set(role, (grouped.get(role) ?? 0) + 1)
+  const banUser = async (userId: string, email: string) => {
+    const confirmed = confirm(`Ban user ${email}? Their account will be suspended.`)
+    if (!confirmed) return
+
+    setBusyId(userId)
+    setError(null)
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    const token = session?.access_token
+    if (!token) {
+      setError('Unauthorized')
+      setBusyId(null)
+      return
     }
 
-    return Array.from(grouped.entries()).map(([label, value]) => ({ label, value }))
-  }, [users])
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/ban`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
 
-  const filteredUsers = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to ban user')
+      } else {
+        await loadUsers()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to ban user')
+    } finally {
+      setBusyId(null)
+    }
+  }
 
-    return users.filter((user) => {
-      const role = user.role || 'user'
-      const roleMatch = roleFilter === 'all' || role === roleFilter
-      const textMatch = !query || `${user.username || ''} ${user.phone || ''} ${role}`.toLowerCase().includes(query)
-      return roleMatch && textMatch
-    })
-  }, [roleFilter, searchQuery, users])
+  const filteredUsers = users.filter((user) => {
+    const query = searchQuery.toLowerCase()
+    const isBanned = !!user.banned_at
+    const matchesSearch =
+      !query ||
+      user.email.toLowerCase().includes(query) ||
+      (user.username?.toLowerCase().includes(query) ?? false) ||
+      (user.full_name?.toLowerCase().includes(query) ?? false)
+
+    if (showBannedOnly) {
+      return isBanned && matchesSearch
+    }
+
+    return matchesSearch
+  })
 
   return (
     <AdminShell>
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="text-xl font-semibold">Users</h2>
-        <p className="mt-1 text-sm text-gray-500">Manage and inspect platform users.</p>
-      </div>
+      <div className="space-y-4">
+        <div className="rounded-2xl bg-white p-4 shadow-sm">
+          <h1 className="text-2xl font-bold">Users</h1>
+          <p className="text-sm text-gray-600">Manage and ban users</p>
+        </div>
 
-      <MiniBarChart title="User Roles" points={roleGraph} colorClass="bg-indigo-500" />
-
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search users"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
-          />
-          <select
-            value={roleFilter}
-            onChange={(event) => setRoleFilter(event.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          >
-            <option value="all">All roles</option>
-            <option value="admin">Admin</option>
-            <option value="seller">Seller</option>
-            <option value="user">User</option>
-          </select>
-          <span className="text-xs text-gray-500">{filteredUsers.length} shown</span>
+        <div className="rounded-2xl bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <input
+              type="text"
+              placeholder="Search by email, username, or name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 rounded border border-gray-300 px-3 py-2"
+            />
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showBannedOnly}
+                onChange={(e) => setShowBannedOnly(e.target.checked)}
+              />
+              <span className="text-sm">Show banned only</span>
+            </label>
+          </div>
         </div>
 
         {loading ? (
-          <p className="text-sm text-gray-500">Loading users…</p>
+          <div className="rounded-2xl bg-white p-8 text-center">Loading...</div>
+        ) : error ? (
+          <div className="rounded-2xl bg-red-50 p-4 text-red-700">{error}</div>
         ) : filteredUsers.length === 0 ? (
-          <p className="text-sm text-gray-500">No users found.</p>
+          <div className="rounded-2xl bg-white p-8 text-center text-gray-500">No users found</div>
         ) : (
-          <div className="max-h-[60vh] overflow-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-gray-500">
-                <tr>
-                  <th className="py-2">Username</th>
-                  <th className="py-2">Phone</th>
-                  <th className="py-2">Tokens</th>
-                  <th className="py-2">Role</th>
+          <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Username</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Role</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.map((user) => (
-                  <tr key={user.id} className="border-t">
-                    <td className="py-2">{user.username || '-'}</td>
-                    <td className="py-2">{user.phone || '-'}</td>
-                    <td className="py-2">{user.token_balance ?? 0}</td>
-                    <td className="py-2">{user.role || 'user'}</td>
+                  <tr key={user.id} className="border-b">
+                    <td className="px-4 py-3 text-sm">{user.email}</td>
+                    <td className="px-4 py-3 text-sm">{user.username || '-'}</td>
+                    <td className="px-4 py-3 text-sm">{user.full_name || '-'}</td>
+                    <td className="px-4 py-3 text-sm capitalize">{user.role || 'user'}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {user.banned_at ? (
+                        <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-red-700">
+                          Banned
+                        </span>
+                      ) : (
+                        <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-green-700">
+                          Active
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {!user.banned_at && user.role !== 'admin' && (
+                        <button
+                          onClick={() => banUser(user.id, user.email)}
+                          disabled={busyId === user.id}
+                          className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700 disabled:bg-gray-400"
+                        >
+                          {busyId === user.id ? 'Banning...' : 'Ban'}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
