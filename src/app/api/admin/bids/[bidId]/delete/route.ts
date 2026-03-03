@@ -57,5 +57,30 @@ export async function POST(request: Request, context: { params: Promise<{ bidId:
     return NextResponse.json({ error: deleteError.message }, { status: 500 })
   }
 
+  // Get auction details and find new highest bid
+  const { data: auction, error: auctionError } = await service
+    .from('auctions')
+    .select('id, starting_price')
+    .eq('id', bid.auction_id)
+    .single()
+
+  if (!auctionError && auction) {
+    // Find the new highest bid for this auction
+    const { data: highestBid } = await service
+      .from('bids')
+      .select('amount')
+      .eq('auction_id', bid.auction_id)
+      .order('amount', { ascending: false })
+      .limit(1)
+      .single()
+
+    // Update auction with new current price
+    const newCurrentPrice = highestBid?.amount || auction.starting_price
+    await service
+      .from('auctions')
+      .update({ current_price: newCurrentPrice })
+      .eq('id', bid.auction_id)
+  }
+
   return NextResponse.json({ success: true, bid })
 }
