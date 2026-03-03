@@ -62,17 +62,18 @@ export async function POST(request: Request, context: { params: Promise<{ bidId:
     .from('auctions')
     .select('id, starting_price')
     .eq('id', bid.auction_id)
-    .single()
+    .maybeSingle()
 
   if (!auctionError && auction) {
     // Find the new highest bid for this auction
-    const { data: highestBid } = await service
+    const { data: highestBids } = await service
       .from('bids')
       .select('amount')
       .eq('auction_id', bid.auction_id)
       .order('amount', { ascending: false })
       .limit(1)
-      .single()
+
+    const highestBid = highestBids?.[0]
 
     // Update auction with new current price
     const newCurrentPrice = highestBid?.amount || auction.starting_price
