@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { formatBidTime } from '@/lib/formatBidTime'
 
 type Bid = {
   id: string
@@ -65,15 +66,7 @@ export default function BidList({ bids, currentUserId }: Props) {
                         {displayName}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {bid.created_at
-                          ? new Date(bid.created_at).toLocaleString('en-GB', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : 'Bid placed'}
+                        {bid.created_at ? formatBidTime(bid.created_at) : 'Bid placed'}
                       </p>
                     </div>
                   </div>
