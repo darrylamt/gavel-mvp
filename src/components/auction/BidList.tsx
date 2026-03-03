@@ -65,7 +65,7 @@ export default function BidList({ bids, currentUserId }: Props) {
                       <p className="text-sm font-medium">
                         {displayName}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 mt-1">
                         {bid.created_at ? formatBidTime(bid.created_at) : 'Bid placed'}
                       </p>
                     </div>
