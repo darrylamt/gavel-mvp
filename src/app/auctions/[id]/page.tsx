@@ -266,9 +266,15 @@ export default function AuctionDetailPage() {
       )
       .subscribe()
 
+    // Fallback polling to ensure data freshness (especially for admin bid deletions)
+    const pollInterval = setInterval(() => {
+      loadAuction()
+    }, 3000) // Poll every 3 seconds
+
     return () => {
       bidsSubscription.unsubscribe()
       auctionSubscription.unsubscribe()
+      clearInterval(pollInterval)
     }
   }, [auctionId, loadAuction, loadBids])
 

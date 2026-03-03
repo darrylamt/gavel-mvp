@@ -60,28 +60,46 @@ export async function POST(request: Request, context: { params: Promise<{ bidId:
   // Get auction details and find new highest bid
   const { data: auction, error: auctionError } = await service
     .from('auctions')
-    .select('id, starting_price')
+    .select('id, starting_price, current_price')
     .eq('id', bid.auction_id)
     .maybeSingle()
 
-  if (!auctionError && auction) {
+  if (auctionError) {
+    console.error('Auction query error:', auctionError)
+  }
+
+  let updatedCurrentPrice = null
+
+  if (auction) {
     // Find the new highest bid for this auction
-    const { data: highestBids } = await service
+    const { data: highestBids, error: bidsError } = await service
       .from('bids')
       .select('amount')
       .eq('auction_id', bid.auction_id)
       .order('amount', { ascending: false })
       .limit(1)
 
+    if (bidsError) {
+      console.error('Bids query error:', bidsError)
+    }
+
     const highestBid = highestBids?.[0]
+    // Use highest remaining bid, or fallback to starting_price, or keep current price
+    updatedCurrentPrice = highestBid?.amount ?? auction.starting_price ?? auction.current_price
+
+    console.log(`Deleting bid ${bidId} from auction ${bid.auction_id}. New current_price: ${updatedCurrentPrice}`)
 
     // Update auction with new current price
-    const newCurrentPrice = highestBid?.amount || auction.starting_price
-    await service
+    const { data: updateResult, error: updateError } = await service
       .from('auctions')
-      .update({ current_price: newCurrentPrice })
+      .update({ current_price: updatedCurrentPrice })
       .eq('id', bid.auction_id)
+      .select()
+
+    if (updateError) {
+      console.error('Auction update error:', updateError)
+    }
   }
 
-  return NextResponse.json({ success: true, bid })
+  return NextResponse.json({ success: true, bid, updatedCurrentPrice })
 }
