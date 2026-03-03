@@ -85,19 +85,21 @@ export async function POST(request: Request, context: { params: Promise<{ bidId:
 
     const highestBid = highestBids?.[0]
     // Use highest remaining bid, or fallback to starting_price, or keep current price
-    updatedCurrentPrice = highestBid?.amount ?? auction.starting_price ?? auction.current_price
+    const newPrice = highestBid ? Number(highestBid.amount) : Number(auction.starting_price)
+    updatedCurrentPrice = newPrice
 
-    console.log(`Deleting bid ${bidId} from auction ${bid.auction_id}. New current_price: ${updatedCurrentPrice}`)
+    console.log(`[BID DELETE] Deleting bid ${bidId} from auction ${bid.auction_id}. Old price: ${auction.current_price}, New price: ${updatedCurrentPrice}`)
 
     // Update auction with new current price
     const { data: updateResult, error: updateError } = await service
       .from('auctions')
       .update({ current_price: updatedCurrentPrice })
       .eq('id', bid.auction_id)
-      .select()
 
     if (updateError) {
-      console.error('Auction update error:', updateError)
+      console.error(`[BID DELETE ERROR] Auction update failed: ${updateError.message}`)
+    } else {
+      console.log(`[BID DELETE SUCCESS] Updated auction ${bid.auction_id} current_price to ${updatedCurrentPrice}`)
     }
   }
 
