@@ -40,7 +40,7 @@ export async function GET(req: Request) {
   const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('bids')
-    .select('id, amount, user_id, profiles (username)')
+    .select('id, amount, user_id, created_at, profiles (username)')
     .eq('auction_id', auctionId)
     .order('amount', { ascending: false })
 

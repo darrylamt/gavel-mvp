@@ -6,6 +6,7 @@ type Bid = {
   id: string
   amount: number
   user_id: string
+  created_at?: string
   masked_email?: string | null
   profiles?: {
     username: string | null
@@ -64,7 +65,15 @@ export default function BidList({ bids, currentUserId }: Props) {
                         {displayName}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Bid placed
+                        {bid.created_at
+                          ? new Date(bid.created_at).toLocaleString('en-GB', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : 'Bid placed'}
                       </p>
                     </div>
                   </div>

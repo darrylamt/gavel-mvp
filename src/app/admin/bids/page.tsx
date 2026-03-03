@@ -152,7 +152,13 @@ export default function AdminBidsPage() {
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-semibold">₵{bid.amount}</td>
                     <td className="px-4 py-3 text-sm">
-                      {new Date(bid.created_at).toLocaleDateString()}
+                      {new Date(bid.created_at).toLocaleString('en-GB', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <button
