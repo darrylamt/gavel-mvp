@@ -26,6 +26,7 @@ type BidRow = {
   id: string
   amount: number
   user_id: string
+  created_at: string
   profiles?: { username: string | null } | { username: string | null }[] | null
 }
 
@@ -72,6 +73,7 @@ export async function GET(req: Request) {
       id: row.id,
       amount: row.amount,
       user_id: row.user_id,
+      created_at: row.created_at,
       profiles: {
         username: profile?.username ?? null,
       },
