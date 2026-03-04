@@ -34,7 +34,7 @@ export default function SellerApplyPage() {
   const [address, setAddress] = useState('')
   const [nationalIdNumber, setNationalIdNumber] = useState('')
   const [ghanaCardFile, setGhanaCardFile] = useState<File | null>(null)
-  const [selfieFile, setSelfieFile] = useState<File | null>(null)
+  const [backOfIdFile, setBackOfIdFile] = useState<File | null>(null)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function SellerApplyPage() {
       address.trim() &&
       nationalIdNumber.trim() &&
       ghanaCardFile &&
-      selfieFile &&
+      backOfIdFile &&
       acceptedTerms
     )
   }, [
@@ -91,7 +91,7 @@ export default function SellerApplyPage() {
     ghanaCardFile,
     nationalIdNumber,
     phone,
-    selfieFile,
+    backOfIdFile,
     submitting,
     acceptedTerms,
   ])
@@ -123,7 +123,7 @@ export default function SellerApplyPage() {
       formData.append('address', address.trim())
       formData.append('national_id_number', nationalIdNumber.trim())
       formData.append('id_document', ghanaCardFile as File)
-      formData.append('selfie_with_card', selfieFile as File)
+      formData.append('selfie_with_card', backOfIdFile as File)
 
       const res = await fetch('/api/seller-applications', {
         method: 'POST',
@@ -158,7 +158,7 @@ export default function SellerApplyPage() {
         <p className="mt-1 text-sm text-gray-600">Submit your business and identity details for seller verification.</p>
         <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
           <p><span className="font-semibold text-gray-800">Note:</span> Your <span className="font-semibold">Business name</span> is for seller verification and storefront records. It is separate from your profile display name.</p>
-          <p className="mt-1"><span className="font-semibold text-gray-800">Why Ghana Card + Selfie:</span> We use these to confirm identity, prevent impersonation/fraud, and protect buyers and sellers on the marketplace.</p>
+          <p className="mt-1"><span className="font-semibold text-gray-800">Why Ghana Card + Back:</span> We use these to confirm identity, prevent impersonation/fraud, and protect buyers and sellers on the marketplace.</p>
         </div>
 
         {error && <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
@@ -221,15 +221,15 @@ export default function SellerApplyPage() {
               <p className="mt-1 text-xs text-gray-500">Needed to verify your legal identity for seller approval.</p>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Upload selfie holding Ghana Card</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Upload back of Ghana Card</label>
               <input
                 type="file"
                 accept="image/*"
-                onChange={(event) => setSelfieFile(event.target.files?.[0] ?? null)}
+                onChange={(event) => setBackOfIdFile(event.target.files?.[0] ?? null)}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">Needed to confirm the ID belongs to you and reduce fraud.</p>
+              <p className="mt-1 text-xs text-gray-500">Needed to verify your identity and reduce fraud.</p>
             </div>
             <div>
               <SellerTermsAndConditions onAccept={() => setAcceptedTerms(true)} />

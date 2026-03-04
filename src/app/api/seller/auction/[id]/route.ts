@@ -56,7 +56,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const { data, error } = await seller.service
     .from('auctions')
-    .select('id, title, description, starting_price, current_price, reserve_price, min_increment, max_increment, starts_at, ends_at, status, seller_expected_amount')
+    .select('id, title, description, starting_price, current_price, reserve_price, min_increment, max_increment, starts_at, ends_at, status, seller_expected_amount, is_private, access_code, anonymous_bidding_enabled')
     .eq('id', id)
     .eq('seller_id', seller.userId)
     .maybeSingle()
@@ -86,6 +86,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const maxIncrement = body.max_increment == null || body.max_increment === '' ? null : Number(body.max_increment)
   const startsAt = typeof body.starts_at === 'string' ? body.starts_at : ''
   const endsAt = typeof body.ends_at === 'string' ? body.ends_at : ''
+  const isPrivate = Boolean(body.is_private)
+  const accessCode = typeof body.access_code === 'string' ? body.access_code.trim() : ''
+  const anonymousBiddingEnabled = body.anonymous_bidding_enabled !== false
 
   if (!title) {
     return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -113,6 +116,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   if (!startsAt || !endsAt) {
     return NextResponse.json({ error: 'Start and end time are required' }, { status: 400 })
+  }
+
+  if (isPrivate && !accessCode) {
+    return NextResponse.json({ error: 'Access code is required for private auctions' }, { status: 400 })
   }
 
   const startsAtIso = new Date(startsAt).toISOString()
@@ -155,6 +162,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       starts_at: startsAtIso,
       ends_at: endsAtIso,
       status: new Date(startsAtIso).getTime() > Date.now() ? 'scheduled' : 'active',
+      is_private: isPrivate,
+      access_code: isPrivate ? accessCode : null,
+      anonymous_bidding_enabled: isPrivate ? anonymousBiddingEnabled : true,
     })
     .eq('id', id)
     .eq('seller_id', seller.userId)

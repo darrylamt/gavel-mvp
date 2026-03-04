@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { Input } from '@/components/base/input/input'
+import Toggle from '@/components/ui/toggle'
+import { generateAccessCode } from '@/lib/privateAuctionUtils'
 
 type AuctionRecord = {
   id: string
@@ -16,6 +18,9 @@ type AuctionRecord = {
   starts_at: string | null
   ends_at: string | null
   status: string | null
+  is_private?: boolean
+  access_code?: string | null
+  anonymous_bidding_enabled?: boolean | null
 }
 
 export default function SellerEditAuctionPage() {
@@ -34,6 +39,9 @@ export default function SellerEditAuctionPage() {
   const [maxIncrement, setMaxIncrement] = useState('')
   const [startsAt, setStartsAt] = useState('')
   const [endsAt, setEndsAt] = useState('')
+  const [isPrivate, setIsPrivate] = useState(false)
+  const [accessCode, setAccessCode] = useState('')
+  const [anonymousBiddingEnabled, setAnonymousBiddingEnabled] = useState(true)
 
   const hasStarted = useMemo(() => {
     if (!startsAt) return true
@@ -73,6 +81,9 @@ export default function SellerEditAuctionPage() {
       setMaxIncrement(auction.max_increment != null ? String(auction.max_increment) : '')
       setStartsAt(auction.starts_at ? new Date(auction.starts_at).toISOString().slice(0, 16) : '')
       setEndsAt(auction.ends_at ? new Date(auction.ends_at).toISOString().slice(0, 16) : '')
+      setIsPrivate(Boolean(auction.is_private))
+      setAccessCode(auction.access_code ?? '')
+      setAnonymousBiddingEnabled(auction.anonymous_bidding_enabled !== false)
       setLoading(false)
     }
 
@@ -91,6 +102,7 @@ export default function SellerEditAuctionPage() {
       if (!startingPrice) throw new Error('Starting price required')
       if (!startsAt || !endsAt) throw new Error('Start and end time are required')
       if (hasStarted) throw new Error('Only auctions that have not started can be edited.')
+      if (isPrivate && !accessCode.trim()) throw new Error('Access code is required for private auctions.')
 
       const {
         data: { session },
@@ -114,6 +126,9 @@ export default function SellerEditAuctionPage() {
           max_increment: maxIncrement ? Number(maxIncrement) : null,
           starts_at: new Date(startsAt).toISOString(),
           ends_at: new Date(endsAt).toISOString(),
+          is_private: isPrivate,
+          access_code: isPrivate ? accessCode.trim() : null,
+          anonymous_bidding_enabled: isPrivate ? anonymousBiddingEnabled : true,
         }),
       })
 
@@ -170,6 +185,56 @@ export default function SellerEditAuctionPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Input label="Start Time" type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} isRequired />
           <Input label="End Time" type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} isRequired />
+        </div>
+
+        <div className="rounded-lg border p-4 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-lg font-semibold">Private Auction</p>
+              <p className="text-sm text-gray-600">Only users with the access code can view and bid.</p>
+            </div>
+            <Toggle
+              checked={isPrivate}
+              onChange={(checked) => {
+                setIsPrivate(checked)
+                if (checked && !accessCode) {
+                  setAccessCode(generateAccessCode())
+                }
+              }}
+              label=""
+            />
+          </div>
+
+          {isPrivate && (
+            <div className="ml-7 space-y-4 border-l-2 border-gray-200 pl-4">
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Anonymous bidding</p>
+                  <p className="text-xs text-gray-600">Turn off to show bidder usernames in this private auction.</p>
+                </div>
+                <Toggle checked={anonymousBiddingEnabled} onChange={setAnonymousBiddingEnabled} label="" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Access Code</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={accessCode}
+                    onChange={(event) => setAccessCode(event.target.value.toUpperCase())}
+                    className="flex-1 rounded-lg border border-gray-300 px-4 py-2 font-mono tracking-wider"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAccessCode(generateAccessCode())}
+                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50"
+                  >
+                    Generate
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 border-t pt-4">

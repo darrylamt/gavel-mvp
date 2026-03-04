@@ -39,6 +39,14 @@ export async function GET(req: Request) {
   }
 
   const supabase = createServiceClient()
+  const { data: auctionSettings } = await supabase
+    .from('auctions')
+    .select('anonymous_bidding_enabled')
+    .eq('id', auctionId)
+    .maybeSingle<{ anonymous_bidding_enabled?: boolean | null }>()
+
+  const anonymousBiddingEnabled = auctionSettings?.anonymous_bidding_enabled !== false
+
   const { data, error } = await supabase
     .from('bids')
     .select('id, amount, user_id, created_at, profiles (username)')
@@ -54,15 +62,17 @@ export async function GET(req: Request) {
 
   const maskedEmailByUserId = new Map<string, string>()
 
-  await Promise.all(
-    userIds.map(async (userId) => {
-      const { data: authUser } = await supabase.auth.admin.getUserById(userId)
-      const masked = maskBidderEmail(authUser.user?.email)
-      if (masked) {
-        maskedEmailByUserId.set(userId, masked)
-      }
-    })
-  )
+  if (anonymousBiddingEnabled) {
+    await Promise.all(
+      userIds.map(async (userId) => {
+        const { data: authUser } = await supabase.auth.admin.getUserById(userId)
+        const masked = maskBidderEmail(authUser.user?.email)
+        if (masked) {
+          maskedEmailByUserId.set(userId, masked)
+        }
+      })
+    )
+  }
 
   const bids = rows.map((row) => {
     const profile = Array.isArray(row.profiles)
@@ -77,7 +87,9 @@ export async function GET(req: Request) {
       profiles: {
         username: profile?.username ?? null,
       },
-      masked_email: maskedEmailByUserId.get(row.user_id) ?? null,
+      masked_email: anonymousBiddingEnabled
+        ? (maskedEmailByUserId.get(row.user_id) ?? null)
+        : null,
     }
   })
 

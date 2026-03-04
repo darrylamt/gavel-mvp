@@ -53,7 +53,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const { data, error } = await admin.service
     .from('auctions')
-    .select('id, title, description, starting_price, current_price, reserve_price, min_increment, max_increment, starts_at, ends_at, status, sale_source, seller_name, seller_phone, seller_expected_amount')
+    .select('id, title, description, starting_price, current_price, reserve_price, min_increment, max_increment, starts_at, ends_at, status, sale_source, seller_name, seller_phone, seller_expected_amount, is_private, access_code, anonymous_bidding_enabled')
     .eq('id', id)
     .maybeSingle()
 
@@ -84,6 +84,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     seller_name,
     seller_phone,
     seller_expected_amount,
+    is_private,
+    access_code,
+    anonymous_bidding_enabled,
   } = body
 
   const { data: existing } = await admin.service
@@ -117,6 +120,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       seller_name,
       seller_phone,
       seller_expected_amount,
+      is_private: Boolean(is_private),
+      access_code: Boolean(is_private) ? (typeof access_code === 'string' ? access_code.trim() : null) : null,
+      anonymous_bidding_enabled: Boolean(is_private) ? anonymous_bidding_enabled !== false : true,
     })
     .eq('id', id)
 

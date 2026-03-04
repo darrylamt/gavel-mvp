@@ -8,6 +8,7 @@ import { FileUpload, getReadableFileSize } from '@/components/base/file-upload/f
 import { type SaleSource } from '@/lib/auctionMeta'
 import { buildAuctionPath } from '@/lib/seo'
 import { generateAccessCode } from '@/lib/privateAuctionUtils'
+import Toggle from '@/components/ui/toggle'
 import { Copy, RefreshCw } from 'lucide-react'
 
 type UploadedFileItem = {
@@ -43,6 +44,7 @@ export default function NewAuction() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPrivate, setIsPrivate] = useState(false)
+  const [anonymousBiddingEnabled, setAnonymousBiddingEnabled] = useState(true)
   const [accessCode, setAccessCode] = useState('')
   const [codeCopied, setCodeCopied] = useState(false)
 
@@ -168,6 +170,7 @@ export default function NewAuction() {
         status: startTime > now ? 'scheduled' : 'active',
         is_private: isPrivate,
         access_code: isPrivate ? accessCode : null,
+        anonymous_bidding_enabled: isPrivate ? anonymousBiddingEnabled : true,
       }
 
       console.log('Creating auction:', payload)
@@ -426,26 +429,37 @@ export default function NewAuction() {
 
         {/* Private Auction Settings */}
         <div className="border rounded-lg p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="isPrivate"
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-lg font-semibold">Make this a Private Auction</p>
+              <p className="text-sm text-gray-600">Only users with the access code can view and bid.</p>
+            </div>
+            <Toggle
               checked={isPrivate}
-              onChange={(e) => {
-                setIsPrivate(e.target.checked)
-                if (e.target.checked && !accessCode) {
+              onChange={(checked) => {
+                setIsPrivate(checked)
+                if (checked && !accessCode) {
                   setAccessCode(generateAccessCode())
                 }
               }}
-              className="w-4 h-4 cursor-pointer"
+              label=""
             />
-            <label htmlFor="isPrivate" className="text-lg font-semibold cursor-pointer">
-              Make this a Private Auction
-            </label>
           </div>
 
           {isPrivate && (
             <div className="ml-7 space-y-4 border-l-2 border-gray-200 pl-4">
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Anonymous bidding</p>
+                  <p className="text-xs text-gray-600">Turn off to show bidder usernames in this private auction.</p>
+                </div>
+                <Toggle
+                  checked={anonymousBiddingEnabled}
+                  onChange={setAnonymousBiddingEnabled}
+                  label=""
+                />
+              </div>
+
               <p className="text-sm text-gray-600">
                 Users will need an access code to view and bid on this auction.
               </p>

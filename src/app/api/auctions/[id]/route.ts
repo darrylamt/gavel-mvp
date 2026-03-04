@@ -28,7 +28,7 @@ export async function GET(
 
   const client = createClient(supabaseUrl, serviceRoleKey || anonKey)
   const selectFields =
-    'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, seller_id, ends_at, status, paid, winning_bid_id, image_url, images, starts_at'
+    'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, seller_id, ends_at, status, paid, winning_bid_id, image_url, images, starts_at, is_private, anonymous_bidding_enabled'
 
   const { data, error } = await client
     .from('auctions')

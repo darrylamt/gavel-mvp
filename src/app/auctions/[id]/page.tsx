@@ -39,6 +39,7 @@ type AuctionRecord = {
   image_url: string | null
   images: string[] | null
   is_private?: boolean
+  anonymous_bidding_enabled?: boolean | null
   delivery_zones?: Array<{
     location_value: string
     delivery_price: number
@@ -145,7 +146,7 @@ export default function AuctionDetailPage() {
     if (!auctionId) return
 
     const selectFields =
-      'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at, is_private'
+      'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at, is_private, anonymous_bidding_enabled'
 
     let auctionData: AuctionRecord | null = null
 
@@ -612,6 +613,17 @@ export default function AuctionDetailPage() {
                 </div>
               )}
             </div>
+
+            {auction.is_private && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+                <p className="font-semibold">Private auction notice</p>
+                <p className="mt-1">
+                  {auction.anonymous_bidding_enabled === false
+                    ? 'Anonymous bidding is off in this private auction. Bidder usernames are visible to participants.'
+                    : 'Anonymous bidding is on in this private auction. Bidder identities are hidden from participants.'}
+                </p>
+              </div>
+            )}
 
             <div className="rounded-xl border bg-gray-50/60 p-4 text-sm text-gray-700">
               <h2 className="mb-1 text-base font-semibold text-gray-900">Delivery Information</h2>
