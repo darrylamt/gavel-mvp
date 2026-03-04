@@ -77,7 +77,7 @@ export async function POST(request: Request) {
           }
         )
       // Successfully recorded
-    } catch {
+     } catch {
       // Silently fail - this is just tracking
     }
 
