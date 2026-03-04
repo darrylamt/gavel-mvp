@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Heart, Info } from 'lucide-react'
+import { Heart, Info, Lock } from 'lucide-react'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
 import { getOrCreateViewerKey } from '@/lib/engagement'
 import { buildAuctionPath } from '@/lib/seo'
@@ -25,6 +25,7 @@ type AuctionCardProps = {
   bidderCount?: number
   watcherCount?: number
   compactMobile?: boolean
+  isPrivate?: boolean
 }
 
 export default function AuctionCard({
@@ -44,6 +45,7 @@ export default function AuctionCard({
   bidderCount,
   watcherCount,
   compactMobile = false,
+  isPrivate = false,
 }: AuctionCardProps) {
   const { isStarred, toggleStarred } = useStarredAuctions()
   const starred = isStarred(id)
@@ -196,6 +198,13 @@ export default function AuctionCard({
         >
           {isEnded ? 'Ended' : isScheduled ? 'Scheduled' : 'Live'}
         </span>
+
+        {isPrivate && (
+          <span className="inline-block ml-2 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700 flex items-center gap-1">
+            <Lock size={12} />
+            Private
+          </span>
+        )}
 
         {isScheduled && startCountdown && (
           <span className="ml-3 text-xs text-gray-600">{startCountdown}</span>

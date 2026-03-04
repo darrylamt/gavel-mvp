@@ -31,6 +31,7 @@ export default async function HomePage() {
     .from('auctions')
     .select('id, title, current_price, ends_at, starts_at, status, image_url')
     .in('status', ['active', 'scheduled'])
+    .or('is_private.is.false,is_private.is.null')
     .gt('ends_at', nowIso)
     .order('created_at', { ascending: false })
     .limit(6)
@@ -39,6 +40,7 @@ export default async function HomePage() {
     .from('auctions')
     .select('id, title, current_price, ends_at, starts_at, status, image_url')
     .eq('status', 'active')
+    .or('is_private.is.false,is_private.is.null')
     .gt('ends_at', nowIso)
     .lt('ends_at', next24HoursIso)
     .order('ends_at', { ascending: true })
@@ -47,6 +49,7 @@ export default async function HomePage() {
   const { data: startingSoon } = await supabase
     .from('auctions')
     .select('id, title, current_price, ends_at, starts_at, status, image_url')
+    .or('is_private.is.false,is_private.is.null')
     .gt('starts_at', nowIso)
     .lt('starts_at', next24HoursIso)
     .neq('status', 'ended')

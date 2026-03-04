@@ -1,5 +1,5 @@
 import { Controller, useForm } from 'react-hook-form'
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput } from 'react-native'
+import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { supabase } from '@/src/lib/supabase'
 
 type ResetForm = {
@@ -25,7 +25,12 @@ export default function ResetPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.brandBlock}>
+        <Text style={styles.brand}>Gavel</Text>
+      </View>
+
       <Text style={styles.title}>Reset password</Text>
+      <Text style={styles.subtitle}>Enter your email and we’ll send a reset link.</Text>
 
       <Controller
         control={control}
@@ -37,6 +42,7 @@ export default function ResetPasswordScreen() {
             value={value}
             onChangeText={onChange}
             placeholder="Email"
+            placeholderTextColor="#9ca3af"
             autoCapitalize="none"
             keyboardType="email-address"
           />
@@ -53,29 +59,49 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    gap: 12,
+    padding: 22,
+    gap: 14,
     justifyContent: 'center',
+    backgroundColor: '#f8fafc',
+  },
+  brandBlock: {
+    marginBottom: 6,
+  },
+  brand: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 12,
+    fontSize: 30,
+    fontWeight: '800',
+    marginBottom: 2,
+    color: '#111827',
+  },
+  subtitle: {
+    color: '#6b7280',
+    marginBottom: 8,
+    fontSize: 14,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    color: '#111827',
+    fontSize: 15,
   },
   button: {
     backgroundColor: '#111827',
-    borderRadius: 8,
-    padding: 14,
+    borderRadius: 14,
+    padding: 15,
     alignItems: 'center',
   },
   buttonText: {
     color: '#ffffff',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 15,
   },
 })

@@ -13,6 +13,7 @@ import BidList from '@/components/auction/BidList'
 import WinnerPanel from '@/components/auction/WinnerPanel'
 import ImageGallery from '@/components/auction/ImageGallery'
 import ShareAuctionButton from '@/components/auction/ShareAuctionButton'
+import PrivateAuctionGuard from '@/components/auction/PrivateAuctionGuard'
 import { parseAuctionMeta } from '@/lib/auctionMeta'
 import { buildAuctionPath } from '@/lib/seo'
 import { getOrCreateViewerKey } from '@/lib/engagement'
@@ -37,6 +38,7 @@ type AuctionRecord = {
   auction_payment_due_at: string | null
   image_url: string | null
   images: string[] | null
+  is_private?: boolean
   delivery_zones?: Array<{
     location_value: string
     delivery_price: number
@@ -143,7 +145,7 @@ export default function AuctionDetailPage() {
     if (!auctionId) return
 
     const selectFields =
-      'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at'
+      'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at, is_private'
 
     let auctionData: AuctionRecord | null = null
 
@@ -572,9 +574,14 @@ export default function AuctionDetailPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-8 space-y-6">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+    <PrivateAuctionGuard
+      auctionId={auction.id}
+      auctionTitle={auction.title}
+      isPrivate={auction.is_private}
+    >
+      <main className="mx-auto w-full max-w-5xl px-6 py-8 space-y-6">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+        <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
         <section className="space-y-6">
           <ImageGallery
             images={fallbackImages}
@@ -718,6 +725,7 @@ export default function AuctionDetailPage() {
       </div>
 
       <BidList bids={bids} currentUserId={userId} />
-    </main>
+      </main>
+    </PrivateAuctionGuard>
   )
 }

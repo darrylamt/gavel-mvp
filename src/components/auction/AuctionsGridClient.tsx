@@ -18,6 +18,7 @@ type Auction = {
   reserve_price?: number | null
   min_increment?: number | null
   max_increment?: number | null
+  is_private?: boolean
 }
 
 type AuctionsGridClientProps = {
@@ -111,6 +112,7 @@ export default function AuctionsGridClient({ auctions, starredOnly = false, enga
           maxIncrement={auction.max_increment}
           bidderCount={counts.bidderCount}
           watcherCount={counts.watcherCount}
+          isPrivate={auction.is_private}
         />
           )
         })()

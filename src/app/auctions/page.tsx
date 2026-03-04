@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import AuctionsGridClient from '@/components/auction/AuctionsGridClient'
+import PrivateAuctionAccessForm from '@/components/auction/PrivateAuctionAccessForm'
 import type { Metadata } from 'next'
 import { buildAuctionPath } from '@/lib/seo'
 import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
@@ -30,6 +31,7 @@ type Auction = {
   reserve_price?: number | null
   min_increment?: number | null
   max_increment?: number | null
+  is_private?: boolean
 }
 
 type EngagementCounts = Record<string, { bidderCount: number; watcherCount: number }>
@@ -49,7 +51,8 @@ export default async function AuctionsPage({
 
   const { data: auctions } = await supabase
     .from('auctions')
-    .select('id, title, description, starting_price, current_price, ends_at, starts_at, status, image_url, images, reserve_price, min_increment, max_increment')
+    .select('id, title, description, starting_price, current_price, ends_at, starts_at, status, image_url, images, reserve_price, min_increment, max_increment, is_private')
+    .or('is_private.is.false,is_private.is.null')
     .order('created_at', { ascending: false })
 
   const typedAuctions: Auction[] = (auctions ?? []) as Auction[]
@@ -84,6 +87,8 @@ return (
       </div>
       <div />
     </div>
+
+    {!starredOnly && <PrivateAuctionAccessForm />}
 
     <AuctionsGridClient auctions={typedAuctions} starredOnly={starredOnly} engagementCounts={engagementCounts} />
   </main>

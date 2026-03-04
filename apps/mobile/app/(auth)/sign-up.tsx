@@ -1,6 +1,6 @@
 import { Link, useRouter } from 'expo-router'
 import { Controller, useForm } from 'react-hook-form'
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput } from 'react-native'
+import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { supabase } from '@/src/lib/supabase'
 
 type SignUpForm = {
@@ -30,6 +30,11 @@ export default function SignUpScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.brandBlock}>
+        <Text style={styles.brand}>Gavel</Text>
+        <Text style={styles.subtitle}>Create your account and start exploring auctions</Text>
+      </View>
+
       <Text style={styles.title}>Create your account</Text>
 
       <Controller
@@ -42,6 +47,7 @@ export default function SignUpScreen() {
             value={value}
             onChangeText={onChange}
             placeholder="Email"
+            placeholderTextColor="#9ca3af"
             autoCapitalize="none"
             keyboardType="email-address"
           />
@@ -58,6 +64,7 @@ export default function SignUpScreen() {
             value={value}
             onChangeText={onChange}
             placeholder="Password"
+            placeholderTextColor="#9ca3af"
             secureTextEntry
           />
         )}
@@ -77,34 +84,57 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    gap: 12,
+    padding: 22,
+    gap: 14,
     justifyContent: 'center',
+    backgroundColor: '#f8fafc',
+  },
+  brandBlock: {
+    marginBottom: 8,
+    gap: 4,
+  },
+  brand: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  subtitle: {
+    color: '#6b7280',
+    fontSize: 14,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 12,
+    fontSize: 30,
+    fontWeight: '800',
+    marginBottom: 6,
+    color: '#111827',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    color: '#111827',
+    fontSize: 15,
   },
   button: {
     backgroundColor: '#111827',
-    borderRadius: 8,
-    padding: 14,
+    borderRadius: 14,
+    padding: 15,
     alignItems: 'center',
+    marginTop: 2,
   },
   buttonText: {
     color: '#ffffff',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 15,
   },
   link: {
-    color: '#1d4ed8',
+    color: '#111827',
     fontWeight: '600',
-    marginTop: 8,
+    marginTop: 6,
+    textAlign: 'center',
+    fontSize: 13,
   },
 })

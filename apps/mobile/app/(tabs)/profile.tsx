@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native'
 import { useAuthSession } from '@/src/hooks/useAuthSession'
 import { supabase } from '@/src/lib/supabase'
 
@@ -40,18 +40,37 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
-      <Text style={styles.label}>Email</Text>
-      <Text style={styles.value}>{user?.email ?? 'Not available'}</Text>
+      <View style={styles.headerCard}>
+        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.email}>{user?.email ?? 'Not available'}</Text>
+      </View>
 
-      <Text style={styles.label}>Name</Text>
-      <Text style={styles.value}>{profileQuery.data?.full_name ?? 'Not set'}</Text>
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryRow}>
+          <Text style={styles.label}>Name</Text>
+          <Text style={styles.value}>{profileQuery.data?.full_name ?? 'Not set'}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.label}>Role</Text>
+          <Text style={styles.value}>{profileQuery.data?.role ?? 'user'}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.label}>Tokens</Text>
+          <Text style={styles.value}>{profileQuery.data?.tokens ?? 0}</Text>
+        </View>
+      </View>
 
-      <Text style={styles.label}>Role</Text>
-      <Text style={styles.value}>{profileQuery.data?.role ?? 'user'}</Text>
-
-      <Text style={styles.label}>Tokens</Text>
-      <Text style={styles.value}>{profileQuery.data?.tokens ?? 0}</Text>
+      <View style={styles.actionsCard}>
+        <Pressable style={styles.actionButton}>
+          <Text style={styles.actionText}>Edit Profile</Text>
+        </Pressable>
+        <Pressable style={styles.actionButton}>
+          <Text style={styles.actionText}>Saved Addresses</Text>
+        </Pressable>
+        <Pressable style={styles.actionButton} onPress={() => supabase.auth.signOut()}>
+          <Text style={styles.actionText}>Sign Out</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   )
 }
@@ -59,26 +78,67 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    gap: 8,
+    padding: 16,
+    gap: 12,
+    backgroundColor: '#f8fafc',
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerCard: {
+    backgroundColor: '#111827',
+    borderRadius: 18,
+    padding: 16,
+    gap: 4,
+  },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 12,
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  email: {
+    color: '#d1d5db',
+    fontSize: 14,
+  },
+  summaryCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 14,
+    gap: 10,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   label: {
     color: '#6b7280',
-    fontSize: 12,
+    fontSize: 13,
   },
   value: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  actionsCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
+  actionButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  actionText: {
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 6,
+    color: '#111827',
   },
 })

@@ -7,6 +7,8 @@ import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize } from '@/components/base/file-upload/file-upload'
 import { type SaleSource } from '@/lib/auctionMeta'
 import { buildAuctionPath } from '@/lib/seo'
+import { generateAccessCode } from '@/lib/privateAuctionUtils'
+import { Copy, RefreshCw } from 'lucide-react'
 
 type UploadedFileItem = {
   id: string
@@ -39,6 +41,9 @@ export default function AdminNewAuction() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFileItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isPrivate, setIsPrivate] = useState(false)
+  const [accessCode, setAccessCode] = useState('')
+  const [codeCopied, setCodeCopied] = useState(false)
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -156,6 +161,8 @@ export default function AdminNewAuction() {
         ends_at: new Date(endsAt).toISOString(),
         seller_id: authData.user.id,
         status: new Date(startsAt).getTime() > Date.now() ? 'scheduled' : 'active',
+        is_private: isPrivate,
+        access_code: isPrivate ? accessCode : null,
       }
 
       const { data, error: insertErr } = await supabase.from('auctions').insert(payload).select()
@@ -333,6 +340,72 @@ export default function AdminNewAuction() {
             <Input label="Start Time" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} isRequired />
             <Input label="End Time" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} isRequired />
           </div>
+        </div>
+
+        <div className="border rounded-lg p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="isPrivate"
+              checked={isPrivate}
+              onChange={(e) => {
+                setIsPrivate(e.target.checked)
+                if (e.target.checked && !accessCode) {
+                  setAccessCode(generateAccessCode())
+                }
+              }}
+              className="w-4 h-4 cursor-pointer"
+            />
+            <label htmlFor="isPrivate" className="text-lg font-semibold cursor-pointer">
+              Make this a Private Auction
+            </label>
+          </div>
+
+          {isPrivate && (
+            <div className="ml-7 space-y-4 border-l-2 border-gray-200 pl-4">
+              <p className="text-sm text-gray-600">
+                Users will need an access code to view and bid on this auction.
+              </p>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Access Code</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={accessCode}
+                    readOnly
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 font-mono tracking-wider text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAccessCode(generateAccessCode())
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                    title="Generate new code"
+                  >
+                    <RefreshCw size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(accessCode)
+                      setCodeCopied(true)
+                      setTimeout(() => setCodeCopied(false), 2000)
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                    title="Copy to clipboard"
+                  >
+                    <Copy size={18} />
+                    {codeCopied && <span className="text-xs">Copied!</span>}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Share this code with authorized bidders only. Users will need to enter it to access the auction.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 pt-6 border-t">

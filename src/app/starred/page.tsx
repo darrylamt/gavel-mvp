@@ -18,6 +18,7 @@ type Auction = {
   reserve_price?: number | null
   min_increment?: number | null
   max_increment?: number | null
+  is_private?: boolean
 }
 
 type EngagementCounts = Record<string, { bidderCount: number; watcherCount: number }>
@@ -41,7 +42,8 @@ export default async function StarredAuctionsPage() {
   const [{ data: auctions }, { data: products }] = await Promise.all([
     supabase
       .from('auctions')
-      .select('id, title, description, starting_price, current_price, ends_at, starts_at, status, image_url, images, reserve_price, min_increment, max_increment')
+      .select('id, title, description, starting_price, current_price, ends_at, starts_at, status, image_url, images, reserve_price, min_increment, max_increment, is_private')
+      .or('is_private.is.false,is_private.is.null')
       .order('created_at', { ascending: false }),
     supabase
       .from('shop_products')

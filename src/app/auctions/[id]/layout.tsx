@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const { data } = await supabase
     .from('auctions')
-    .select('id, title, description, current_price, images, image_url, status, is_hidden')
+    .select('id, title, description, current_price, images, image_url, status, is_hidden, is_private')
     .eq('id', id)
     .maybeSingle()
 
