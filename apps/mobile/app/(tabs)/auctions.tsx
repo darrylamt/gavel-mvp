@@ -24,19 +24,65 @@ export default function AuctionsScreen() {
     }, [])
   )
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+          <ActivityIndicator size="large" color="#e53238" />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Live Auctions</Text>
+        <Text style={styles.brand}>⏰ Live Auctions</Text>
+        <Text style={styles.subtitle}>{auctions.length} active bids</Text>
       </View>
-      <FlatList data={auctions} keyExtractor={(i) => i.id} contentContainerStyle={styles.content} ItemSeparatorComponent={() => <View style={{ height: 12 }} />} renderItem={({ item }) => <AuctionCard auction={item} compact />} />
+      <FlatList 
+        data={auctions} 
+        keyExtractor={(i) => i.id} 
+        contentContainerStyle={styles.content} 
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />} 
+        renderItem={({ item }) => <AuctionCard auction={item} compact />} 
+        ListEmptyComponent={<Text style={styles.empty}>No active auctions</Text>}
+      />
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  title: { fontSize: 26, fontWeight: '800', color: '#111827' },
-  content: { paddingHorizontal: 16, paddingBottom: 18 },
+  container: { flex: 1, backgroundColor: '#fafafa' },
+  header: { 
+    paddingHorizontal: 16, 
+    paddingTop: 14, 
+    paddingBottom: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0'
+  },
+  brand: { 
+    fontSize: 24, 
+    fontWeight: '800', 
+    color: '#e53238',
+    letterSpacing: -0.5
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+    fontWeight: '500'
+  },
+  content: { 
+    paddingHorizontal: 12, 
+    paddingBottom: 18,
+    paddingTop: 12
+  },
+  empty: {
+    textAlign: 'center',
+    marginTop: 40,
+    color: '#999',
+    fontSize: 15
+  }
 })

@@ -30,53 +30,86 @@ export default function SignUpScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* eBay Logo */}
       <View style={styles.brandBlock}>
-        <Text style={styles.brand}>Gavel</Text>
-        <Text style={styles.subtitle}>Create your account and start exploring auctions</Text>
+        <Text style={styles.brand}>eBay</Text>
+        <Text style={styles.subtitle}>Join millions of buyers & sellers</Text>
       </View>
 
       <Text style={styles.title}>Create your account</Text>
 
+      {/* Email Input */}
       <Controller
         control={control}
         name="email"
-        rules={{ required: true }}
+        rules={{ required: 'Email is required' }}
         render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChange}
-            placeholder="Email"
-            placeholderTextColor="#9ca3af"
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+          <View>
+            <Text style={styles.label}>Email or username</Text>
+            <TextInput
+              style={[styles.input, formState.errors.email && styles.inputError]}
+              value={value}
+              onChangeText={onChange}
+              placeholder="example@email.com"
+              placeholderTextColor="#ccc"
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            {formState.errors.email && (
+              <Text style={styles.errorText}>{formState.errors.email.message}</Text>
+            )}
+          </View>
         )}
       />
 
+      {/* Password Input */}
       <Controller
         control={control}
         name="password"
-        rules={{ required: true, minLength: 6 }}
+        rules={{ required: 'Password is required', minLength: { value: 6, message: 'Minimum 6 characters' } }}
         render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChange}
-            placeholder="Password"
-            placeholderTextColor="#9ca3af"
-            secureTextEntry
-          />
+          <View>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={[styles.input, formState.errors.password && styles.inputError]}
+              value={value}
+              onChangeText={onChange}
+              placeholder="••••••••"
+              placeholderTextColor="#ccc"
+              secureTextEntry
+            />
+            {formState.errors.password && (
+              <Text style={styles.errorText}>{formState.errors.password.message}</Text>
+            )}
+          </View>
         )}
       />
 
-      <Pressable style={styles.button} onPress={onSubmit} disabled={formState.isSubmitting}>
-        <Text style={styles.buttonText}>{formState.isSubmitting ? 'Creating...' : 'Create Account'}</Text>
+      {/* Create Button */}
+      <Pressable 
+        style={[styles.button, formState.isSubmitting && styles.buttonDisabled]} 
+        onPress={onSubmit} 
+        disabled={formState.isSubmitting}
+      >
+        <Text style={styles.buttonText}>
+          {formState.isSubmitting ? 'Creating account...' : 'Create account'}
+        </Text>
       </Pressable>
 
-      <Link href="/sign-in" style={styles.link}>
-        Already have an account? Sign in
-      </Link>
+      {/* Privacy Note */}
+      <Text style={styles.privacyNote}>
+        We'll treat your data with respect. See our Privacy Policy.
+      </Text>
+
+      {/* Sign In Link */}
+      <View style={styles.signInContainer}>
+        <Text style={styles.signInText}>Already have an account? </Text>
+        <Link href="/sign-in" asChild>
+          <Pressable>
+            <Text style={styles.signInLink}>Sign in</Text>
+          </Pressable>
+        </Link>
+      </View>
     </SafeAreaView>
   )
 }
@@ -84,57 +117,94 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 22,
-    gap: 14,
+    padding: 20,
+    backgroundColor: '#fafafa',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
   },
   brandBlock: {
-    marginBottom: 8,
-    gap: 4,
+    marginBottom: 24,
+    alignItems: 'center',
   },
   brand: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
+    fontSize: 42,
+    fontWeight: '900',
+    color: '#e53238',
+    letterSpacing: -1.5
   },
   subtitle: {
-    color: '#6b7280',
-    fontSize: 14,
+    color: '#666',
+    fontSize: 13,
+    marginTop: 4,
+    fontWeight: '500'
   },
   title: {
-    fontSize: 30,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 24,
+    color: '#333',
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 6,
-    color: '#111827',
   },
   input: {
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    borderColor: '#d0d0d0',
     backgroundColor: '#ffffff',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    color: '#111827',
-    fontSize: 15,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 13,
+    color: '#333',
+    fontSize: 14,
+    marginBottom: 14,
+  },
+  inputError: {
+    borderColor: '#e53238',
+  },
+  errorText: {
+    color: '#e53238',
+    fontSize: 12,
+    marginTop: -12,
+    marginBottom: 12,
+    fontWeight: '500'
   },
   button: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    padding: 15,
+    backgroundColor: '#e53238',
+    borderRadius: 6,
+    paddingVertical: 13,
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: 10,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     color: '#ffffff',
     fontWeight: '700',
     fontSize: 15,
   },
-  link: {
-    color: '#111827',
-    fontWeight: '600',
-    marginTop: 6,
+  privacyNote: {
     textAlign: 'center',
+    fontSize: 12,
+    color: '#666',
+    marginTop: 14,
+    lineHeight: 18
+  },
+  signInContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  signInText: {
+    color: '#666',
+    fontSize: 13,
+  },
+  signInLink: {
+    color: '#e53238',
+    fontWeight: '600',
     fontSize: 13,
   },
 })
