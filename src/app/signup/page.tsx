@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
@@ -25,6 +25,17 @@ export default function SignupPage() {
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpSentMessage, setOtpSentMessage] = useState<string | null>(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
+
+  useEffect(() => {
+    if (authUser && !isRedirecting && !authLoading && !isChecking) {
+      setIsRedirecting(true)
+      router.replace('/profile?onboarding=1')
+      const timeout = window.setTimeout(() => {
+        window.location.href = '/profile?onboarding=1'
+      }, 800)
+      return () => window.clearTimeout(timeout)
+    }
+  }, [authUser, isRedirecting, authLoading, isChecking, router])
 
   const signUpWithEmail = async () => {
     setLoading(true)

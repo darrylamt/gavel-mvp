@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
@@ -17,6 +17,17 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
+
+  useEffect(() => {
+    if (authUser && !isRedirecting && !authLoading && !isChecking) {
+      setIsRedirecting(true)
+      router.replace('/profile')
+      const timeout = window.setTimeout(() => {
+        window.location.href = '/profile'
+      }, 800)
+      return () => window.clearTimeout(timeout)
+    }
+  }, [authUser, isRedirecting, authLoading, isChecking, router])
 
   const signInWithEmail = async () => {
     setLoading(true)
