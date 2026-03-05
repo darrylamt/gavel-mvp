@@ -3,10 +3,15 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import AuthForm from '@/components/auth/AuthForm'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { user: authUser, loading: authLoading, isChecking } = useAuthGuard({ 
+    allowPublic: true, 
+    redirectIfAuthenticated: '/profile' 
+  })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)

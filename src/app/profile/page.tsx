@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import ContactDetailsSection from '@/components/profile/ContactDetailsSection'
@@ -82,6 +82,8 @@ type UserBidRow = {
 export default function ProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { user: authUser, loading: authLoading, isChecking } = useAuthGuard()
+
   const [userId, setUserId] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
   const [tokens, setTokens] = useState<number>(0)
@@ -144,22 +146,15 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
+    if (authLoading || isChecking) {
+      return
+    }
+
+    if (!authUser) {
+      return
+    }
+
     const loadProfile = async () => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const activeUser = sessionData.session?.user
-
-      let authUser = activeUser
-
-      if (!authUser) {
-        const { data: refreshed } = await supabase.auth.refreshSession()
-        authUser = refreshed.session?.user
-      }
-
-      if (!authUser) {
-        setLoading(false)
-        return
-      }
-
       setUserId(authUser.id)
 
       const { data: profile } = await supabase
@@ -209,7 +204,7 @@ export default function ProfilePage() {
     }
 
     loadProfile()
-  }, [])
+  }, [authUser, authLoading, isChecking])
 
   useEffect(() => {
     const onboarding = searchParams.get('onboarding')
