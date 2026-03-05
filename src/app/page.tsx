@@ -29,7 +29,7 @@ export default async function HomePage() {
 
   const { data: auctions } = await supabase
     .from('auctions')
-    .select('id, title, current_price, ends_at, starts_at, status, image_url')
+    .select('id, title, current_price, ends_at, starts_at, status, image_url, images')
     .in('status', ['active', 'scheduled'])
     .or('is_private.is.false,is_private.is.null')
     .gt('ends_at', nowIso)
@@ -38,7 +38,7 @@ export default async function HomePage() {
 
   const { data: endingSoon } = await supabase
     .from('auctions')
-    .select('id, title, current_price, ends_at, starts_at, status, image_url')
+    .select('id, title, current_price, ends_at, starts_at, status, image_url, images')
     .eq('status', 'active')
     .or('is_private.is.false,is_private.is.null')
     .gt('ends_at', nowIso)
@@ -48,7 +48,7 @@ export default async function HomePage() {
 
   const { data: startingSoon } = await supabase
     .from('auctions')
-    .select('id, title, current_price, ends_at, starts_at, status, image_url')
+    .select('id, title, current_price, ends_at, starts_at, status, image_url, images')
     .or('is_private.is.false,is_private.is.null')
     .gt('starts_at', nowIso)
     .lt('starts_at', next24HoursIso)
@@ -177,6 +177,7 @@ export default async function HomePage() {
                 startsAt={a.starts_at}
                 status={a.status}
                 imageUrl={a.image_url}
+                images={a.images}
                 bidderCount={counts.bidderCount}
                 watcherCount={counts.watcherCount}
                 compactMobile
@@ -210,6 +211,7 @@ export default async function HomePage() {
                 startsAt={a.starts_at}
                 status={a.status}
                 imageUrl={a.image_url}
+                images={a.images}
                 bidderCount={counts.bidderCount}
                 watcherCount={counts.watcherCount}
                 compactMobile
@@ -256,6 +258,7 @@ export default async function HomePage() {
               startsAt={a.starts_at}
               status={a.status}
               imageUrl={a.image_url}
+              images={a.images}
               bidderCount={counts.bidderCount}
               watcherCount={counts.watcherCount}
               compactMobile
