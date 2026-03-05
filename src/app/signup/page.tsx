@@ -24,6 +24,7 @@ export default function SignupPage() {
   const [otpError, setOtpError] = useState<string | null>(null)
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpSentMessage, setOtpSentMessage] = useState<string | null>(null)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   const signUpWithEmail = async () => {
     setLoading(true)
@@ -113,6 +114,7 @@ export default function SignupPage() {
     }
 
     setShowOtpModal(false)
+    setIsRedirecting(true)
     router.replace('/profile?onboarding=1')
     router.refresh()
   }
@@ -142,13 +144,35 @@ export default function SignupPage() {
   const signUpWithGoogle = async () => {
     setError(null)
     setLoading(true)
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/profile%3Fonboarding%3D1`,
-      },
-    })
-    setLoading(false)
+    setIsRedirecting(true)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/profile%3Fonboarding%3D1`,
+        },
+      })
+
+      if (error) {
+        setError(error.message)
+        setIsRedirecting(false)
+      }
+    } catch {
+      setError('Google sign up failed. Please try again.')
+      setIsRedirecting(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (isChecking || authLoading || authUser || isRedirecting) {
+    return (
+      <main className="min-h-[calc(100dvh-64px)] bg-gray-100 px-4 py-8 md:py-12">
+        <div className="mx-auto w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm md:p-8">
+          {isRedirecting || authUser ? 'Account ready. Redirecting to your profile…' : 'Checking your session…'}
+        </div>
+      </main>
+    )
   }
 
   return (

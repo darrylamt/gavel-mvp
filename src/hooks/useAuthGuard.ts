@@ -30,24 +30,42 @@ export function useAuthGuard({
   useEffect(() => {
     let isMounted = true
 
+    const resolveUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (session?.user) {
+        return session.user
+      }
+
+      const { data: refreshed } = await supabase.auth.refreshSession()
+      if (refreshed.session?.user) {
+        return refreshed.session.user
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      return user ?? null
+    }
+
     const checkAuth = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
+        const authUser = await resolveUser()
         if (!isMounted) return
-
-        const authUser = session?.user ?? null
 
         // Redirect authenticated users if redirectIfAuthenticated is set
         if (authUser && redirectIfAuthenticated) {
+          setUser(authUser)
           router.replace(redirectIfAuthenticated)
           return
         }
 
         // Redirect unauthenticated users if not allowing public access
         if (!authUser && !allowPublic) {
+          setUser(null)
           router.replace(redirectTo)
           return
         }
@@ -71,13 +89,33 @@ export function useAuthGuard({
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return
-      const authUser = session?.user ?? null
+
+      let authUser = session?.user ?? null
+      if (!authUser) {
+        try {
+          authUser = await resolveUser()
+        } catch {
+          authUser = null
+        }
+        if (!isMounted) return
+      }
       
       // Redirect if authenticated and redirectIfAuthenticated is set
       if (authUser && redirectIfAuthenticated) {
+        setUser(authUser)
+        setIsChecking(false)
+        setLoading(false)
         router.replace(redirectIfAuthenticated)
+        return
+      }
+
+      if (!authUser && !allowPublic) {
+        setUser(null)
+        setIsChecking(false)
+        setLoading(false)
+        router.replace(redirectTo)
         return
       }
       

@@ -16,33 +16,65 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   const signInWithEmail = async () => {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    setLoading(false)
+      if (error) {
+        setError(error.message)
+        return
+      }
 
-    if (error) {
-      setError(error.message)
-    } else {
+      setIsRedirecting(true)
       router.replace('/profile')
       router.refresh()
+    } catch {
+      setError('Sign in failed. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
+    setError(null)
+    setLoading(true)
+    setIsRedirecting(true)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) {
+        setError(error.message)
+        setIsRedirecting(false)
+      }
+    } catch {
+      setError('Google sign in failed. Please try again.')
+      setIsRedirecting(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (isChecking || authLoading || authUser || isRedirecting) {
+    return (
+      <main className="min-h-[calc(100dvh-64px)] bg-gray-100 px-4 py-8 md:py-12">
+        <div className="mx-auto w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm md:p-8">
+          {isRedirecting || authUser ? 'Sign in successful. Redirecting to your profile…' : 'Checking your session…'}
+        </div>
+      </main>
+    )
   }
 
   return (

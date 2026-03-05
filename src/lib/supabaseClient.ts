@@ -7,6 +7,9 @@ const createBrowserSupabaseClient = () =>
   createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       storageKey: 'gavel-auth',
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
     },
   })
 
