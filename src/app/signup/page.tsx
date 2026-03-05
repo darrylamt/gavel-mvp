@@ -102,12 +102,23 @@ export default function SignupPage() {
     } = await supabase.auth.getUser()
 
     if (verifiedUser?.id && fullName) {
+      // Check if profile exists and has tokens
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('token_balance')
+        .eq('id', verifiedUser.id)
+        .maybeSingle()
+
+      // Set tokens to 100 if profile doesn't exist or has 0/null tokens
+      const tokenBalance = existingProfile && existingProfile.token_balance ? existingProfile.token_balance : 100
+
       await supabase
         .from('profiles')
         .upsert(
           {
             id: verifiedUser.id,
             username: fullName,
+            token_balance: tokenBalance,
           },
           { onConflict: 'id' }
         )

@@ -74,14 +74,14 @@ export default async function AuctionsPage({
   }
 
 return (
-  <main className="max-w-7xl mx-auto px-6 py-12">
+  <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListStructuredData) }} />
-    <div className="mb-10 flex items-start justify-between gap-4">
+    <div className="mb-8 sm:mb-10 flex items-start justify-between gap-4">
       <div>
-        <h1 className="text-4xl font-extrabold mb-2">
+        <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">
           {starredOnly ? 'Starred Auctions' : 'Auctions'}
         </h1>
-        <p className="text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600">
           {starredOnly ? 'Items you have starred to bid on.' : 'Browse live and completed auctions.'}
         </p>
       </div>

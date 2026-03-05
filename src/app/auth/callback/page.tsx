@@ -33,6 +33,31 @@ export default function AuthCallbackPage() {
 
         if (session) {
           if (session.access_token) {
+            // Ensure new users get 100 tokens (only if they don't have any)
+            if (session.user?.id) {
+              const { data: existingProfile } = await supabase
+                .from('profiles')
+                .select('token_balance')
+                .eq('id', session.user.id)
+                .maybeSingle()
+
+              // Only set tokens if profile doesn't exist or has 0/null tokens
+              if (!existingProfile || !existingProfile.token_balance) {
+                await supabase
+                  .from('profiles')
+                  .upsert(
+                    {
+                      id: session.user.id,
+                      token_balance: 100,
+                    },
+                    { 
+                      onConflict: 'id',
+                      ignoreDuplicates: false 
+                    }
+                  )
+              }
+            }
+
             await fetch('/api/whatsapp/account-created', {
               method: 'POST',
               headers: {

@@ -256,7 +256,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="max-w-4xl mx-auto p-6 space-y-10">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 sm:space-y-10">
       <ProfileHeader
         username={username}
         tokens={tokens}

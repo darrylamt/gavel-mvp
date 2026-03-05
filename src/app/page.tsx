@@ -130,7 +130,7 @@ export default async function HomePage() {
   ]
 
   return (
-    <main className="max-w-7xl mx-auto px-6 py-14">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-14">
       <HeroShowcaseCarousel />
 
       <section className="mb-12">
@@ -138,7 +138,7 @@ export default async function HomePage() {
           <h2 className="text-xl font-bold text-gray-900">Popular Categories</h2>
           <Link href="/shop" className="text-sm font-semibold underline underline-offset-2">See all products</Link>
         </div>
-        <div className="no-scrollbar mt-4 -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-6">
+        <div className="no-scrollbar mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-6">
           {heroCategories.map((category) => (
             <Link
               key={category.name}
@@ -158,12 +158,12 @@ export default async function HomePage() {
       {/* ENDING SOON */}
       {endingSoon && endingSoon.length > 0 && (
         <section className="mt-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Ending Soon</h2>
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold">Ending Soon</h2>
             <Link href="/auctions" className="text-sm font-semibold underline">View all</Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {endingSoon.map((a: any) => (
               (() => {
                 const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
@@ -192,12 +192,12 @@ export default async function HomePage() {
       {/* STARTING SOON */}
       {startingSoon && startingSoon.length > 0 && (
         <section className="mt-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Starting Soon</h2>
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold">Starting Soon</h2>
             <Link href="/auctions" className="text-sm font-semibold underline">View all</Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {startingSoon.map((a: any) => (
               (() => {
                 const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
@@ -225,8 +225,8 @@ export default async function HomePage() {
 
       {/* FEATURED AUCTIONS */}
       <section className="mt-10 sm:mt-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold">
             Featured Auctions
           </h2>
 
@@ -239,12 +239,12 @@ export default async function HomePage() {
         </div>
 
         {(!auctions || auctions.length === 0) && (
-          <div className="border rounded-xl p-12 text-center text-gray-500">
+          <div className="border rounded-xl p-8 sm:p-12 text-center text-gray-500">
             No auctions available yet.
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
           {auctions?.map((a) => (
             (() => {
               const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
@@ -276,9 +276,9 @@ export default async function HomePage() {
             <h2 className="text-xl font-bold text-gray-900">New Products (Buy Now)</h2>
             <Link href="/shop" className="text-sm font-semibold underline underline-offset-2">See all products</Link>
           </div>
-          <div className="no-scrollbar mt-4 -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+          <div className="no-scrollbar mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-4">
             {products.map((product: any) => (
-              <div key={product.id} className="snap-start w-[72%] max-w-[232px] flex-none sm:w-auto sm:max-w-none">
+              <div key={product.id} className="snap-start w-[72%] max-w-[232px] flex-none h-full sm:w-auto sm:max-w-none">
                 <ShopProductCard
                   id={product.id}
                   title={product.title}
@@ -287,6 +287,7 @@ export default async function HomePage() {
                   imageUrl={product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : product.image_url}
                   stock={product.stock}
                   categoryLabel={product.category}
+                  compactMobile
                 />
               </div>
             ))}

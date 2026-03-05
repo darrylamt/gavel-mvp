@@ -83,14 +83,14 @@ export default function AuctionsGridClient({ auctions, starredOnly = false, enga
 
   if (!visibleAuctions.length) {
     return (
-      <div className="border rounded-2xl p-12 text-center text-gray-500">
+      <div className="border rounded-2xl p-8 sm:p-12 text-center text-gray-500">
         {starredOnly ? 'No starred auctions yet.' : 'No auctions available yet.'}
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
       {visibleAuctions.map((auction) => (
         (() => {
           const counts = liveEngagementCounts[auction.id] ?? { bidderCount: 0, watcherCount: 0 }

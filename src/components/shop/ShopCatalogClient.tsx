@@ -123,27 +123,27 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10">
       {/* Products first on mobile */}
-      <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-8">
-        <p className="pointer-events-none absolute right-4 top-1 text-6xl font-extrabold leading-none text-gray-100 md:right-8 md:text-8xl">
+      <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 md:p-8">
+        <p className="pointer-events-none absolute right-4 top-1 text-5xl sm:text-6xl font-extrabold leading-none text-gray-100 md:right-8 md:text-8xl">
           SHOP
         </p>
-        <h1 className="relative text-2xl font-bold text-gray-900 md:text-3xl">Give all you need</h1>
+        <h1 className="relative text-xl sm:text-2xl font-bold text-gray-900 md:text-3xl">Give all you need</h1>
         <p className="relative mt-2 max-w-2xl text-sm text-gray-600 md:text-base">
           Browse fixed-price products and buy instantly.
         </p>
       </section>
 
       {/* Filters button for mobile */}
-      <div className="block lg:hidden mb-4">
+      <div className="block lg:hidden mt-4 mb-4">
         <button
-          className="w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-semibold shadow-sm flex items-center justify-center"
+          className="w-full rounded-full border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm flex items-center justify-center hover:bg-gray-50 transition"
           onClick={() => setShowFilters((v) => !v)}
         >
           {showFilters ? 'Hide Filters' : 'Show Filters'}
         </button>
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-[240px_1fr]">
+      <section className="grid gap-4 lg:grid-cols-[240px_1fr] mt-6">
         {/* Sidebar: hidden on mobile unless toggled */}
         <aside
           className={`h-fit rounded-2xl border border-gray-200 bg-white p-4 shadow-sm lg:sticky lg:top-24 z-20 transition-transform duration-200 ${
@@ -250,7 +250,7 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
               <p className="mt-2 text-sm text-gray-600">Try another search term or clear filters.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 xl:grid-cols-4">
               {filteredProducts.map((product) => (
                 <ShopProductCard
                   key={product.id}
