@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
-import { queueShopOrderPaidNotifications } from '@/lib/whatsapp/events'
+import { queueShopOrderPaidNotifications } from '@/lib/arkesel/events'
 import { sendNotificationEmail } from '@/lib/resend-service'
 
 const supabase = createClient(

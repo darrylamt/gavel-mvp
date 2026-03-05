@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
-import { queueAuctionClosedNotifications } from '@/lib/whatsapp/events'
+import { queueAuctionClosedNotifications } from '@/lib/arkesel/events'
 import { sendNotificationEmail } from '@/lib/resend-service'
 
 

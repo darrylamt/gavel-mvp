@@ -1,21 +1,20 @@
+'use server'
+
 import { NextResponse } from 'next/server'
-import 'server-only'
 import { createServiceRoleClient } from '@/lib/serverSupabase'
-import { sendWhatsAppTemplateMessage } from '@/lib/whatsapp/provider'
-import { WHATSAPP_TEMPLATE_MAP, type WhatsAppTemplateKey } from '@/lib/whatsapp/templates'
+import { sendArkeselSMS } from '@/lib/arkesel/provider'
 
 function authorized(request: Request) {
   const authHeader = request.headers.get('authorization') || ''
   const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-  const expected = process.env.WHATSAPP_DISPATCH_SECRET || process.env.CRON_SECRET || ''
+  const expected = process.env.ARKESEL_DISPATCH_SECRET || process.env.CRON_SECRET || ''
   return !!expected && bearer === expected
 }
 
 type QueueRow = {
   id: string
   phone: string
-  template_key: string
-  template_params: Record<string, string | number | boolean | null> | null
+  message: string
 }
 
 export async function POST(request: Request) {
@@ -27,9 +26,9 @@ export async function POST(request: Request) {
   const nowIso = new Date().toISOString()
 
   const { data: rows, error } = await service
-    .from('whatsapp_notifications')
-    .select('id, phone, template_key, template_params')
-    .eq('status', 'queued')
+    .from('sms_notifications')
+    .select('id, phone, message')
+    .eq('status', 'pending')
     .lte('send_after', nowIso)
     .order('created_at', { ascending: true })
     .limit(50)
@@ -47,37 +46,26 @@ export async function POST(request: Request) {
   let failed = 0
 
   for (const job of jobs) {
-    const key = job.template_key as WhatsAppTemplateKey
-    if (!WHATSAPP_TEMPLATE_MAP[key]) {
-      await service
-        .from('whatsapp_notifications')
-        .update({ status: 'failed', reason: `Unknown template key: ${job.template_key}` })
-        .eq('id', job.id)
-      failed += 1
-      continue
-    }
-
-    const result = await sendWhatsAppTemplateMessage({
+    const result = await sendArkeselSMS({
       toPhone: job.phone,
-      templateKey: key,
-      params: job.template_params ?? {},
+      message: job.message,
     })
 
     if (result.success) {
       sent += 1
       await service
-        .from('whatsapp_notifications')
+        .from('sms_notifications')
         .update({
           status: 'sent',
           sent_at: new Date().toISOString(),
-          provider_message_id: result.providerMessageId ?? null,
+          provider_message_id: result.messageId ?? null,
           reason: null,
         })
         .eq('id', job.id)
     } else {
       failed += 1
       await service
-        .from('whatsapp_notifications')
+        .from('sms_notifications')
         .update({ status: 'failed', reason: result.error ?? 'Unknown error' })
         .eq('id', job.id)
     }

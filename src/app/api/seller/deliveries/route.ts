@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
-import { queueBuyerDeliveredNotification } from '@/lib/whatsapp/events'
+import { queueBuyerDeliveredNotification } from '@/lib/arkesel/events'
 
 type SellerDeliveryRow = {
   item_id: string

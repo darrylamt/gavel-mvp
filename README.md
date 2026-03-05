@@ -35,9 +35,9 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## WhatsApp Notifications Setup
+## Arkesel SMS Notifications Setup
 
-Run the latest Supabase migrations so WhatsApp tables/columns exist:
+Run the latest Supabase migrations so SMS tables/columns exist:
 
 ```bash
 # Apply migrations with your existing workflow
@@ -45,21 +45,16 @@ Run the latest Supabase migrations so WhatsApp tables/columns exist:
 
 Set these environment variables:
 
-- `WHATSAPP_ENABLED=true`
-- `WHATSAPP_PROVIDER=meta`
-- `WHATSAPP_ACCESS_TOKEN=...`
-- `WHATSAPP_PHONE_NUMBER_ID=...`
-- `WHATSAPP_GRAPH_API_VERSION=v21.0`
-- `WHATSAPP_TEMPLATE_LANGUAGE=en`
-- `WHATSAPP_DEFAULT_COUNTRY_CODE=233`
-- `WHATSAPP_DISPATCH_SECRET=...` (or use `CRON_SECRET`)
+- `ARKESEL_ENABLED=true`
+- `ARKESEL_API_KEY=<your-gavel-api-key-from-dashboard>`
+- `ARKESEL_SENDER_ID=Gavel` (optional, defaults to "Gavel")
+- `ARKESEL_DEFAULT_COUNTRY_CODE=233` (Ghana)
+- `ARKESEL_DISPATCH_SECRET=...` (or use `CRON_SECRET`)
 
-Cron endpoints to call with `Authorization: Bearer <WHATSAPP_DISPATCH_SECRET>`:
+Cron endpoints to call with `Authorization: Bearer <ARKESEL_DISPATCH_SECRET>`:
 
-- `POST /api/whatsapp/auction-reminders` (enqueue scheduled reminders)
-- `POST /api/whatsapp/dispatch` (deliver queued WhatsApp messages)
+- `POST /api/arkesel/dispatch` (deliver queued SMS messages)
 
 Recommended schedule:
 
-- `auction-reminders`: every minute
 - `dispatch`: every minute

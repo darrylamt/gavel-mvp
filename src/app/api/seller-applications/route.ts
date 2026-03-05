@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
-import { queueSellerApplicationReceivedNotification } from '@/lib/whatsapp/events'
+import { queueSellerApplicationReceivedNotification } from '@/lib/arkesel/events'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
-import { queueAuctionPaymentReceivedNotifications } from '@/lib/whatsapp/events'
+import { queueAuctionPaymentReceivedNotifications } from '@/lib/arkesel/events'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { maskBidderEmail } from '@/lib/maskBidderEmail'
-import { queueBidNotifications } from '@/lib/whatsapp/events'
-import { queueWhatsAppNotification } from '@/lib/whatsapp/queue'
+import { queueBidNotifications } from '@/lib/arkesel/events'
+import { queueArkeselNotification } from '@/lib/arkesel/queue'
 import { sendNotificationEmail } from '@/lib/resend-service'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -392,13 +392,10 @@ export async function POST(req: Request) {
 
       await Promise.allSettled(
         watcherUserIds.map((watcherId) =>
-          queueWhatsAppNotification({
+          queueArkeselNotification({
             userId: watcherId,
-            templateKey: 'watchlist_new_bid',
-            params: {
-              auction_title: String(auction.title || 'Auction'),
-              amount: bidAmount,
-            },
+            message: `New bid on your watchlist item "${String(auction.title || 'Auction')}" for GHS ${bidAmount}. Bid now!`,
+            category: 'transactional',
             dedupeKey: `watchlist-new-bid:${auction_id}:${watcherId}:${bidAmount}`,
           })
         )
