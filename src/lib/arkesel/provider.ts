@@ -50,7 +50,7 @@ export async function sendArkeselSMS(input: {
   })
 
   try {
-    const response = await fetch('https://sms.arkesel.com/api/send', {
+    const response = await fetch('https://sms.arkesel.com/api/v2/sms/send', {
       method: 'POST',
       body: params,
       headers: {
