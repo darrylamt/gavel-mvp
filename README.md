@@ -54,6 +54,7 @@ Set these environment variables:
 Cron endpoint (supports both GET and POST):
 
 - `/api/arkesel/dispatch` (deliver queued SMS messages)
+- `/api/arkesel/auction-countdown` (check auctions and send countdown notifications to bidders)
 
 Call with either:
 - Query param: `GET https://gavelgh.com/api/arkesel/dispatch?secret=gavel-sms-dispatch-7f3a9c2e1b4d6k8h`
@@ -62,5 +63,17 @@ Call with either:
 Recommended schedule:
 
 - `dispatch`: every minute
+- `auction-countdown`: every 5 minutes
 
 **Note:** Uses Arkesel SMS API v2 with JSON body format. Phone numbers are automatically formatted to `233XXXXXXXXX` format.
+
+## Auction Countdown Notifications
+
+Bidders automatically receive SMS notifications at:
+- ⏰ 10 hours before auction ends
+- ⏰ 5 hours before auction ends
+- ⏰ 1 hour before auction ends
+- ⏰ 30 minutes before auction ends
+- ⏰ 5 minutes before auction ends
+
+Users can customize these preferences at `/profile/notifications`

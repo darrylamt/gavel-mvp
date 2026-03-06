@@ -338,3 +338,55 @@ export async function queueParticipatingAuctionEndingNotification(input: {
     dedupeKey: `participating-auction-ending:${input.auctionId}:${input.userId}:${input.minutesUntilEnd}m`,
   })
 }
+
+/**
+ * Queue countdown notifications for bidders on an auction
+ * Supports: 10h, 5h, 1h, 30m, 5m intervals
+ */
+export async function queueAuctionCountdownNotification(input: {
+  auctionId: string
+  auctionTitle: string
+  bidderUserIds: string[]
+  timeRemaining: '10h' | '5h' | '1h' | '30m' | '5m'
+}) {
+  const timeLabels = {
+    '10h': '10 hours',
+    '5h': '5 hours',
+    '1h': '1 hour',
+    '30m': '30 minutes',
+    '5m': '5 minutes',
+  }
+
+  const preferenceFields = {
+    '10h': 'sms_auction_countdown_10h',
+    '5h': 'sms_auction_countdown_5h',
+    '1h': 'sms_auction_countdown_1h',
+    '30m': 'sms_auction_countdown_30m',
+    '5m': 'sms_auction_countdown_5m',
+  }
+
+  const service = createServiceRoleClient()
+
+  // Get profiles with preference check
+  const { data: profiles } = await service
+    .from('profiles')
+    .select(`id, ${preferenceFields[input.timeRemaining]}`)
+    .in('id', input.bidderUserIds)
+
+  const enabledUserIds = (profiles ?? [])
+    .filter((p: any) => p[preferenceFields[input.timeRemaining]] !== false)
+    .map((p: any) => p.id)
+
+  if (enabledUserIds.length === 0) return
+
+  const tasks = enabledUserIds.map((userId) =>
+    queueArkeselNotification({
+      userId,
+      message: `⏰ Auction "${input.auctionTitle}" ends in ${timeLabels[input.timeRemaining]}! You're currently bidding. Place your final bid now at gavelgh.com`,
+      category: 'transactional',
+      dedupeKey: `auction-countdown:${input.auctionId}:${userId}:${input.timeRemaining}`,
+    })
+  )
+
+  await Promise.allSettled(tasks)
+}

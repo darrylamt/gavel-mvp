@@ -309,6 +309,22 @@ export default function ProfilePage() {
         address={address}
       />
 
+      {/* Notification Settings Link */}
+      <section className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-blue-900">📱 SMS Notification Settings</p>
+            <p className="text-sm text-blue-700">Manage your auction alerts and countdown reminders</p>
+          </div>
+          <Link
+            href="/profile/notifications"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Manage Notifications
+          </Link>
+        </div>
+      </section>
+
       <WonAuctionsSection
         auctions={wonAuctions}
         onPay={payNow}
