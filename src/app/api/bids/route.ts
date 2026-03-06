@@ -380,27 +380,6 @@ export async function POST(req: Request) {
         }
       }
     })(),
-    (async () => {
-      const { data: watchers } = await supabase
-        .from('auction_watchers')
-        .select('user_id')
-        .eq('auction_id', auction_id)
-
-      const watcherUserIds = Array.from(
-        new Set((watchers ?? []).map((row) => String(row.user_id || '')).filter(Boolean))
-      ).filter((watcherId) => watcherId !== String(user_id))
-
-      await Promise.allSettled(
-        watcherUserIds.map((watcherId) =>
-          queueArkeselNotification({
-            userId: watcherId,
-            message: `New bid on your watchlist item "${String(auction.title || 'Auction')}" for GHS ${bidAmount}. Bid now!`,
-            category: 'transactional',
-            dedupeKey: `watchlist-new-bid:${auction_id}:${watcherId}:${bidAmount}`,
-          })
-        )
-      )
-    })(),
   ])
 
   return NextResponse.json({ success: true })
