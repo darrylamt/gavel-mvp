@@ -99,11 +99,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
   }
 
-  const hasStarted = existing.starts_at ? new Date(existing.starts_at).getTime() <= Date.now() : true
-  if (hasStarted) {
-    return NextResponse.json({ error: 'Only auctions that have not started can be edited.' }, { status: 400 })
-  }
-
+  // Admins can edit auctions even if they have started
   const { error } = await admin.service
     .from('auctions')
     .update({

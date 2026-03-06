@@ -114,7 +114,6 @@ export default function AdminEditAuctionPage() {
       if (!description.trim()) throw new Error('Description required')
       if (!startingPrice) throw new Error('Starting price required')
       if (!startsAt || !endsAt) throw new Error('Start and end time are required')
-      if (hasStarted) throw new Error('Only auctions that have not started can be edited.')
       if (isPrivate && !accessCode.trim()) throw new Error('Access code is required for private auctions.')
 
       if (saleSource === 'seller') {
@@ -187,7 +186,7 @@ export default function AdminEditAuctionPage() {
   return (
     <main className="mx-auto max-w-4xl p-6">
       <h1 className="mb-2 text-3xl font-bold">Edit Auction</h1>
-      <p className="mb-6 text-gray-600">Only auctions that have not started can be edited.</p>
+      <p className="mb-6 text-gray-600">As an admin, you can edit any auction including live ones.</p>
 
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">{error}</div>}
 
