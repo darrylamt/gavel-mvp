@@ -5,10 +5,15 @@ import { createServiceRoleClient } from '@/lib/serverSupabase'
 import { sendArkeselSMS } from '@/lib/arkesel/provider'
 
 function authorized(request: Request) {
+  // Support both query param and header authorization
+  const url = new URL(request.url)
+  const secretFromQuery = url.searchParams.get('secret')
+  const secretFromHeader = request.headers.get('x-dispatch-secret')
   const authHeader = request.headers.get('authorization') || ''
   const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  
   const expected = process.env.ARKESEL_DISPATCH_SECRET || process.env.CRON_SECRET || ''
-  return !!expected && bearer === expected
+  return !!expected && (bearer === expected || secretFromQuery === expected || secretFromHeader === expected)
 }
 
 type QueueRow = {
@@ -17,9 +22,13 @@ type QueueRow = {
   message: string
 }
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   if (!authorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (process.env.ARKESEL_ENABLED !== 'true') {
+    return NextResponse.json({ message: 'SMS disabled' }, { status: 200 })
   }
 
   const service = createServiceRoleClient()
@@ -72,4 +81,9 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ success: true, processed: jobs.length, sent, failed })
+}
+
+// Also support POST for flexibility
+export async function POST(request: Request) {
+  return GET(request)
 }

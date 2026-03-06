@@ -4,21 +4,35 @@ export type ArkeselSendResult = {
   error?: string
 }
 
+// Format phone to 233XXXXXXXXX (no + or 0 prefix) for Arkesel API v2
 export function normalizePhoneNumber(raw: string): string | null {
-  const digits = String(raw || '').replace(/[^\d+]/g, '')
+  const digits = String(raw || '').replace(/[^\d]/g, '')
   if (!digits) return null
 
-  if (digits.startsWith('+')) {
-    const clean = digits.replace(/[^\d+]/g, '')
-    return /^\+[1-9]\d{7,14}$/.test(clean) ? clean : null
+  // Already in 233XXXXXXXXX format
+  if (digits.startsWith('233') && digits.length === 12) {
+    return digits
   }
 
-  const trimmed = digits.replace(/^0+/, '')
-  if (!trimmed) return null
+  // Remove leading 0 and add 233
+  if (digits.startsWith('0') && digits.length === 10) {
+    return '233' + digits.slice(1)
+  }
 
+  // If it has + prefix, remove it
+  const cleaned = digits.replace(/^\+/, '')
+  if (cleaned.startsWith('233') && cleaned.length === 12) {
+    return cleaned
+  }
+
+  // Try with default country code
   const defaultCountryCode = (process.env.ARKESEL_DEFAULT_COUNTRY_CODE || '233').replace(/\D/g, '')
-  const e164 = `+${defaultCountryCode}${trimmed}`
-  return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : null
+  const withCode = `${defaultCountryCode}${digits}`
+  if (withCode.startsWith('233') && withCode.length === 12) {
+    return withCode
+  }
+
+  return null
 }
 
 export async function sendArkeselSMS(input: {
@@ -42,30 +56,30 @@ export async function sendArkeselSMS(input: {
 
   const sender = process.env.ARKESEL_SENDER_ID || 'Gavel'
 
-  const params = new URLSearchParams({
-    api_key: apiKey,
-    to: normalizedTo,
-    sms: input.message,
-    sender_id: sender,
-  })
+  // API v2 requires JSON body with recipients array
+  const body = {
+    sender: sender,
+    message: input.message,
+    recipients: [normalizedTo],
+  }
 
   try {
     const response = await fetch('https://sms.arkesel.com/api/v2/sms/send', {
       method: 'POST',
-      body: params,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
+        'api-key': apiKey, // v2 uses api-key in header, not URL param
       },
+      body: JSON.stringify(body),
     })
 
     const responseText = await response.text()
     let payload: any = null
 
-    // Try to parse as JSON, otherwise treat as plain text
+    // Try to parse as JSON
     try {
       payload = JSON.parse(responseText)
     } catch {
-      // Arkesel sometimes returns plain text responses
       payload = { success: response.ok, message: responseText }
     }
 
@@ -74,13 +88,13 @@ export async function sendArkeselSMS(input: {
       return { success: false, error: String(message) }
     }
 
-    // Arkesel returns success if status is ok or status code 200
-    const success = payload?.status === 'ok' || payload?.success === true || response.ok
+    // Check for success in response
+    const success = payload?.code === '1000' || payload?.status === 'success' || response.ok
     if (!success) {
       return { success: false, error: payload?.message || 'SMS delivery failed' }
     }
 
-    const messageId = payload?.message_id || payload?.id
+    const messageId = payload?.data?.message_id || payload?.message_id || payload?.id
     return { success: true, messageId: messageId ? String(messageId) : undefined }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'

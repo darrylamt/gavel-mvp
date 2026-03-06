@@ -49,12 +49,18 @@ Set these environment variables:
 - `ARKESEL_API_KEY=<your-gavel-api-key-from-dashboard>`
 - `ARKESEL_SENDER_ID=Gavel` (optional, defaults to "Gavel")
 - `ARKESEL_DEFAULT_COUNTRY_CODE=233` (Ghana)
-- `ARKESEL_DISPATCH_SECRET=...` (or use `CRON_SECRET`)
+- `ARKESEL_DISPATCH_SECRET=gavel-sms-dispatch-7f3a9c2e1b4d6k8h` (or use `CRON_SECRET`)
 
-Cron endpoints to call with `Authorization: Bearer <ARKESEL_DISPATCH_SECRET>`:
+Cron endpoint (supports both GET and POST):
 
-- `POST /api/arkesel/dispatch` (deliver queued SMS messages)
+- `/api/arkesel/dispatch` (deliver queued SMS messages)
+
+Call with either:
+- Query param: `GET https://gavelgh.com/api/arkesel/dispatch?secret=gavel-sms-dispatch-7f3a9c2e1b4d6k8h`
+- Header: `Authorization: Bearer gavel-sms-dispatch-7f3a9c2e1b4d6k8h`
 
 Recommended schedule:
 
 - `dispatch`: every minute
+
+**Note:** Uses Arkesel SMS API v2 with JSON body format. Phone numbers are automatically formatted to `233XXXXXXXXX` format.
