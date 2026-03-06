@@ -17,6 +17,7 @@ export default function SignupPage() {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [phone, setPhone] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showOtpModal, setShowOtpModal] = useState(false)
@@ -112,25 +113,33 @@ export default function SignupPage() {
       // Set tokens to 100 if profile doesn't exist or has 0/null tokens
       const tokenBalance = existingProfile && existingProfile.token_balance ? existingProfile.token_balance : 100
 
+      const profileData: Record<string, string | number | boolean> = {
+        id: verifiedUser.id,
+        username: fullName,
+        token_balance: tokenBalance,
+      }
+
+      // Add phone number if provided
+      if (phone.trim()) {
+        profileData.phone = phone.trim()
+        profileData.sms_opt_in = true
+        profileData.sms_marketing_opt_in = true
+      }
+
       await supabase
         .from('profiles')
-        .upsert(
-          {
-            id: verifiedUser.id,
-            username: fullName,
-            token_balance: tokenBalance,
-          },
-          { onConflict: 'id' }
-        )
+        .upsert(profileData, { onConflict: 'id' })
 
       const { data: sessionData } = await supabase.auth.getSession()
       const accessToken = sessionData.session?.access_token
       if (accessToken) {
-        await fetch('/api/whatsapp/account-created', {
+        await fetch('/api/arkesel/events/account-created', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
+        }).catch(() => {
+          // Silently fail if SMS notification fails
         })
       }
     }
@@ -248,12 +257,14 @@ export default function SignupPage() {
           lastName={lastName}
           email={email}
           password={password}
+          phone={phone}
           error={error}
           loading={loading}
           onFirstNameChange={setFirstName}
           onLastNameChange={setLastName}
           onEmailChange={setEmail}
           onPasswordChange={setPassword}
+          onPhoneChange={setPhone}
           onSubmit={signUpWithEmail}
           onGoogleClick={signUpWithGoogle}
           onSignUpClick={() => router.push('/login')}

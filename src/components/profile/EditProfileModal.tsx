@@ -11,18 +11,16 @@ type Props = {
   userId: string;
   initialUsername?: string;
   initialPhone?: string;
-  initialWhatsAppPhone?: string;
-  initialWhatsAppOptIn?: boolean;
-  initialWhatsAppMarketingOptIn?: boolean;
+  initialSmsOptIn?: boolean;
+  initialSmsMarketingOptIn?: boolean;
   initialAddress?: string;
   initialDeliveryLocation?: string | null;
   initialAvatarUrl?: string | null;
   onSaved?: (d: {
     username?: string;
     phone?: string;
-    whatsappPhone?: string;
-    whatsappOptIn?: boolean;
-    whatsappMarketingOptIn?: boolean;
+    smsOptIn?: boolean;
+    smsMarketingOptIn?: boolean;
     address?: string;
     deliveryLocation?: string;
     avatarUrl?: string;
@@ -35,9 +33,8 @@ export default function EditProfileModal({
   userId,
   initialUsername,
   initialPhone,
-  initialWhatsAppPhone,
-  initialWhatsAppOptIn,
-  initialWhatsAppMarketingOptIn,
+  initialSmsOptIn,
+  initialSmsMarketingOptIn,
   initialAddress,
   initialDeliveryLocation,
   initialAvatarUrl,
@@ -45,9 +42,8 @@ export default function EditProfileModal({
 }: Props) {
   const [username, setUsername] = useState(initialUsername ?? '')
   const [phone, setPhone] = useState(initialPhone ?? '')
-  const [whatsappPhone, setWhatsappPhone] = useState(initialWhatsAppPhone ?? '')
-  const [whatsappOptIn, setWhatsappOptIn] = useState(Boolean(initialWhatsAppOptIn))
-  const [whatsappMarketingOptIn, setWhatsappMarketingOptIn] = useState(Boolean(initialWhatsAppMarketingOptIn))
+  const [smsOptIn, setSmsOptIn] = useState(Boolean(initialSmsOptIn))
+  const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(Boolean(initialSmsMarketingOptIn))
   const [address, setAddress] = useState(initialAddress ?? '')
   const [deliveryLocation, setDeliveryLocation] = useState(initialDeliveryLocation ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -109,10 +105,9 @@ export default function EditProfileModal({
       const updates: Record<string, string | boolean | null> = {
         username: username || null,
         phone: phone || null,
-        whatsapp_phone: whatsappPhone || null,
-        whatsapp_opt_in: whatsappOptIn,
-        whatsapp_marketing_opt_in: whatsappMarketingOptIn,
-        whatsapp_opt_in_at: whatsappOptIn ? new Date().toISOString() : null,
+        sms_opt_in: smsOptIn,
+        sms_marketing_opt_in: smsMarketingOptIn,
+        sms_opt_in_at: smsOptIn ? new Date().toISOString() : null,
         address: address || null,
         delivery_location: deliveryLocation || null,
       }
@@ -130,9 +125,8 @@ export default function EditProfileModal({
       onSaved?.({
         username,
         phone,
-        whatsappPhone,
-        whatsappOptIn,
-        whatsappMarketingOptIn,
+        smsOptIn,
+        smsMarketingOptIn,
         address,
         deliveryLocation,
         avatarUrl: avatarUrl ?? undefined,
@@ -167,40 +161,41 @@ export default function EditProfileModal({
             />
 
             <Input
-              label="Phone"
+              label="Phone Number"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 000-0000"
-            />
-
-            <Input
-              label="WhatsApp Number"
-              type="tel"
-              value={whatsappPhone}
-              onChange={(e) => setWhatsappPhone(e.target.value)}
-              placeholder="+233 24 000 0000"
+              placeholder="+233 24 123 4567"
             />
           </div>
 
-          <div className="space-y-2 rounded-lg border border-gray-200 p-3">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+          <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">📱</span>
+              <h3 className="text-sm font-semibold text-gray-900">SMS Notifications</h3>
+            </div>
+            <label className="flex items-start gap-2 text-sm text-gray-700">
               <input
                 type="checkbox"
-                checked={whatsappOptIn}
-                onChange={(event) => setWhatsappOptIn(event.target.checked)}
+                checked={smsOptIn}
+                onChange={(event) => setSmsOptIn(event.target.checked)}
+                className="mt-0.5"
               />
-              Receive auction/payment/delivery alerts on WhatsApp
+              <span>Receive auction updates, bid alerts, payment confirmations, and delivery notifications via SMS</span>
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+            <label className="flex items-start gap-2 text-sm text-gray-700">
               <input
                 type="checkbox"
-                checked={whatsappMarketingOptIn}
-                onChange={(event) => setWhatsappMarketingOptIn(event.target.checked)}
-                disabled={!whatsappOptIn}
+                checked={smsMarketingOptIn}
+                onChange={(event) => setSmsMarketingOptIn(event.target.checked)}
+                disabled={!smsOptIn}
+                className="mt-0.5"
               />
-              Receive marketing updates on WhatsApp
+              <span>Receive promotional messages about new auctions and special offers</span>
             </label>
+            {phone && (
+              <p className="text-xs text-gray-500 mt-2">Messages will be sent to {phone}</p>
+            )}
           </div>
 
 

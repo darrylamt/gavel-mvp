@@ -10,12 +10,14 @@ interface AuthFormProps {
   lastName?: string
   email: string
   password: string
+  phone?: string
   error?: string | null
   loading?: boolean
   onFirstNameChange?: (value: string) => void
   onLastNameChange?: (value: string) => void
   onEmailChange: (email: string) => void
   onPasswordChange: (password: string) => void
+  onPhoneChange?: (value: string) => void
   onSubmit: () => void
   onGoogleClick: () => void
   onSignUpClick?: () => void
@@ -30,12 +32,14 @@ const AuthForm: React.FC<AuthFormProps> = ({
   lastName = '',
   email,
   password,
+  phone = '',
   error,
   loading = false,
   onFirstNameChange,
   onLastNameChange,
   onEmailChange,
   onPasswordChange,
+  onPhoneChange,
   onSubmit,
   onGoogleClick,
   onSignUpClick,
@@ -147,6 +151,21 @@ const AuthForm: React.FC<AuthFormProps> = ({
                 required
               />
             </div>
+
+            {isSignUp && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Phone Number (optional)</label>
+                <input
+                  type="tel"
+                  className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
+                  placeholder="+233 24 123 4567"
+                  value={phone}
+                  onChange={(e) => onPhoneChange?.(e.target.value)}
+                  disabled={loading}
+                />
+                <p className="text-xs text-gray-500">We'll send you SMS notifications about bids and auctions</p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Password</label>

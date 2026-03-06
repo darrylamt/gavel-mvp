@@ -3,6 +3,7 @@ import './globals.css'
 import Navbar from '@/components/layout/Navbar'
 import InAppBrowserBanner from '@/components/layout/InAppBrowserBanner'
 import WelcomeTourModal from '@/components/layout/WelcomeTourModal'
+import PhoneNumberPrompt from '@/components/PhoneNumberPrompt'
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from 'next'
@@ -91,6 +92,7 @@ export default function RootLayout({
           <Navbar />
           <InAppBrowserBanner />
           <WelcomeTourModal />
+          <PhoneNumberPrompt />
           {children}
           <Footer />
           <Analytics />

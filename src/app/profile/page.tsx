@@ -26,9 +26,8 @@ type ProfileData = {
   username: string | null
   token_balance: number | null
   phone: string | null
-  whatsapp_phone: string | null
-  whatsapp_opt_in: boolean | null
-  whatsapp_marketing_opt_in: boolean | null
+  sms_opt_in: boolean | null
+  sms_marketing_opt_in: boolean | null
   address: string | null
   delivery_location: string | null
   avatar_url: string | null
@@ -89,9 +88,8 @@ export default function ProfilePage() {
   const [tokens, setTokens] = useState<number>(0)
 
   const [phone, setPhone] = useState('')
-  const [whatsappPhone, setWhatsappPhone] = useState('')
-  const [whatsappOptIn, setWhatsappOptIn] = useState(false)
-  const [whatsappMarketingOptIn, setWhatsappMarketingOptIn] = useState(false)
+  const [smsOptIn, setSmsOptIn] = useState(false)
+  const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(false)
   const [address, setAddress] = useState('')
   const [deliveryLocation, setDeliveryLocation] = useState('')
 
@@ -159,7 +157,7 @@ export default function ProfilePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, token_balance, phone, whatsapp_phone, whatsapp_opt_in, whatsapp_marketing_opt_in, address, delivery_location, avatar_url, role')
+        .select('username, token_balance, phone, sms_opt_in, sms_marketing_opt_in, address, delivery_location, avatar_url, role')
         .eq('id', authUser.id)
         .single()
 
@@ -175,9 +173,8 @@ export default function ProfilePage() {
       setUsername(profileData?.username ?? (metadataFullName || null))
       setTokens(profileData?.token_balance ?? 0)
       setPhone(profileData?.phone ?? '')
-      setWhatsappPhone(profileData?.whatsapp_phone ?? '')
-      setWhatsappOptIn(Boolean(profileData?.whatsapp_opt_in))
-      setWhatsappMarketingOptIn(Boolean(profileData?.whatsapp_marketing_opt_in))
+      setSmsOptIn(Boolean(profileData?.sms_opt_in))
+      setSmsMarketingOptIn(Boolean(profileData?.sms_marketing_opt_in))
       setAddress(profileData?.address ?? '')
       setDeliveryLocation(profileData?.delivery_location ?? '')
       setAvatarUrl(profileData?.avatar_url ?? null)
@@ -327,27 +324,24 @@ export default function ProfilePage() {
         userId={userId!}
         initialUsername={username ?? undefined}
         initialPhone={phone}
-        initialWhatsAppPhone={whatsappPhone}
-        initialWhatsAppOptIn={whatsappOptIn}
-        initialWhatsAppMarketingOptIn={whatsappMarketingOptIn}
+        initialSmsOptIn={smsOptIn}
+        initialSmsMarketingOptIn={smsMarketingOptIn}
         initialAddress={address}
         initialDeliveryLocation={deliveryLocation}
         initialAvatarUrl={avatarUrl}
         onSaved={(d: {
           username?: string;
           phone?: string;
-          whatsappPhone?: string;
-          whatsappOptIn?: boolean;
-          whatsappMarketingOptIn?: boolean;
+          smsOptIn?: boolean;
+          smsMarketingOptIn?: boolean;
           address?: string;
           deliveryLocation?: string;
           avatarUrl?: string;
         }) => {
           if (d.username) setUsername(d.username)
           if (typeof d.phone !== 'undefined') setPhone(d.phone)
-          if (typeof d.whatsappPhone !== 'undefined') setWhatsappPhone(d.whatsappPhone)
-          if (typeof d.whatsappOptIn !== 'undefined') setWhatsappOptIn(d.whatsappOptIn)
-          if (typeof d.whatsappMarketingOptIn !== 'undefined') setWhatsappMarketingOptIn(d.whatsappMarketingOptIn)
+          if (typeof d.smsOptIn !== 'undefined') setSmsOptIn(d.smsOptIn)
+          if (typeof d.smsMarketingOptIn !== 'undefined') setSmsMarketingOptIn(d.smsMarketingOptIn)
           if (typeof d.address !== 'undefined') setAddress(d.address)
           if (typeof d.deliveryLocation !== 'undefined') setDeliveryLocation(d.deliveryLocation)
           if (d.avatarUrl) setAvatarUrl(d.avatarUrl)
