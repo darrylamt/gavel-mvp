@@ -178,6 +178,12 @@ export default function Navbar() {
                     Auctions
                   </button>
                   <button
+                    onClick={() => router.push('/auctions/winners')}
+                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-black"
+                  >
+                    Recent Winners
+                  </button>
+                  <button
                     onClick={() => router.push('/shop')}
                     className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-black"
                   >

@@ -77,3 +77,29 @@ Bidders automatically receive SMS notifications at:
 - ⏰ 5 minutes before auction ends
 
 Users can customize these preferences at `/profile/notifications`
+
+## Resend Broadcast + Contacts Setup
+
+Set these environment variables:
+
+- `RESEND_API_KEY=<your_resend_api_key>`
+- `RESEND_BROADCAST_SEGMENT_ID=<your_resend_segment_id>`
+- `RESEND_BROADCAST_FROM=Gavel Ghana <notifications@gavelghana.com>`
+
+Admin-only API endpoints (require `Authorization: Bearer <admin_user_token>`):
+
+- `POST /api/admin/resend/contacts` create contact
+- `GET /api/admin/resend/contacts?id=...` or `?email=...` get contact
+- `PATCH /api/admin/resend/contacts` update contact by `id` or `email`
+- `DELETE /api/admin/resend/contacts?id=...` or `?email=...` delete contact
+- `GET /api/admin/resend/contacts?limit=20` list contacts
+- `POST /api/admin/resend/contacts/sync` sync Supabase auth users to Resend contacts
+
+- `POST /api/admin/resend/broadcasts` create broadcast
+- `GET /api/admin/resend/broadcasts` list broadcasts
+- `GET /api/admin/resend/broadcasts/{id}` retrieve broadcast
+- `PATCH /api/admin/resend/broadcasts/{id}` update broadcast
+- `DELETE /api/admin/resend/broadcasts/{id}` delete broadcast
+- `POST /api/admin/resend/broadcasts/{id}/send` send or schedule broadcast
+
+Admin page `/admin/broadcast` now uses Resend Broadcast flow (`create -> send`) instead of manual batch email loops.

@@ -7,7 +7,9 @@ type AuctionSettlementRow = {
   id: string
   status: string | null
   ends_at: string | null
+  starts_at: string | null
   paid: boolean
+  starting_price: number | null
   reserve_price: number | null
   winning_bid_id: string | null
   winner_id: string | null
@@ -55,7 +57,7 @@ async function loadAuction(
   const { data, error } = await supabase
     .from('auctions')
     .select(
-      'id, status, ends_at, paid, reserve_price, winning_bid_id, winner_id, auction_payment_due_at'
+      'id, status, starts_at, ends_at, paid, starting_price, reserve_price, winning_bid_id, winner_id, auction_payment_due_at'
     )
     .eq('id', auctionId)
     .single()
@@ -63,7 +65,7 @@ async function loadAuction(
   if (error && isMissingColumnError(error.message)) {
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('auctions')
-      .select('id, status, ends_at, paid, reserve_price, winning_bid_id')
+      .select('id, status, starts_at, ends_at, paid, starting_price, reserve_price, winning_bid_id')
       .eq('id', auctionId)
       .single()
 
@@ -313,27 +315,14 @@ export async function resolveAuctionPaymentCandidate(
     }
   }
 
-  const nextCandidateIndex = winnerIndex + 1
-  if (nextCandidateIndex >= eligibleBids.length) {
-    await clearCandidate(supabase, auctionId)
-
-    return {
-      auction,
-      activeCandidate: null,
-      paymentDueAt: null,
-      reason: 'no_eligible_bids',
-    }
-  }
-
-  const paymentDueAt = new Date(nowMs + ONE_HOUR_MS).toISOString()
-  const nextCandidate = buildCandidate(nextCandidateIndex)
-
-  await persistActiveCandidate(supabase, auctionId, nextCandidate.bidId, paymentDueAt)
+  // Winner payment expired: do not fall back to 2nd bidder.
+  // Also do not relist automatically. Keep ended and clear candidate.
+  await clearCandidate(supabase, auctionId)
 
   return {
     auction,
-    activeCandidate: nextCandidate,
-    paymentDueAt,
-    reason: 'ok',
+    activeCandidate: null,
+    paymentDueAt: null,
+    reason: 'no_eligible_bids',
   }
 }

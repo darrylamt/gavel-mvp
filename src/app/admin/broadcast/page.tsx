@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
 export default function BroadcastEmailPage() {
   const [subject, setSubject] = useState('')
   const [content, setContent] = useState('')
+  const [segmentId, setSegmentId] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{
     success?: boolean
@@ -53,7 +54,8 @@ export default function BroadcastEmailPage() {
         },
         body: JSON.stringify({
           subject,
-          htmlContent: content.replace(/\n/g, '<br>')
+          htmlContent: content.replace(/\n/g, '<br>'),
+          segmentId: segmentId.trim() || undefined,
         })
       })
 
@@ -137,6 +139,24 @@ export default function BroadcastEmailPage() {
 
         <div className="space-y-4">
           <div>
+            <label htmlFor="segment-id" className="mb-2 block text-sm font-medium">
+              Resend Segment ID (optional)
+            </label>
+            <input
+              id="segment-id"
+              type="text"
+              value={segmentId}
+              onChange={(e) => setSegmentId(e.target.value)}
+              className="w-full rounded-lg border px-4 py-2 focus:border-black focus:outline-none"
+              placeholder="If empty, server uses RESEND_BROADCAST_SEGMENT_ID"
+              disabled={loading}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Leave empty to use your default segment from environment variables.
+            </p>
+          </div>
+
+          <div>
             <label htmlFor="subject" className="mb-2 block text-sm font-medium">
               Subject
             </label>
@@ -195,7 +215,10 @@ export default function BroadcastEmailPage() {
               Add <code className="rounded bg-yellow-100 px-1 py-0.5">RESEND_API_KEY</code> to your .env.local file
             </li>
             <li>
-              Update the &quot;from&quot; address in the API route to match your verified domain
+              Add <code className="rounded bg-yellow-100 px-1 py-0.5">RESEND_BROADCAST_SEGMENT_ID</code> (or type Segment ID above)
+            </li>
+            <li>
+              Add <code className="rounded bg-yellow-100 px-1 py-0.5">RESEND_BROADCAST_FROM</code> with your verified sender
             </li>
           </ol>
         </div>

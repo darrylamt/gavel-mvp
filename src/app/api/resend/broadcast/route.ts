@@ -36,20 +36,24 @@ export async function POST(request: Request) {
 
     const service = createServiceRoleClient()
 
-    // Get email addresses for all users (or all users if no userIds provided)
-    let query = service.from('profiles').select('id, email').not('email', 'is', null)
+    // Pull recipients from Supabase auth users instead of profiles.email
+    const { data: usersResponse, error: usersError } = await service.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    })
+
+    if (usersError) {
+      return NextResponse.json({ error: usersError.message }, { status: 500 })
+    }
+
+    let validEmails = (usersResponse.users ?? [])
+      .filter((user: { id: string; email?: string | null }) => !!user.email)
+      .map((user: { id: string; email?: string | null }) => ({ id: user.id, email: user.email as string }))
 
     if (userIds && Array.isArray(userIds) && userIds.length > 0) {
-      query = query.in('id', userIds)
+      const targetSet = new Set(userIds)
+      validEmails = validEmails.filter((user) => targetSet.has(user.id))
     }
-
-    const { data: profiles, error: profileError } = await query
-
-    if (profileError) {
-      return NextResponse.json({ error: profileError.message }, { status: 500 })
-    }
-
-    const validEmails = (profiles ?? []).filter((p) => p.email)
 
     if (validEmails.length === 0) {
       return NextResponse.json(
@@ -58,21 +62,23 @@ export async function POST(request: Request) {
       )
     }
 
-    // Send emails in parallel (Resend can handle batch sends)
-    const emailPromises = validEmails.map((profile) =>
-      resend.emails.send({
-        from: 'Gavel Ghana <notifications@gavelghana.com>',
-        to: profile.email,
-        subject,
-        html: htmlContent,
-        text: plainText,
-      })
-    )
+    // Use Resend batch API for broadcast delivery
+    const batchPayload = validEmails.map((profile) => ({
+      from: 'Gavel Ghana <notifications@gavelghana.com>',
+      to: [profile.email],
+      subject,
+      html: htmlContent,
+      text: plainText,
+    }))
 
-    const results = await Promise.allSettled(emailPromises)
+    const batchResult = await resend.batch.send(batchPayload)
 
-    const sent = results.filter((r) => r.status === 'fulfilled' && !r.value.error).length
-    const failed = results.length - sent
+    if (batchResult.error) {
+      return NextResponse.json({ error: batchResult.error.message }, { status: 500 })
+    }
+
+    const sent = validEmails.length
+    const failed = 0
 
     return NextResponse.json({
       success: true,
