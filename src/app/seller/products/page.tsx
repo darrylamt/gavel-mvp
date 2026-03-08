@@ -103,6 +103,9 @@ export default function SellerProductsPage() {
   const [useVariants, setUseVariants] = useState(false)
   const [variants, setVariants] = useState<ProductVariantDraft[]>([createEmptyVariant()])
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null)
+  const [aiDescriptionLoading, setAiDescriptionLoading] = useState(false)
+  const [aiDescriptionError, setAiDescriptionError] = useState<string | null>(null)
+  const [descriptionGeneratedByAi, setDescriptionGeneratedByAi] = useState(false)
 
   const parsedPrice = Number(price)
   const hasValidPrice = Number.isFinite(parsedPrice) && parsedPrice >= 0
@@ -211,6 +214,9 @@ export default function SellerProductsPage() {
     setUploadingVariantIndex(null)
     setEditingId(null)
     setFormMode('create')
+    setAiDescriptionLoading(false)
+    setAiDescriptionError(null)
+    setDescriptionGeneratedByAi(false)
   }
 
   const openCreateForm = () => {
@@ -328,6 +334,64 @@ export default function SellerProductsPage() {
     } finally {
       setUploadingVariantIndex(null)
       event.target.value = ''
+    }
+  }
+
+  const generateDescriptionWithAi = async () => {
+    setAiDescriptionLoading(true)
+    setAiDescriptionError(null)
+
+    try {
+      if (imageUrls.length === 0) {
+        throw new Error('Please upload an image first')
+      }
+
+      const imageUrl = imageUrls[0]!
+      const res = await fetch(imageUrl)
+      const blob = await res.blob()
+      const reader = new FileReader()
+
+      reader.onload = async (event) => {
+        try {
+          const base64 = (event.target?.result as string).split(',')[1]
+          if (!base64) throw new Error('Failed to convert image to base64')
+
+          const mediaType = blob.type || 'image/jpeg'
+
+          const aiRes = await fetch('/api/ai/describe-product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64: base64, mediaType, productName: title.trim() }),
+          })
+
+          if (!aiRes.ok) {
+            const errData = await aiRes.json()
+            throw new Error(errData.error || 'Failed to generate description')
+          }
+
+          const data = (await aiRes.json()) as { description?: string }
+          if (data.description) {
+            setDescription(data.description)
+            setDescriptionGeneratedByAi(true)
+            setAiDescriptionLoading(false)
+          }
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Unknown error'
+          setAiDescriptionError(message)
+          setAiDescriptionLoading(false)
+        }
+      }
+
+      reader.onerror = () => {
+        setAiDescriptionError('Failed to read image file')
+        setAiDescriptionLoading(false)
+      }
+
+      reader.readAsDataURL(blob)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to generate description'
+      setAiDescriptionError(message)
+      setAiDescriptionLoading(false)
     }
   }
 
@@ -755,9 +819,34 @@ export default function SellerProductsPage() {
                 <option value="archived">Archived</option>
               </select>
             </div>
-            <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
-              <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className="w-full rounded-lg border px-3 py-2" />
+            <div className="md:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <button
+                  type="button"
+                  onClick={generateDescriptionWithAi}
+                  disabled={aiDescriptionLoading || imageUrls.length === 0}
+                  className="text-sm px-3 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                >
+                  {aiDescriptionLoading ? 'Generating...' : description.trim() ? '✨ Improve with AI' : '✨ Generate with AI'}
+                </button>
+              </div>
+              {aiDescriptionError && (
+                <div className="text-sm text-red-600 bg-red-50 p-2 rounded">Couldn't generate description. Please write one manually.</div>
+              )}
+              {descriptionGeneratedByAi && !aiDescriptionError && (
+                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">AI-generated — please review before publishing</div>
+              )}
+              <textarea
+                value={description}
+                onChange={(event) => {
+                  setDescription(event.target.value)
+                  setDescriptionGeneratedByAi(false)
+                }}
+                rows={4}
+                className="w-full rounded-lg border px-3 py-2"
+                placeholder="Describe your product..."
+              />
             </div>
           </div>
 

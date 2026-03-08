@@ -47,6 +47,9 @@ export default function NewAuction() {
   const [anonymousBiddingEnabled, setAnonymousBiddingEnabled] = useState(true)
   const [accessCode, setAccessCode] = useState('')
   const [codeCopied, setCodeCopied] = useState(false)
+  const [aiDescriptionLoading, setAiDescriptionLoading] = useState(false)
+  const [aiDescriptionError, setAiDescriptionError] = useState<string | null>(null)
+  const [descriptionGeneratedByAi, setDescriptionGeneratedByAi] = useState(false)
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -103,6 +106,62 @@ export default function NewAuction() {
 
   const handleDeleteFile = (id: string) => {
     setUploadedFiles(uploadedFiles.filter((f) => f.id !== id))
+  }
+
+  const generateDescriptionWithAi = async () => {
+    setAiDescriptionLoading(true)
+    setAiDescriptionError(null)
+
+    try {
+      if (uploadedFiles.length === 0) {
+        throw new Error('Please upload an image first')
+      }
+
+      const firstFile = uploadedFiles[0]!.fileObject
+      const reader = new FileReader()
+
+      reader.onload = async (event) => {
+        try {
+          const base64 = (event.target?.result as string).split(',')[1]
+          if (!base64) throw new Error('Failed to convert image to base64')
+
+          const mediaType = firstFile.type || 'image/jpeg'
+
+          const res = await fetch('/api/ai/describe-product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64: base64, mediaType, productName: title.trim() }),
+          })
+
+          if (!res.ok) {
+            const errData = await res.json()
+            throw new Error(errData.error || 'Failed to generate description')
+          }
+
+          const data = (await res.json()) as { description?: string }
+          if (data.description) {
+            setDescription(data.description)
+            setDescriptionGeneratedByAi(true)
+            setAiDescriptionLoading(false)
+          }
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Unknown error'
+          setAiDescriptionError(message)
+          setAiDescriptionLoading(false)
+        }
+      }
+
+      reader.onerror = () => {
+        setAiDescriptionError('Failed to read image file')
+        setAiDescriptionLoading(false)
+      }
+
+      reader.readAsDataURL(firstFile)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to generate description'
+      setAiDescriptionError(message)
+      setAiDescriptionLoading(false)
+    }
   }
 
   const createAuction = async () => {
@@ -314,22 +373,9 @@ export default function NewAuction() {
               isRequired
             />
 
-            <div className="w-full space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Description
-                <span className="text-red-500 ml-1">*</span>
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={`Describe your item in detail...\n\n• Condition\n• Included accessories\n• Any defects or notes`}
-                rows={8}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
+              <p className="text-sm text-gray-500 mb-3">Upload at least one image. The AI will use the first image to generate a description.</p>
               <FileUpload.Root>
                 <FileUpload.DropZone
                   maxSize={10 * 1024 * 1024}
@@ -352,6 +398,39 @@ export default function NewAuction() {
                   </FileUpload.List>
                 )}
               </FileUpload.Root>
+            </div>
+
+            <div className="w-full space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Description
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={generateDescriptionWithAi}
+                  disabled={aiDescriptionLoading || uploadedFiles.length === 0}
+                  className="text-sm px-3 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                >
+                  {aiDescriptionLoading ? 'Generating...' : description.trim() ? '✨ Improve with AI' : '✨ Generate with AI'}
+                </button>
+              </div>
+              {aiDescriptionError && (
+                <div className="text-sm text-red-600 bg-red-50 p-2 rounded">Couldn't generate description. Please write one manually.</div>
+              )}
+              {descriptionGeneratedByAi && !aiDescriptionError && (
+                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">AI-generated — please review before publishing</div>
+              )}
+              <textarea
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value)
+                  setDescriptionGeneratedByAi(false)
+                }}
+                placeholder={`Describe your item in detail...\n\n• Condition\n• Included accessories\n• Any defects or notes`}
+                rows={8}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black"
+              />
             </div>
           </div>
         </div>
