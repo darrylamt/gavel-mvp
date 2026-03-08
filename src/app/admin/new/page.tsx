@@ -208,6 +208,35 @@ export default function AdminNewAuction() {
         }
       }
 
+      /* Generate embedding for semantic search */
+      try {
+        const embeddingResponse = await fetch('/api/embeddings/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            listingId: auction.id,
+            type: 'auction',
+            title: title.trim(),
+            description: description.trim(),
+            category: null,
+          }),
+        })
+
+        if (!embeddingResponse.ok) {
+          const responseBody = await embeddingResponse.text()
+          console.warn('Embedding API returned non-OK status for admin auction create', {
+            auctionId: auction.id,
+            status: embeddingResponse.status,
+            body: responseBody,
+          })
+        }
+      } catch (embErr) {
+        console.warn('Failed to generate embedding during admin auction create', {
+          auctionId: auction.id,
+          error: embErr,
+        })
+      }
+
       router.push(buildAuctionPath(auction.id, auction.title ?? title))
     } catch (err: unknown) {
       console.error('Create auction error:', err)

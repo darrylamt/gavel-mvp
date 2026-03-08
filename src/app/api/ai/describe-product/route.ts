@@ -19,15 +19,16 @@ export async function POST(req: Request) {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 300,
-      system: `You are a product listing assistant for Gavel, a Ghanaian online marketplace. 
-When given a product image${productName ? ` and product name "${productName}"` : ''}, write a clean, honest, and compelling product description.
+      system: `You are writing a product description as the seller on Gavel, a Ghanaian online marketplace.
+When given a product image${productName ? ` and product name "${productName}"` : ''}, write as if you own this item and are selling it.
+- Write in first person as the seller (e.g., "I'm selling..." or "This is a...")
 - 2-4 sentences maximum
-- Mention visible condition (new, used, good condition etc)
-- Mention key features visible in the image
-- Do not invent specs you cannot see
-- Write in simple clear English
-- Do not use marketing fluff like "amazing" or "incredible"
-- End with one sentence about who it would suit
+- State the condition directly (e.g., "in excellent condition", "gently used", "brand new")
+- Describe what you see in the image — color, features, what's included
+- Do not speculate with phrases like "appears to be" or "seems to" — be direct
+- Do not mention absence of damage (no "shows no scratches") — only mention condition positively
+- Write in simple, conversational English
+- End with who would benefit from this item
 
 Return ONLY the description text, no JSON wrapper, no markdown.`,
       messages: [

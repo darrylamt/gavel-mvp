@@ -1,3 +1,4 @@
+import SemanticSearch from '@/components/search/SemanticSearch'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -131,6 +132,11 @@ export default async function HomePage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-14">
+        {/* Mobile Search Bar - only visible on mobile */}
+        <div className="md:hidden mb-6">
+          <SemanticSearch placeholder="Search auctions and products..." fullWidth />
+        </div>
+
       <HeroShowcaseCarousel />
 
       <section className="mb-12">

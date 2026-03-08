@@ -524,6 +524,33 @@ export async function POST(request: Request) {
       })
     }
 
+    /* Generate embedding for semantic search */
+    try {
+      const { generateListingEmbedding } = await import('@/lib/embeddings')
+      const embedding = await generateListingEmbedding({
+        title,
+        description: description || null,
+        category,
+      })
+
+      const { error: embeddingUpdateError } = await service
+        .from('shop_products')
+        .update({ embedding: `[${embedding.join(',')}]` })
+        .eq('id', data.id)
+
+      if (embeddingUpdateError) {
+        console.warn('Failed to persist product embedding on create', {
+          productId: data.id,
+          error: embeddingUpdateError.message,
+        })
+      }
+    } catch (embErr) {
+      console.warn('Failed to generate embedding for product create', {
+        productId: data.id,
+        error: embErr,
+      })
+    }
+
     const hydrated = await hydrateProductsWithVariants([data as { id: string }])
 
     return NextResponse.json({ product: hydrated[0] })
@@ -646,6 +673,35 @@ export async function PATCH(request: Request) {
         variants,
         role: auth.role,
       })
+    }
+
+    /* Generate embedding for semantic search if title/description/category changed */
+    if (title || description || category) {
+      try {
+        const { generateListingEmbedding } = await import('@/lib/embeddings')
+        const embedding = await generateListingEmbedding({
+          title: title || data.title,
+          description: description || data.description || null,
+          category: category || data.category,
+        })
+
+        const { error: embeddingUpdateError } = await service
+          .from('shop_products')
+          .update({ embedding: `[${embedding.join(',')}]` })
+          .eq('id', data.id)
+
+        if (embeddingUpdateError) {
+          console.warn('Failed to persist product embedding on update', {
+            productId: data.id,
+            error: embeddingUpdateError.message,
+          })
+        }
+      } catch (embErr) {
+        console.warn('Failed to generate embedding for product update', {
+          productId: data.id,
+          error: embErr,
+        })
+      }
     }
 
     const hydrated = await hydrateProductsWithVariants([data as { id: string }])
