@@ -14,7 +14,7 @@ type Auction = {
   starts_at?: string | null
   status?: string | null
   image_url?: string | null
-  images?: string[] | null
+  images?: unknown[] | null
   reserve_price?: number | null
   min_increment?: number | null
   max_increment?: number | null

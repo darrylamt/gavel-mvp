@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { parseAuctionMeta } from '@/lib/auctionMeta'
 import { buildAuctionPath } from '@/lib/seo'
+import { normalizeAuctionImageUrls } from '@/lib/auctionImages'
 
 type Props = {
   children: React.ReactNode
@@ -55,7 +56,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     .slice(0, 160)
 
   const canonicalPath = buildAuctionPath(data.id, data.title)
-  const ogImage = data.images?.[0] || data.image_url || `${siteUrl}/share/auction/${data.id}/opengraph-image`
+  const normalizedImages = normalizeAuctionImageUrls(
+    (data as { images?: unknown }).images,
+    (data as { image_url?: string | null }).image_url ?? null
+  )
+  const ogImage = normalizedImages[0] || `${siteUrl}/share/auction/${data.id}/opengraph-image`
 
   return {
     title: data.title,

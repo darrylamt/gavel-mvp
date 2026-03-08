@@ -7,6 +7,7 @@ import { useStarredAuctions } from '@/hooks/useStarredAuctions'
 import { getOrCreateViewerKey } from '@/lib/engagement'
 import { buildAuctionPath } from '@/lib/seo'
 import { getSessionHeaders } from '@/lib/supabaseClient'
+import { normalizeAuctionImageUrls } from '@/lib/auctionImages'
 
 type AuctionCardProps = {
   id: string
@@ -18,7 +19,7 @@ type AuctionCardProps = {
   startsAt?: string | null
   status?: string | null
   imageUrl?: string | null
-  images?: string[] | null
+  images?: unknown[] | null
   reservePrice?: number | null
   minIncrement?: number | null
   maxIncrement?: number | null
@@ -50,8 +51,8 @@ export default function AuctionCard({
   const { isStarred, toggleStarred } = useStarredAuctions()
   const starred = isStarred(id)
   const [nowMs, setNowMs] = useState(() => Date.now())
-  const galleryImages = (images ?? []).filter((img) => typeof img === 'string' && img.trim() !== '')
-  const primaryImage = galleryImages[0] ?? (imageUrl && imageUrl.trim() ? imageUrl : null)
+  const galleryImages = normalizeAuctionImageUrls(images, imageUrl)
+  const primaryImage = galleryImages[0] ?? null
 
   useEffect(() => {
     const ticker = setInterval(() => setNowMs(Date.now()), 1000)

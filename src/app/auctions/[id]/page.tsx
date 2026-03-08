@@ -18,6 +18,7 @@ import { parseAuctionMeta } from '@/lib/auctionMeta'
 import { buildAuctionPath } from '@/lib/seo'
 import { getOrCreateViewerKey } from '@/lib/engagement'
 import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
+import { normalizeAuctionImageUrls } from '@/lib/auctionImages'
 
 type AuctionRecord = {
   id: string
@@ -29,6 +30,7 @@ type AuctionRecord = {
   reserve_price: number | null
   sale_source: 'gavel' | 'seller' | null
   seller_name: string | null
+  seller_shop_name?: string | null
   seller_phone: string | null
   starts_at: string | null
   ends_at: string | null
@@ -37,7 +39,7 @@ type AuctionRecord = {
   winning_bid_id: string | null
   auction_payment_due_at: string | null
   image_url: string | null
-  images: string[] | null
+  images: unknown[] | null
   is_private?: boolean
   anonymous_bidding_enabled?: boolean | null
   delivery_zones?: Array<{
@@ -552,13 +554,10 @@ export default function AuctionDetailPage() {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
   const productUrl = `${siteUrl}${buildAuctionPath(auction.id, auction.title)}`
-  const galleryImages = (auction.images ?? []).filter((img) => typeof img === 'string' && img.trim() !== '')
-  const fallbackImages = galleryImages.length > 0
-    ? galleryImages
-    : auction.image_url && auction.image_url.trim()
-    ? [auction.image_url]
-    : []
+  const fallbackImages = normalizeAuctionImageUrls(auction.images, auction.image_url)
   const imageUrl = fallbackImages[0] || `${siteUrl}/share/auction/${auction.id}/opengraph-image`
+  const sellerDisplayName =
+    (auction.seller_shop_name || auction.seller_name || '').trim() || 'External Seller'
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -603,8 +602,8 @@ export default function AuctionDetailPage() {
 
             <div className="grid grid-cols-1 gap-3 rounded-xl border bg-gray-50/60 p-4 text-sm text-gray-700 sm:grid-cols-2">
               <div>
-                <div className="font-medium text-gray-900">Sale Source</div>
-                <div>{saleSource === 'seller' ? 'External Seller' : 'Gavel Products'}</div>
+                <div className="font-medium text-gray-900">{saleSource === 'seller' ? 'Seller' : 'Sale Source'}</div>
+                <div>{saleSource === 'seller' ? sellerDisplayName : 'Gavel Products'}</div>
               </div>
               {auction.ends_at && (
                 <div>
