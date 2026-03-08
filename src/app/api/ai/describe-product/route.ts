@@ -5,6 +5,7 @@ export async function POST(req: Request) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
+      console.error('ANTHROPIC_API_KEY not configured')
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
     }
 
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing imageBase64 or mediaType' }, { status: 400 })
     }
 
-    const client = new Anthropic()
+    const client = new Anthropic({ apiKey })
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',

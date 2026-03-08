@@ -29,10 +29,13 @@ export async function POST(req: Request) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Supabase configuration missing for embeddings')
       throw new Error('Supabase configuration missing')
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    })
 
     // Update the appropriate table
     const tableName = type === 'auction' ? 'auctions' : 'shop_products'
@@ -43,10 +46,16 @@ export async function POST(req: Request) {
       .eq('id', listingId)
 
     if (updateError) {
-      console.error('Error updating embedding:', updateError)
+      console.error('Error updating embedding in database:', {
+        listingId,
+        type,
+        error: updateError.message,
+        code: updateError.code,
+      })
       throw new Error(`Failed to save embedding: ${updateError.message}`)
     }
 
+    console.log('Embedding generated and saved successfully', { listingId, type })
     return NextResponse.json({ success: true, message: 'Embedding generated successfully' })
   } catch (error) {
     console.error('Generate embedding error:', error)
