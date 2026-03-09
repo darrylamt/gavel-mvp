@@ -228,7 +228,7 @@ export default function Navbar() {
                   >
                     <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
                       <SemanticSearch 
-                        placeholder="Search auctions and products..." 
+                        placeholder='Search auctions and products... e.g., "something for my skin"' 
                         fullWidth
                       />
                     </div>

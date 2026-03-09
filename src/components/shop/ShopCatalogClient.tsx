@@ -258,6 +258,7 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
                   title={product.title}
                   description={product.description}
                   price={product.price}
+                  imageUrls={product.image_urls}
                   imageUrl={product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : product.image_url}
                   stock={product.stock}
                   categoryLabel={product.category}

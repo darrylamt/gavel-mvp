@@ -134,7 +134,7 @@ export default async function HomePage() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-14">
         {/* Mobile Search Bar - only visible on mobile */}
         <div className="md:hidden mb-6">
-          <SemanticSearch placeholder="Search auctions and products..." fullWidth />
+          <SemanticSearch placeholder='Search auctions and products... e.g., "something for my skin"' fullWidth />
         </div>
 
       <HeroShowcaseCarousel />
@@ -290,6 +290,7 @@ export default async function HomePage() {
                   title={product.title}
                   description={product.description}
                   price={product.price}
+                  imageUrls={product.image_urls}
                   imageUrl={product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : product.image_url}
                   stock={product.stock}
                   categoryLabel={product.category}

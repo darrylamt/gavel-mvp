@@ -1,10 +1,12 @@
 'use client'
 
-import { Heart } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Heart, ShoppingCart } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCart } from '@/hooks/useCart'
 import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useTopToast } from '@/components/ui/TopToastProvider'
+import styles from './ShopProductCard.module.css'
 
 type Props = {
   id: string
@@ -12,17 +14,41 @@ type Props = {
   description: string | null
   price: number
   imageUrl: string | null
+  imageUrls?: string[] | null
   stock: number
   categoryLabel?: string
   compactMobile?: boolean
 }
 
-export default function ShopProductCard({ id, title, description, price, imageUrl, stock, categoryLabel, compactMobile = false }: Props) {
-  const router = useRouter()
+export default function ShopProductCard({
+  id,
+  title,
+  description,
+  price,
+  imageUrl,
+  imageUrls,
+  stock,
+  categoryLabel,
+  compactMobile = false,
+}: Props) {
   const { addToCart } = useCart()
-  const { isStarredProduct, toggleStarredProduct } = useStarredProducts()
+  const { toggleStarredProduct } = useStarredProducts()
   const { notify } = useTopToast()
-  const isStarred = isStarredProduct(id)
+  const href = `/shop/${id}`
+
+  const images = useMemo(() => {
+    const candidates = [...(imageUrls ?? []), imageUrl]
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .map((value) => value.trim())
+
+    return Array.from(new Set(candidates))
+  }, [imageUrl, imageUrls])
+
+  const [activeImageSrc, setActiveImageSrc] = useState(images[0] ?? '')
+
+  useEffect(() => {
+    setActiveImageSrc(images[0] ?? '')
+  }, [images, id])
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault()
@@ -43,92 +69,91 @@ export default function ShopProductCard({ id, title, description, price, imageUr
     }
   }
 
+  const handleToggleWishlist = (event: React.MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const nextIsStarred = toggleStarredProduct(id)
+    notify({
+      title: nextIsStarred ? 'Added to starred' : 'Removed from starred',
+      description: nextIsStarred ? `${title} is now in your favorites.` : `${title} was removed from your favorites.`,
+      variant: nextIsStarred ? 'success' : 'info',
+    })
+  }
+
   return (
-    <article
-      className={`group block overflow-hidden border bg-white transition hover:shadow-lg ${
-        compactMobile ? 'rounded-xl sm:rounded-2xl' : 'rounded-2xl'
-      }`}
-    >
-      {/* IMAGE */}
-      <div
-        className={`bg-gray-100 overflow-hidden relative cursor-pointer ${
-          compactMobile ? 'h-28 sm:h-48' : 'h-48'
-        }`}
-        onClick={() => router.push(`/shop/${id}`)}
-      >
-        <button
-          type="button"
-          onClick={(event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            const nextIsStarred = toggleStarredProduct(id)
-            notify({
-              title: nextIsStarred ? 'Added to starred' : 'Removed from starred',
-              description: nextIsStarred ? `${title} is now in your favorites.` : `${title} was removed from your favorites.`,
-              variant: nextIsStarred ? 'success' : 'info',
-            })
-          }}
-          aria-label={isStarred ? 'Remove from starred products' : 'Add to starred products'}
-          className="absolute left-2 top-2 z-10 rounded-full p-2 shadow-sm transition bg-white/90 text-gray-700 hover:bg-white"
-        >
-          <Heart className={`h-4 w-4 ${isStarred ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-        </button>
+    <article className={`${styles.card} ${compactMobile ? styles.cardCompact : ''}`}>
+      <div className={styles.imgWrapper}>
+        <div className={styles.labelBlock}>
+          {categoryLabel && <span className={styles.labelCategory}>{categoryLabel}</span>}
+          {stock <= 0 && <span className={styles.labelSale}>Out of stock</span>}
+        </div>
 
-        {categoryLabel && (
-          <div className="absolute right-2 top-2 bg-black text-white text-xs px-2 py-1 rounded">{categoryLabel}</div>
+        <Link href={href} className={styles.front}>
+          {activeImageSrc ? (
+            <img
+              src={activeImageSrc}
+              alt={title}
+              loading="lazy"
+              decoding="async"
+              className={styles.image}
+            />
+          ) : (
+            <div className={styles.imageFallback}>No image</div>
+          )}
+        </Link>
+
+        {images.length > 1 && (
+          <ul className={styles.thumbList}>
+            {images.map((src, index) => (
+              <li
+                key={`${src}-${index}`}
+                className={`${styles.thumbItem} ${activeImageSrc === src ? styles.thumbActive : ''}`}
+              >
+                <button
+                  type="button"
+                  className={styles.thumbButton}
+                  onClick={() => setActiveImageSrc(src)}
+                  aria-label={`Show image ${index + 1}`}
+                >
+                  <img src={src} alt={`${title} ${index + 1}`} className={styles.thumbImage} loading="lazy" />
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
 
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={title}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover group-hover:scale-105 transition-transform"
-          />
-        ) : (
-          <div className="h-full flex items-center justify-center text-gray-400 text-sm">No image</div>
-        )}
+        <div className={styles.cartInfo}>
+          <button
+            type="button"
+            title="Add to cart"
+            className={styles.iconButton}
+            onClick={handleAddToCart}
+            disabled={stock <= 0}
+          >
+            <ShoppingCart className={styles.actionIcon} />
+          </button>
 
-        {stock <= 0 && (
-          <div className="absolute bottom-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded font-semibold">
-            Out of Stock
-          </div>
-        )}
+          <button
+            type="button"
+            title="Wishlist"
+            className={styles.iconButton}
+            onClick={handleToggleWishlist}
+          >
+            <Heart className={styles.actionIcon} />
+          </button>
+        </div>
       </div>
 
-      {/* CONTENT */}
-      <div className={compactMobile ? 'p-2.5 sm:p-4' : 'p-4'}>
-        <h3
-          className={`font-semibold leading-tight mb-1.5 cursor-pointer group-hover:underline ${
-            compactMobile ? 'text-xs sm:text-lg' : 'text-lg'
-          }`}
-          onClick={() => router.push(`/shop/${id}`)}
-        >
-          {title}
-        </h3>
+      <div className={styles.detail}>
+        <Link href={href} className={styles.titleLink}>
+          <h3 className={styles.title}>{title}</h3>
+        </Link>
 
-        <p className={`text-gray-500 mb-1 ${compactMobile ? 'hidden sm:block sm:text-sm' : 'text-sm'}`}>Price</p>
+        {description && <p className={styles.desc}>{description}</p>}
 
-        <p className={`font-bold mb-3 ${compactMobile ? 'text-sm sm:text-2xl' : 'text-2xl'}`}>
-          GHS {Number(price).toLocaleString()}
-        </p>
+        <p className={styles.price}>GHS {Number(price).toLocaleString()}</p>
 
-        <button
-          onClick={handleAddToCart}
-          disabled={stock <= 0}
-          className={`w-full rounded-lg font-semibold transition ${
-            stock <= 0
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-black text-white hover:bg-gray-800'
-          } ${compactMobile ? 'py-1.5 text-xs sm:py-2 sm:text-sm' : 'py-2 text-sm'}`}
-        >
-          {stock <= 0 ? 'Out of stock' : 'Add to cart'}
-        </button>
-
-        {stock > 0 && stock <= 5 && (
-          <div className="mt-2 text-xs text-orange-600 font-medium">Only {stock} left in stock</div>
-        )}
+        {stock > 0 && stock <= 5 && <p className={styles.lowStock}>Only {stock} left in stock</p>}
       </div>
     </article>
   )

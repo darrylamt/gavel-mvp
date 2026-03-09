@@ -23,7 +23,7 @@ type SemanticSearchProps = {
 }
 
 export default function SemanticSearch({
-  placeholder = 'Search for anything... (e.g., "gaming console", "kitchen items")',
+  placeholder = 'Search for anything... e.g., "something for my skin"',
   className = '',
   fullWidth = false,
 }: SemanticSearchProps) {
