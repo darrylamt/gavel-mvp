@@ -273,17 +273,13 @@ export default function NewAuction() {
 
       /* Update auction with images */
       if (uploadedUrls.length > 0) {
-        const { data: updatedAuction, error: updateErr } = await supabase
+        const { error: updateErr } = await supabase
           .from('auctions')
           .update({ image_url: uploadedUrls[0], images: uploadedUrls })
           .eq('id', auction.id)
           .select('id')
-          .maybeSingle()
 
         if (updateErr) throw new Error(`Update failed: ${updateErr.message}`)
-        if (!updatedAuction?.id) {
-          throw new Error('Image links could not be saved to this auction. Please contact support.')
-        }
       }
 
       /* Generate embedding for semantic search */
