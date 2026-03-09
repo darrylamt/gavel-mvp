@@ -130,6 +130,11 @@ export default function SignupPage() {
         .from('profiles')
         .upsert(profileData, { onConflict: 'id' })
 
+      // If user provided phone number, dismiss the phone prompt
+      if (phone.trim()) {
+        localStorage.setItem('phoneNumberPromptDismissed', 'true')
+      }
+
       const { data: sessionData } = await supabase.auth.getSession()
       const accessToken = sessionData.session?.access_token
       if (accessToken) {

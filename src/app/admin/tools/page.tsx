@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertCircle, CheckCircle2, Loader2, Zap } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, Zap, Image as ImageIcon } from 'lucide-react'
 import AdminShell from '@/components/admin/AdminShell'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -31,11 +31,24 @@ type BackfillResult = {
   error?: string
 }
 
+type ImageRepairResult = {
+  success: boolean
+  message: string
+  repaired_count: number
+  total_checked: number
+  details?: Array<{ auction_id: string; image_count: number }>
+  error?: string
+}
+
 export default function AdminToolsPage() {
-  const [activeTab, setActiveTab] = useState<'embeddings'>('embeddings')
+  const [activeTab, setActiveTab] = useState<'embeddings' | 'images'>('embeddings')
   const [backfillStatus, setBackfillStatus] = useState<BackfillStatus>('idle')
   const [backfillResult, setBackfillResult] = useState<BackfillResult | null>(null)
   const [isRunning, setIsRunning] = useState(false)
+
+  const [imageRepairStatus, setImageRepairStatus] = useState<BackfillStatus>('idle')
+  const [imageRepairResult, setImageRepairResult] = useState<ImageRepairResult | null>(null)
+  const [isImageRepairRunning, setIsImageRepairRunning] = useState(false)
 
   const runBackfill = async () => {
     setBackfillStatus('running')
@@ -101,6 +114,60 @@ export default function AdminToolsPage() {
     }
   }
 
+  const runImageRepair = async () => {
+    setImageRepairStatus('running')
+    setIsImageRepairRunning(true)
+    setImageRepairResult(null)
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      const token = session?.access_token
+      if (!token) {
+        setImageRepairStatus('error')
+        setImageRepairResult({
+          success: false,
+          message: 'Not authenticated',
+          repaired_count: 0,
+          total_checked: 0,
+          error: 'Not authenticated',
+        })
+        return
+      }
+
+      const response = await fetch('/api/admin/repair-auction-images', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      const result: ImageRepairResult = await response.json()
+
+      if (result.success) {
+        setImageRepairStatus('success')
+      } else {
+        setImageRepairStatus('error')
+      }
+
+      setImageRepairResult(result)
+    } catch (error) {
+      setImageRepairStatus('error')
+      setImageRepairResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        repaired_count: 0,
+        total_checked: 0,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+    } finally {
+      setIsImageRepairRunning(false)
+    }
+  }
+
   return (
     <AdminShell>
       <div className="space-y-4">
@@ -122,6 +189,16 @@ export default function AdminToolsPage() {
               }`}
             >
               Embeddings
+            </button>
+            <button
+              onClick={() => setActiveTab('images')}
+              className={`text-sm font-medium transition ${
+                activeTab === 'images'
+                  ? 'border-b-2 border-black text-black'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Images
             </button>
           </div>
         </div>
@@ -233,6 +310,102 @@ export default function AdminToolsPage() {
               <p>
                 Embeddings convert auction titles, descriptions, and products into vectors for semantic search. This allows users to search by meaning, not just keywords.
                 The system auto-generates embeddings when new listings are created. Use this tool to backfill embeddings for existing listings.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Images Tab */}
+        {activeTab === 'images' && (
+          <div className="space-y-4 rounded-b-2xl bg-white p-6 shadow-sm">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Auction Image Repair</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Automatically repair auctions with missing image_url and images fields by scanning their storage folders.
+              </p>
+            </div>
+
+            {/* Status Alert */}
+            {imageRepairResult && (
+              <div
+                className={`rounded-lg border p-4 ${
+                  imageRepairStatus === 'success'
+                    ? 'border-green-200 bg-green-50'
+                    : 'border-red-200 bg-red-50'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {imageRepairStatus === 'success' ? (
+                    <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-600 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <h3 className={`font-semibold ${
+                      imageRepairStatus === 'success' ? 'text-green-900' : 'text-red-900'
+                    }`}>
+                      {imageRepairStatus === 'success' ? 'Image Repair Completed' : 'Image Repair Failed'}
+                    </h3>
+
+                    {imageRepairResult.success && (
+                      <div className="mt-2 text-sm text-gray-700 space-y-1">
+                        <p>{imageRepairResult.message}</p>
+                        <p>
+                          <strong>Repaired:</strong> {imageRepairResult.repaired_count} out of {imageRepairResult.total_checked} auctions
+                        </p>
+                        {imageRepairResult.details && imageRepairResult.details.length > 0 && (
+                          <div className="mt-2">
+                            <p className="font-medium">Sample repairs:</p>
+                            <ul className="mt-1 list-inside list-disc text-xs">
+                              {imageRepairResult.details.slice(0, 5).map((detail, i) => (
+                                <li key={i}>
+                                  Auction {detail.auction_id.slice(0, 8)}: {detail.image_count} images
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {!imageRepairResult.success && (
+                      <div className="mt-2 text-sm text-gray-700">
+                        <p>{imageRepairResult.error || imageRepairResult.message || 'An error occurred'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Button */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={runImageRepair}
+                disabled={isImageRepairRunning}
+                className="inline-flex items-center gap-2 rounded-lg bg-black px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isImageRepairRunning ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="h-4 w-4" />
+                    Repair Auction Images
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-gray-600">Scans up to 500 auctions and repairs missing image fields</p>
+            </div>
+
+            {/* Info Box */}
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 text-sm text-blue-900">
+              <p className="font-medium mb-1">🖼️ About Image Repair</p>
+              <p>
+                This tool finds auctions with missing image_url or images fields and automatically populates them by scanning the auction's storage folder.
+                Useful when images were uploaded but the database wasn't updated properly.
               </p>
             </div>
           </div>

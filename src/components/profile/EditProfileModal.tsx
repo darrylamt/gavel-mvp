@@ -11,16 +11,12 @@ type Props = {
   userId: string;
   initialUsername?: string;
   initialPhone?: string;
-  initialSmsOptIn?: boolean;
-  initialSmsMarketingOptIn?: boolean;
   initialAddress?: string;
   initialDeliveryLocation?: string | null;
   initialAvatarUrl?: string | null;
   onSaved?: (d: {
     username?: string;
     phone?: string;
-    smsOptIn?: boolean;
-    smsMarketingOptIn?: boolean;
     address?: string;
     deliveryLocation?: string;
     avatarUrl?: string;
@@ -33,8 +29,6 @@ export default function EditProfileModal({
   userId,
   initialUsername,
   initialPhone,
-  initialSmsOptIn,
-  initialSmsMarketingOptIn,
   initialAddress,
   initialDeliveryLocation,
   initialAvatarUrl,
@@ -42,8 +36,6 @@ export default function EditProfileModal({
 }: Props) {
   const [username, setUsername] = useState(initialUsername ?? '')
   const [phone, setPhone] = useState(initialPhone ?? '')
-  const [smsOptIn, setSmsOptIn] = useState(Boolean(initialSmsOptIn))
-  const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(Boolean(initialSmsMarketingOptIn))
   const [address, setAddress] = useState(initialAddress ?? '')
   const [deliveryLocation, setDeliveryLocation] = useState(initialDeliveryLocation ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -105,9 +97,6 @@ export default function EditProfileModal({
       const updates: Record<string, string | boolean | null> = {
         username: username || null,
         phone: phone || null,
-        sms_opt_in: smsOptIn,
-        sms_marketing_opt_in: smsMarketingOptIn,
-        sms_opt_in_at: smsOptIn ? new Date().toISOString() : null,
         address: address || null,
         delivery_location: deliveryLocation || null,
       }
@@ -122,11 +111,15 @@ export default function EditProfileModal({
       }
 
       console.log('Profile updated successfully')
+      
+      // If user added a phone number, dismiss the phone prompt
+      if (phone && phone.trim() !== '') {
+        localStorage.setItem('phoneNumberPromptDismissed', 'true')
+      }
+      
       onSaved?.({
         username,
         phone,
-        smsOptIn,
-        smsMarketingOptIn,
         address,
         deliveryLocation,
         avatarUrl: avatarUrl ?? undefined,
@@ -168,36 +161,6 @@ export default function EditProfileModal({
               placeholder="+233 24 123 4567"
             />
           </div>
-
-          <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">📱</span>
-              <h3 className="text-sm font-semibold text-gray-900">SMS Notifications</h3>
-            </div>
-            <label className="flex items-start gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={smsOptIn}
-                onChange={(event) => setSmsOptIn(event.target.checked)}
-                className="mt-0.5"
-              />
-              <span>Receive auction updates, bid alerts, payment confirmations, and delivery notifications via SMS</span>
-            </label>
-            <label className="flex items-start gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={smsMarketingOptIn}
-                onChange={(event) => setSmsMarketingOptIn(event.target.checked)}
-                disabled={!smsOptIn}
-                className="mt-0.5"
-              />
-              <span>Receive promotional messages about new auctions and special offers</span>
-            </label>
-            {phone && (
-              <p className="text-xs text-gray-500 mt-2">Messages will be sent to {phone}</p>
-            )}
-          </div>
-
 
           <Input
             label="Home Address"

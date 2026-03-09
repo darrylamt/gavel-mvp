@@ -13,8 +13,6 @@ import SignOutButton from '@/components/profile/SignOutButton'
 import EditProfileModal from '@/components/profile/EditProfileModal'
 import BidAuctionsSection from '@/components/profile/BidAuctionsSection'
 
-// Add settings link
-
 type WonAuction = {
   auction_id: string
   title: string
@@ -26,8 +24,6 @@ type ProfileData = {
   username: string | null
   token_balance: number | null
   phone: string | null
-  sms_opt_in: boolean | null
-  sms_marketing_opt_in: boolean | null
   address: string | null
   delivery_location: string | null
   avatar_url: string | null
@@ -41,23 +37,6 @@ type BidAuctionItem = {
   currentPrice: number
   status: string
 }
-
-// ...existing code...
-
-// Add settings link to profile UI (top right for now)
-// Find the main return and add a link to /profile/settings
-
-// ...existing code...
-
-// In the main profile page component, add:
-
-// ...existing code...
-
-// Example insertion (adjust placement as needed):
-
-// <div className="flex justify-end mb-4">
-//   <Link href="/profile/settings" className="text-sm text-blue-600 hover:underline">Settings</Link>
-// </div>
 
 type UserBidRow = {
   auction_id: string
@@ -88,8 +67,6 @@ export default function ProfilePage() {
   const [tokens, setTokens] = useState<number>(0)
 
   const [phone, setPhone] = useState('')
-  const [smsOptIn, setSmsOptIn] = useState(false)
-  const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(false)
   const [address, setAddress] = useState('')
   const [deliveryLocation, setDeliveryLocation] = useState('')
 
@@ -173,8 +150,6 @@ export default function ProfilePage() {
       setUsername(profileData?.username ?? (metadataFullName || null))
       setTokens(profileData?.token_balance ?? 0)
       setPhone(profileData?.phone ?? '')
-      setSmsOptIn(Boolean(profileData?.sms_opt_in))
-      setSmsMarketingOptIn(Boolean(profileData?.sms_marketing_opt_in))
       setAddress(profileData?.address ?? '')
       setDeliveryLocation(profileData?.delivery_location ?? '')
       setAvatarUrl(profileData?.avatar_url ?? null)
@@ -309,22 +284,6 @@ export default function ProfilePage() {
         address={address}
       />
 
-      {/* Notification Settings Link */}
-      <section className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-blue-900">📱 SMS Notification Settings</p>
-            <p className="text-sm text-blue-700">Manage your auction alerts and countdown reminders</p>
-          </div>
-          <Link
-            href="/profile/notifications"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            Manage Notifications
-          </Link>
-        </div>
-      </section>
-
       <WonAuctionsSection
         auctions={wonAuctions}
         onPay={payNow}
@@ -340,24 +299,18 @@ export default function ProfilePage() {
         userId={userId!}
         initialUsername={username ?? undefined}
         initialPhone={phone}
-        initialSmsOptIn={smsOptIn}
-        initialSmsMarketingOptIn={smsMarketingOptIn}
         initialAddress={address}
         initialDeliveryLocation={deliveryLocation}
         initialAvatarUrl={avatarUrl}
         onSaved={(d: {
           username?: string;
           phone?: string;
-          smsOptIn?: boolean;
-          smsMarketingOptIn?: boolean;
           address?: string;
           deliveryLocation?: string;
           avatarUrl?: string;
         }) => {
           if (d.username) setUsername(d.username)
           if (typeof d.phone !== 'undefined') setPhone(d.phone)
-          if (typeof d.smsOptIn !== 'undefined') setSmsOptIn(d.smsOptIn)
-          if (typeof d.smsMarketingOptIn !== 'undefined') setSmsMarketingOptIn(d.smsMarketingOptIn)
           if (typeof d.address !== 'undefined') setAddress(d.address)
           if (typeof d.deliveryLocation !== 'undefined') setDeliveryLocation(d.deliveryLocation)
           if (d.avatarUrl) setAvatarUrl(d.avatarUrl)

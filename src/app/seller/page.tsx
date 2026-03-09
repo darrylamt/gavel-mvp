@@ -111,33 +111,6 @@ export default function SellerDashboardPage() {
           >
             My Products
           </Link>
-          <Link
-            href="/auctions/new"
-            className="hidden rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50 md:inline-flex"
-          >
-            New Auction
-          </Link>
-          <Link
-            href="/seller/products"
-            className="hidden rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50 md:inline-flex"
-          >
-            Add Product
-          </Link>
-          <Link
-            href="/seller/shop"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50"
-          >
-            Edit Shop
-          </Link>
-          <Link
-            href="/seller/deliveries"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50"
-          >
-            Delivery Details
-          </Link>
-          <Link href="/auctions" className="hidden rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-gray-50 md:inline-flex">
-            Browse Auctions
-          </Link>
         </div>
       </section>
 

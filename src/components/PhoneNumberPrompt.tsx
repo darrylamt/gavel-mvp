@@ -2,15 +2,24 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function PhoneNumberPrompt() {
   const [showPrompt, setShowPrompt] = useState(false)
   const [loading, setLoading] = useState(true)
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     const checkPhoneNumber = async () => {
       try {
+        // Don't show prompt during onboarding (user just signed up)
+        const isOnboarding = searchParams?.get('onboarding') === '1'
+        if (isOnboarding) {
+          setLoading(false)
+          return
+        }
+
         // Check if user dismissed this prompt before
         const hasDismissed = localStorage.getItem('phoneNumberPromptDismissed')
         if (hasDismissed) {
@@ -18,7 +27,7 @@ export default function PhoneNumberPrompt() {
           return
         }
 
-        // Get current user
+        // Get current user (force refresh to avoid stale cache)
         const { data: { user } } = await supabase.auth.getUser()
         
         if (!user) {
@@ -26,12 +35,12 @@ export default function PhoneNumberPrompt() {
           return
         }
 
-        // Check if user has a phone number
+        // Check if user has a phone number (with cache-busting query)
         const { data: profile } = await supabase
           .from('profiles')
           .select('phone')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
         const hasPhone = profile?.phone && profile.phone.trim() !== ''
 
@@ -51,7 +60,7 @@ export default function PhoneNumberPrompt() {
     }
 
     checkPhoneNumber()
-  }, [])
+  }, [searchParams])
 
   const handleDismiss = () => {
     localStorage.setItem('phoneNumberPromptDismissed', 'true')

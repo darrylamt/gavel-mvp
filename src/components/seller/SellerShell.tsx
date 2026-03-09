@@ -14,7 +14,7 @@ const tabs = [
   { href: '/seller/auctions', label: 'My Auctions', icon: Gavel },
   { href: '/seller/products', label: 'My Products', icon: Package },
   { href: '/seller/earnings', label: 'Earnings', icon: Wallet },
-  { href: '/seller/shop', label: 'Shop Profile', icon: Store },
+  { href: '/seller/shop', label: 'Edit Shop', icon: Store },
   { href: '/seller/deliveries', label: 'Deliveries', icon: Truck },
 ]
 

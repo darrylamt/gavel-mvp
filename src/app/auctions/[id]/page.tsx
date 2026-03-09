@@ -30,6 +30,7 @@ type AuctionRecord = {
   reserve_price: number | null
   sale_source: 'gavel' | 'seller' | null
   seller_name: string | null
+  seller_shop_id?: string | null
   seller_shop_name?: string | null
   seller_phone: string | null
   starts_at: string | null
@@ -557,7 +558,7 @@ export default function AuctionDetailPage() {
   const fallbackImages = normalizeAuctionImageUrls(auction.images, auction.image_url)
   const imageUrl = fallbackImages[0] || `${siteUrl}/share/auction/${auction.id}/opengraph-image`
   const sellerDisplayName =
-    (auction.seller_shop_name || auction.seller_name || '').trim() || 'External Seller'
+    (auction.seller_name || auction.seller_shop_name || '').trim() || 'External Seller'
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -603,7 +604,17 @@ export default function AuctionDetailPage() {
             <div className="grid grid-cols-1 gap-3 rounded-xl border bg-gray-50/60 p-4 text-sm text-gray-700 sm:grid-cols-2">
               <div>
                 <div className="font-medium text-gray-900">{saleSource === 'seller' ? 'Seller' : 'Sale Source'}</div>
-                <div>{saleSource === 'seller' ? sellerDisplayName : 'Gavel Products'}</div>
+                <div>
+                  {saleSource === 'seller' && auction.seller_shop_id ? (
+                    <Link href={`/shop/seller/${auction.seller_shop_id}`} className="underline underline-offset-2 hover:text-gray-900">
+                      {sellerDisplayName}
+                    </Link>
+                  ) : saleSource === 'seller' ? (
+                    sellerDisplayName
+                  ) : (
+                    'Gavel Products'
+                  )}
+                </div>
               </div>
               {auction.ends_at && (
                 <div>

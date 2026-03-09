@@ -49,7 +49,7 @@ export async function GET(
   const { data: activeSellerShop } = sellerId
     ? await client
         .from('shops')
-        .select('name, created_at, updated_at')
+        .select('id, name, created_at, updated_at')
         .eq('owner_id', sellerId)
         .eq('status', 'active')
         .order('updated_at', { ascending: false, nullsFirst: false })
@@ -61,7 +61,7 @@ export async function GET(
   const { data: latestSellerShop } = sellerId && !activeSellerShop
     ? await client
         .from('shops')
-        .select('name, created_at, updated_at')
+        .select('id, name, created_at, updated_at')
         .eq('owner_id', sellerId)
         .order('updated_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false, nullsFirst: false })
@@ -113,6 +113,9 @@ export async function GET(
   return NextResponse.json({
     auction: {
       ...data,
+      seller_shop_id: (activeSellerShop as { id?: string | null } | null)?.id
+        ?? (latestSellerShop as { id?: string | null } | null)?.id
+        ?? null,
       seller_shop_name: (activeSellerShop as { name?: string | null } | null)?.name
         ?? (latestSellerShop as { name?: string | null } | null)?.name
         ?? null,
