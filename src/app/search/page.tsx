@@ -109,10 +109,10 @@ function SearchResults() {
               </h1>
 
               {/* Tabs */}
-              <div className="flex gap-2 border-b border-gray-200">
+              <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto border-b border-gray-200 px-1">
                 <button
                   onClick={() => setActiveTab('all')}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
+                  className={`whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
                     activeTab === 'all'
                       ? 'border-black text-black'
                       : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -122,7 +122,7 @@ function SearchResults() {
                 </button>
                 <button
                   onClick={() => setActiveTab('auctions')}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
+                  className={`whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
                     activeTab === 'auctions'
                       ? 'border-orange-500 text-orange-700'
                       : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -132,7 +132,7 @@ function SearchResults() {
                 </button>
                 <button
                   onClick={() => setActiveTab('products')}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
+                  className={`whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
                     activeTab === 'products'
                       ? 'border-blue-500 text-blue-700'
                       : 'border-transparent text-gray-600 hover:text-gray-900'

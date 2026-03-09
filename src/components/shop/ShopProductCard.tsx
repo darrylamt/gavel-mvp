@@ -32,7 +32,7 @@ export default function ShopProductCard({
   compactMobile = false,
 }: Props) {
   const { addToCart } = useCart()
-  const { toggleStarredProduct } = useStarredProducts()
+  const { toggleStarredProduct, isStarredProduct } = useStarredProducts()
   const { notify } = useTopToast()
   const href = `/shop/${id}`
 
@@ -45,6 +45,7 @@ export default function ShopProductCard({
   }, [imageUrl, imageUrls])
 
   const [activeImageSrc, setActiveImageSrc] = useState(images[0] ?? '')
+  const isStarred = isStarredProduct(id)
 
   useEffect(() => {
     setActiveImageSrc(images[0] ?? '')
@@ -138,8 +139,10 @@ export default function ShopProductCard({
             title="Wishlist"
             className={styles.iconButton}
             onClick={handleToggleWishlist}
+            aria-label={isStarred ? 'Remove from wishlist' : 'Add to wishlist'}
+            aria-pressed={isStarred}
           >
-            <Heart className={styles.actionIcon} />
+            <Heart className={styles.actionIcon} fill={isStarred ? 'currentColor' : 'none'} />
           </button>
         </div>
       </div>

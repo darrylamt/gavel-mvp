@@ -61,8 +61,12 @@ export default function SellerOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [updatingItem, setUpdatingItem] = useState<string | null>(null)
+  const [noteModalOpen, setNoteModalOpen] = useState(false)
+  const [statusNote, setStatusNote] = useState('')
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{ orderId: string; status: string } | null>(null)
 
   useEffect(() => {
     loadOrders()
@@ -108,6 +112,7 @@ export default function SellerOrdersPage() {
   ) => {
     setUpdatingItem(itemId)
     setError(null)
+    setSuccessMessage(null)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -138,7 +143,7 @@ export default function SellerOrdersPage() {
       const data = await res.json()
 
       if (res.ok) {
-        alert('✓ Order status updated')
+        setSuccessMessage('Order item status updated successfully.')
         await loadOrders()
       } else {
         setError(data.error || 'Failed to update status')
@@ -150,11 +155,9 @@ export default function SellerOrdersPage() {
     }
   }
 
-  const updateOrderStatus = async (orderId: string, status: string) => {
-    const description = prompt(`Add a note for "${STATUS_OPTIONS.find((s) => s.value === status)?.label}"`)
-    if (description === null) return
-
+  const updateOrderStatus = async (orderId: string, status: string, description: string) => {
     setError(null)
+    setSuccessMessage(null)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -181,7 +184,7 @@ export default function SellerOrdersPage() {
       const data = await res.json()
 
       if (res.ok) {
-        alert('✓ Order status updated')
+        setSuccessMessage('Order status updated successfully.')
         await loadOrders()
       } else {
         setError(data.error || 'Failed to update status')
@@ -189,6 +192,20 @@ export default function SellerOrdersPage() {
     } catch (err) {
       setError('Failed to update status')
     }
+  }
+
+  const openStatusNoteModal = (orderId: string, status: string) => {
+    setPendingStatusUpdate({ orderId, status })
+    setStatusNote(STATUS_OPTIONS.find((option) => option.value === status)?.label || '')
+    setNoteModalOpen(true)
+  }
+
+  const submitStatusUpdate = async () => {
+    if (!pendingStatusUpdate) return
+    await updateOrderStatus(pendingStatusUpdate.orderId, pendingStatusUpdate.status, statusNote.trim())
+    setNoteModalOpen(false)
+    setPendingStatusUpdate(null)
+    setStatusNote('')
   }
 
   const formatDate = (dateStr: string) => {
@@ -272,6 +289,12 @@ export default function SellerOrdersPage() {
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+            {successMessage}
           </div>
         )}
 
@@ -384,9 +407,7 @@ export default function SellerOrdersPage() {
                               return (
                                 <button
                                   key={statusOption.value}
-                                  onClick={() =>
-                                    updateOrderStatus(order.id, statusOption.value)
-                                  }
+                                  onClick={() => openStatusNoteModal(order.id, statusOption.value)}
                                   className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
                                 >
                                   <Icon className="h-3.5 w-3.5" />
@@ -460,6 +481,44 @@ export default function SellerOrdersPage() {
             </div>
           )}
         </div>
+
+        {noteModalOpen && pendingStatusUpdate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+              <h3 className="text-base font-semibold text-gray-900">Update order status</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Add a note for "{STATUS_OPTIONS.find((s) => s.value === pendingStatusUpdate.status)?.label}".
+              </p>
+              <textarea
+                value={statusNote}
+                onChange={(event) => setStatusNote(event.target.value)}
+                rows={4}
+                className="mt-4 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                placeholder="Status note"
+              />
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNoteModalOpen(false)
+                    setPendingStatusUpdate(null)
+                    setStatusNote('')
+                  }}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitStatusUpdate}
+                  className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                >
+                  Save update
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </SellerShell>
   )
