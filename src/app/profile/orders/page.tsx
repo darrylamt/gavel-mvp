@@ -211,7 +211,13 @@ export default function MyOrdersPage() {
                       {item.quantity}x {item.title}
                     </span>
                     <span className="font-medium text-gray-900">
-               /* Action Buttons */}
+                      GHS {item.unit_price.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
               <div className="mt-4 flex gap-2 border-t border-gray-100 pt-4">
                 {order.tracking_number && (
                   <Link
@@ -238,13 +244,7 @@ export default function MyOrdersPage() {
                     </button>
                   </div>
                 )}
-              </div>  >
-                    {confirmingOrderId === order.id
-                      ? 'Confirming...'
-                      : 'Confirm Delivery'}
-                  </button>
-                </div>
-              )}
+              </div>
 
               {order.delivered && order.delivery_confirmed_at && (
                 <div className="mt-4 border-t border-gray-100 pt-3">
