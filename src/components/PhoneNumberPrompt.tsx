@@ -2,19 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function PhoneNumberPrompt() {
   const [showPrompt, setShowPrompt] = useState(false)
   const [loading, setLoading] = useState(true)
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     const checkPhoneNumber = async () => {
       try {
         // Don't show prompt during onboarding (user just signed up)
-        const isOnboarding = searchParams?.get('onboarding') === '1'
+        const params = new URLSearchParams(window.location.search)
+        const isOnboarding = params.get('onboarding') === '1'
         if (isOnboarding) {
           setLoading(false)
           return
@@ -60,7 +59,7 @@ export default function PhoneNumberPrompt() {
     }
 
     checkPhoneNumber()
-  }, [searchParams])
+  }, [])
 
   const handleDismiss = () => {
     localStorage.setItem('phoneNumberPromptDismissed', 'true')
