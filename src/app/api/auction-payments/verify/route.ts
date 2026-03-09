@@ -154,6 +154,46 @@ export async function POST(req: Request) {
     })
   }
 
+  // 5️⃣ Create payout record with escrow (hold for 5 days or until buyer confirms delivery)
+  if (auctionMeta?.created_by) {
+    const grossAmount = Number(json.data.amount) / 100
+    const commissionAmount = grossAmount * 0.10 // 10% commission
+    const payoutAmount = grossAmount * 0.90 // 90% to seller
+
+    // Get seller's default payout account
+    const { data: payoutAccount } = await supabase
+      .from('seller_payout_accounts')
+      .select('recipient_code')
+      .eq('seller_id', auctionMeta.created_by)
+      .eq('is_default', true)
+      .maybeSingle()
+
+    if (payoutAccount?.recipient_code) {
+      const scheduledRelease = new Date()
+      scheduledRelease.setDate(scheduledRelease.getDate() + 5) // 5 days from now
+
+      const { error: payoutError } = await supabase.from('payouts').insert({
+        auction_id: String(auction_id),
+        seller_id: auctionMeta.created_by,
+        buyer_id: resolution.activeCandidate.userId,
+        gross_amount: grossAmount,
+        commission_amount: commissionAmount,
+        payout_amount: payoutAmount,
+        recipient_code: payoutAccount.recipient_code,
+        status: 'pending',
+        scheduled_release_at: scheduledRelease.toISOString(),
+      })
+
+      if (payoutError) {
+        console.error('Failed to create payout record:', payoutError)
+      } else {
+        console.log('Payout record created for auction:', auction_id)
+      }
+    } else {
+      console.warn('No default payout account found for seller:', auctionMeta.created_by)
+    }
+  }
+
   console.log('Payment successful for auction:', auction_id)
   return NextResponse.json({ success: true })
 }

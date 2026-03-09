@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Gavel, LayoutDashboard, Package, Store, Truck, Wallet } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Gavel, LayoutDashboard, Package, Store, Truck, Wallet, CreditCard, ShoppingBag } from 'lucide-react'
 
 type Props = {
   children: React.ReactNode
@@ -13,9 +13,11 @@ const tabs = [
   { href: '/seller', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/seller/auctions', label: 'My Auctions', icon: Gavel },
   { href: '/seller/products', label: 'My Products', icon: Package },
+  { href: '/seller/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/seller/earnings', label: 'Earnings', icon: Wallet },
   { href: '/seller/shop', label: 'Edit Shop', icon: Store },
   { href: '/seller/deliveries', label: 'Deliveries', icon: Truck },
+  { href: '/seller/settings/payouts', label: 'Payout Settings', icon: CreditCard },
 ]
 
 export default function SellerShell({ children }: Props) {

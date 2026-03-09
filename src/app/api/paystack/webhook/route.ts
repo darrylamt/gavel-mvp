@@ -69,5 +69,105 @@ export async function POST(req: Request) {
     }
   }
 
+  // Handle transfer.success - Payout successfully sent to seller
+  if (event.event === 'transfer.success') {
+    const { reference, transfer_code, recipient } = event.data || {}
+
+    if (reference && transfer_code) {
+      // Extract payout_id from reference (format: payout_{id}_{timestamp})
+      const parts = reference.split('_')
+      if (parts.length >= 3 && parts[0] === 'payout') {
+        const payout_id = parts[1]
+
+        const { error } = await supabase
+          .from('payouts')
+          .update({ status: 'success' })
+          .eq('id', payout_id)
+
+        if (error) {
+          console.error('Failed to update payout status to success:', error)
+        } else {
+          console.log('Payout marked as success:', payout_id)
+
+          // TODO: Notify seller
+          // const { data: payout } = await supabase
+          //   .from('payouts')
+          //   .select('seller_id, payout_amount')
+          //   .eq('id', payout_id)
+          //   .single()
+          //
+          // if (payout) {
+          //   await queueSellerNotification({
+          //     userId: payout.seller_id,
+          //     message: `Your payout of GHS ${payout.payout_amount} has been sent! 🎉`
+          //   })
+          // }
+        }
+      }
+    }
+  }
+
+  // Handle transfer.failed - Payout transfer failed
+  if (event.event === 'transfer.failed') {
+    const { reference, transfer_code } = event.data || {}
+
+    if (reference) {
+      const parts = reference.split('_')
+      if (parts.length >= 3 && parts[0] === 'payout') {
+        const payout_id = parts[1]
+
+        const { error } = await supabase
+          .from('payouts')
+          .update({ status: 'failed' })
+          .eq('id', payout_id)
+
+        if (error) {
+          console.error('Failed to update payout status to failed:', error)
+        } else {
+          console.log('Payout marked as failed:', payout_id)
+
+          // TODO: Notify seller and flag for admin review
+          // const { data: payout } = await supabase
+          //   .from('payouts')
+          //   .select('seller_id')
+          //   .eq('id', payout_id)
+          //   .single()
+          //
+          // if (payout) {
+          //   await queueSellerNotification({
+          //     userId: payout.seller_id,
+          //     message: 'There was an issue with your payout. Our team will resolve this within 24 hours.'
+          //   })
+          // }
+        }
+      }
+    }
+  }
+
+  // Handle transfer.reversed - Payout transfer was reversed
+  if (event.event === 'transfer.reversed') {
+    const { reference, transfer_code } = event.data || {}
+
+    if (reference) {
+      const parts = reference.split('_')
+      if (parts.length >= 3 && parts[0] === 'payout') {
+        const payout_id = parts[1]
+
+        const { error } = await supabase
+          .from('payouts')
+          .update({ status: 'reversed' })
+          .eq('id', payout_id)
+
+        if (error) {
+          console.error('Failed to update payout status to reversed:', error)
+        } else {
+          console.log('Payout marked as reversed:', payout_id)
+
+          // TODO: Flag for admin review and notify seller
+        }
+      }
+    }
+  }
+
   return NextResponse.json({ received: true })
 }

@@ -57,14 +57,91 @@ export async function GET(req: Request) {
 
   const { data: profile } = await service
     .from('profiles')
-    .select('role')
+    .select('role, is_admin')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  if (profile?.role !== 'admin' && !profile?.is_admin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // Check if this is a request for payout management (new system)
+  const { searchParams } = new URL(req.url)
+  const mode = searchParams.get('mode')
+
+  if (mode === 'management') {
+    // New payout management system
+    const status = searchParams.get('status') || 'all'
+
+    let query = service
+      .from('payouts')
+      .select(`
+        *,
+        seller:seller_id(id, username, phone),
+        buyer:buyer_id(id, username),
+        order:order_id(id, created_at, total_amount),
+        auction:auction_id(id, title, current_price)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(200)
+
+    // Filter by status if not 'all'
+    if (status !== 'all') {
+      query = query.eq('status', status)
+    }
+
+    const { data: payouts, error } = await query
+
+    if (error) {
+      console.error('Failed to fetch payouts:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch payouts' },
+        { status: 500 }
+      )
+    }
+
+    // Calculate summary statistics
+    const summary = {
+      total_pending: 0,
+      total_pending_value: 0,
+      total_on_hold: 0,
+      total_on_hold_value: 0,
+      total_processing: 0,
+      total_processing_value: 0,
+      total_success: 0,
+      total_success_value: 0,
+      total_failed: 0,
+      total_commission: 0,
+    }
+
+    for (const payout of payouts || []) {
+      if (payout.status === 'pending') {
+        summary.total_pending++
+        summary.total_pending_value += Number(payout.payout_amount)
+      } else if (payout.status === 'on_hold') {
+        summary.total_on_hold++
+        summary.total_on_hold_value += Number(payout.payout_amount)
+      } else if (payout.status === 'processing') {
+        summary.total_processing++
+        summary.total_processing_value += Number(payout.payout_amount)
+      } else if (payout.status === 'success') {
+        summary.total_success++
+        summary.total_success_value += Number(payout.payout_amount)
+      } else if (payout.status === 'failed') {
+        summary.total_failed++
+      }
+
+      summary.total_commission += Number(payout.commission_amount)
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: payouts,
+      summary,
+    })
+  }
+
+  // Legacy mode: shop order payout summaries
   const { data: paidOrders, error: paidOrdersError } = await service
     .from('shop_orders')
     .select('id')

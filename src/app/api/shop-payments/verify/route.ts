@@ -269,6 +269,67 @@ export async function POST(req: Request) {
           estimatedDelivery: undefined,
         })
       }
+
+      // Create payout records for each seller (escrow with 5-day hold)
+      const sellerPayouts = new Map<string, { items: typeof metadata.items, totalAmount: number }>()
+
+      // Group items by seller and calculate totals
+      for (const item of metadata.items) {
+        if (!item.seller_id) continue
+
+        const sellerId = String(item.seller_id)
+        const itemTotal = Number(item.unit_price) * Number(item.quantity)
+
+        if (!sellerPayouts.has(sellerId)) {
+          sellerPayouts.set(sellerId, { items: [], totalAmount: 0 })
+        }
+
+        const sellerData = sellerPayouts.get(sellerId)!
+        sellerData.items.push(item)
+        sellerData.totalAmount += itemTotal
+      }
+
+      // Create payout for each seller
+      for (const [sellerId, sellerData] of sellerPayouts) {
+        // For fixed price items, 10% commission already added on top
+        // So seller receives full listed price (100%), we keep 10% of that as commission
+        const grossAmount = sellerData.totalAmount // Total paid by buyer
+        const payoutAmount = grossAmount / 1.1 // Seller's original price (remove the 10% markup)
+        const commissionAmount = grossAmount - payoutAmount // Our 10% commission
+
+        // Get seller's default payout account
+        const { data: payoutAccount } = await supabase
+          .from('seller_payout_accounts')
+          .select('recipient_code')
+          .eq('seller_id', sellerId)
+          .eq('is_default', true)
+          .maybeSingle()
+
+        if (payoutAccount?.recipient_code) {
+          const scheduledRelease = new Date()
+          scheduledRelease.setDate(scheduledRelease.getDate() + 5) // 5 days from now
+
+          const { error: payoutError } = await supabase.from('payouts').insert({
+            order_id: String(orderId),
+            seller_id: sellerId,
+            buyer_id: metadata.user_id,
+            gross_amount: grossAmount,
+            commission_amount: commissionAmount,
+            payout_amount: payoutAmount,
+            recipient_code: payoutAccount.recipient_code,
+            status: 'pending',
+            scheduled_release_at: scheduledRelease.toISOString(),
+          })
+
+          if (payoutError) {
+            console.error('Failed to create payout record for seller:', sellerId, payoutError)
+          } else {
+            console.log('Payout record created for seller:', sellerId, 'order:', orderId)
+          }
+        } else {
+          console.warn('No default payout account found for seller:', sellerId)
+        }
+      }
     }
 
     return NextResponse.json({ success: true })
