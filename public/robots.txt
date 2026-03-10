@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+Allow: /shop
+Allow: /shop/*
+Allow: /auctions
+Allow: /auctions/*
+Allow: /contact
+Allow: /terms
+Allow: /privacy
+Allow: /faq
+
+Disallow: /admin
+Disallow: /api/
+Disallow: /profile
+Disallow: /login
+Disallow: /signup
+Disallow: /auth/
+Disallow: /cart
+Disallow: /pay/
+Disallow: /payment/
+Disallow: /*.json$
+Disallow: /*?*
+Disallow: /*&*
+
+Sitemap: https://gavelgh.com/sitemap.xml
+Sitemap: https://gavelgh.com/api/sitemap.xml

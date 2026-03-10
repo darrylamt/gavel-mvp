@@ -11,6 +11,9 @@ type Props = {
   params: Promise<{ id: string }>
 }
 
+export const dynamic = 'force-static'
+export const revalidate = 3600 // revalidate hourly
+
 type ShopInfo = {
   id: string
   name: string
@@ -59,13 +62,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const { data: product } = await supabase
     .from('shop_products')
-    .select('id, title, description, image_url, image_urls, status')
+    .select('id, title, description, image_url, image_urls, status, category, price, stock')
     .eq('id', id)
     .eq('status', 'active')
     .maybeSingle()
 
   if (!product) {
-    return { title: 'Product' }
+    return {
+      title: 'Product Not Found',
+      robots: { index: false, follow: false },
+    }
   }
 
   const description = (product.description || `Buy ${product.title} on Gavel Ghana.`)
@@ -76,22 +82,37 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? product.image_urls[0]
     : product.image_url
   const productUrl = `${siteUrl}/shop/${product.id}`
+  const category = product.category || 'Products'
 
   return {
-    title: product.title,
+    title: `${product.title} - Buy on Gavel Ghana`,
     description,
-    alternates: { canonical: `/shop/${product.id}` },
+    keywords: [product.title, category, 'Gavel Ghana', 'online shopping', 'buy now'],
+    authors: [{ name: 'Gavel Ghana' }],
+    robots: {
+      index: true,
+      follow: true,
+      nocache: false,
+      googleBot: {
+        index: true,
+        follow: true,
+      },
+    },
+    alternates: {
+      canonical: `${siteUrl}/shop/${product.id}`,
+    },
     openGraph: {
       type: 'website',
       url: productUrl,
-      title: product.title,
-      description,
-      images: imageUrl ? [{ url: imageUrl }] : undefined,
+      title: `${product.title} - Buy on Gavel Ghana`,
+      description: description,
+      siteName: 'Gavel Ghana',
+      images: imageUrl ? [{ url: imageUrl, width: 800, height: 800, alt: product.title }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
-      title: product.title,
-      description,
+      title: `${product.title} - Buy on Gavel Ghana`,
+      description: description,
       images: imageUrl ? [imageUrl] : undefined,
     },
   }
