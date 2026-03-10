@@ -23,4 +23,3 @@ Disallow: /*?*
 Disallow: /*&*
 
 Sitemap: https://gavelgh.com/sitemap.xml
-Sitemap: https://gavelgh.com/api/sitemap.xml
