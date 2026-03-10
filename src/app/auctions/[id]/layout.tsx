@@ -10,23 +10,23 @@ type Props = {
 }
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     return {
       title: 'Auction',
       description: 'Auction details on Gavel Ghana.',
     }
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey || supabaseAnonKey)
 
   const { data } = await supabase
     .from('auctions')
@@ -38,6 +38,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title: 'Auction',
       description: 'Auction details on Gavel Ghana.',
+      robots: { index: false, follow: false },
+    }
+  }
+
+  if (data.is_private) {
+    return {
+      title: data.title || 'Private auction',
+      description: 'This auction is private and not publicly indexable.',
       robots: { index: false, follow: false },
     }
   }
@@ -65,8 +73,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: data.title,
     description: metaDescription,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+      },
+    },
     alternates: {
-      canonical: canonicalPath,
+      canonical: `${siteUrl}${canonicalPath}`,
     },
     openGraph: {
       type: 'website',

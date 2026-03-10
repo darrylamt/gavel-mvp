@@ -14,6 +14,10 @@ type Props = {
 export const dynamic = 'force-static'
 export const revalidate = 3600 // revalidate hourly
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
 type ShopInfo = {
   id: string
   name: string
@@ -52,8 +56,8 @@ type ProductReview = {
 }
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  supabaseUrl!,
+  supabaseServiceRoleKey || supabaseAnonKey!
 )
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
