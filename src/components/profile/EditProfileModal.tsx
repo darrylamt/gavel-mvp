@@ -4,6 +4,7 @@ import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize, UploadedFile } from '@/components/base/file-upload/file-upload'
 import LocationDropdown from '@/components/ui/LocationDropdown'
 import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
+import { useTopToast } from '@/components/ui/TopToastProvider'
 
 type Props = {
   open: boolean;
@@ -34,6 +35,7 @@ export default function EditProfileModal({
   initialAvatarUrl,
   onSaved,
 }: Props) {
+  const { notify } = useTopToast()
   const [username, setUsername] = useState(initialUsername ?? '')
   const [phone, setPhone] = useState(initialPhone ?? '')
   const [address, setAddress] = useState(initialAddress ?? '')
@@ -128,7 +130,11 @@ export default function EditProfileModal({
     } catch (err: unknown) {
       console.error('Profile save error:', err)
       const message = err instanceof Error ? err.message : 'Unknown error'
-      alert(`Failed to save profile: ${message}`)
+      notify({
+        title: 'Save Failed',
+        description: `Failed to save profile: ${message}`,
+        variant: 'error',
+      })
     } finally {
       setSaving(false)
     }
@@ -187,7 +193,11 @@ export default function EditProfileModal({
                 hint="Upload an image (max 5MB)"
                 onDropFiles={handleDropFiles}
                 onSizeLimitExceed={() => {
-                  alert(`File too large. Max size: ${getReadableFileSize(5 * 1024 * 1024)}`)
+                  notify({
+                    title: 'File Too Large',
+                    description: `Max size: ${getReadableFileSize(5 * 1024 * 1024)}`,
+                    variant: 'warning',
+                  })
                 }}
               />
               {uploadedFiles.length > 0 && (

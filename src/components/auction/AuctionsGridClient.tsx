@@ -1,6 +1,7 @@
 'use client'
 
 import AuctionCard from '@/components/auction/AuctionCard'
+import { SharedTickProvider } from '@/components/auction/SharedTickProvider'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -90,33 +91,35 @@ export default function AuctionsGridClient({ auctions, starredOnly = false, enga
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
-      {visibleAuctions.map((auction) => (
-        (() => {
-          const counts = liveEngagementCounts[auction.id] ?? { bidderCount: 0, watcherCount: 0 }
-          return (
-        <AuctionCard
-          key={auction.id}
-          id={auction.id}
-          title={auction.title}
-          description={auction.description}
-          startingPrice={auction.starting_price}
-          currentPrice={auction.current_price}
-          endsAt={auction.ends_at}
-          startsAt={auction.starts_at}
-          status={auction.status}
-          imageUrl={auction.image_url}
-          images={auction.images}
-          reservePrice={auction.reserve_price}
-          minIncrement={auction.min_increment}
-          maxIncrement={auction.max_increment}
-          bidderCount={counts.bidderCount}
-          watcherCount={counts.watcherCount}
-          isPrivate={auction.is_private}
-        />
-          )
-        })()
-      ))}
-    </div>
+    <SharedTickProvider>
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
+        {visibleAuctions.map((auction) => (
+          (() => {
+            const counts = liveEngagementCounts[auction.id] ?? { bidderCount: 0, watcherCount: 0 }
+            return (
+          <AuctionCard
+            key={auction.id}
+            id={auction.id}
+            title={auction.title}
+            description={auction.description}
+            startingPrice={auction.starting_price}
+            currentPrice={auction.current_price}
+            endsAt={auction.ends_at}
+            startsAt={auction.starts_at}
+            status={auction.status}
+            imageUrl={auction.image_url}
+            images={auction.images}
+            reservePrice={auction.reserve_price}
+            minIncrement={auction.min_increment}
+            maxIncrement={auction.max_increment}
+            bidderCount={counts.bidderCount}
+            watcherCount={counts.watcherCount}
+            isPrivate={auction.is_private}
+          />
+            )
+          })()
+        ))}
+      </div>
+    </SharedTickProvider>
   )
 }

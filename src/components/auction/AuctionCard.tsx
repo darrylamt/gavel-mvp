@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Heart, Info, Lock } from 'lucide-react'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
@@ -8,6 +8,7 @@ import { getOrCreateViewerKey } from '@/lib/engagement'
 import { buildAuctionPath } from '@/lib/seo'
 import { getSessionHeaders } from '@/lib/supabaseClient'
 import { normalizeAuctionImageUrls } from '@/lib/auctionImages'
+import { useSharedTick } from './SharedTickProvider'
 
 type AuctionCardProps = {
   id: string
@@ -50,14 +51,9 @@ export default function AuctionCard({
 }: AuctionCardProps) {
   const { isStarred, toggleStarred } = useStarredAuctions()
   const starred = isStarred(id)
-  const [nowMs, setNowMs] = useState(() => Date.now())
+  const { nowMs } = useSharedTick()
   const galleryImages = normalizeAuctionImageUrls(images, imageUrl)
   const primaryImage = galleryImages[0] ?? null
-
-  useEffect(() => {
-    const ticker = setInterval(() => setNowMs(Date.now()), 1000)
-    return () => clearInterval(ticker)
-  }, [])
 
   const timeLeftMs = new Date(endsAt).getTime() - nowMs
   const isEnded = timeLeftMs <= 0
@@ -65,37 +61,27 @@ export default function AuctionCard({
   const isScheduled = !isEnded && startsAtMs > nowMs
   const canToggleStar = !isEnded || starred
 
-  const [startCountdown, setStartCountdown] = useState<string | null>(null)
   const [openTip, setOpenTip] = useState<'min' | 'max' | null>(null)
 
-  useEffect(() => {
-    if (!startsAt || !isScheduled) return
+  const startCountdown = useMemo(() => {
+    if (!startsAt || !isScheduled) return null
 
-    const update = () => {
-      const diff = new Date(startsAt).getTime() - Date.now()
-      if (diff <= 0) {
-        setStartCountdown('Starting...')
-        return
-      }
+    const diff = new Date(startsAt).getTime() - nowMs
+    if (diff <= 0) return 'Starting...'
 
-      const s = Math.floor((diff / 1000) % 60)
-      const m = Math.floor((diff / (1000 * 60)) % 60)
-      const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
-      const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const s = Math.floor((diff / 1000) % 60)
+    const m = Math.floor((diff / (1000 * 60)) % 60)
+    const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24))
 
-      const parts: string[] = []
-      if (d) parts.push(`${d}d`)
-      if (h) parts.push(`${h}h`)
-      if (m) parts.push(`${m}m`)
-      parts.push(`${s}s`)
+    const parts: string[] = []
+    if (d) parts.push(`${d}d`)
+    if (h) parts.push(`${h}h`)
+    if (m) parts.push(`${m}m`)
+    parts.push(`${s}s`)
 
-      setStartCountdown(parts.join(' '))
-    }
-
-    update()
-    const t = setInterval(update, 1000)
-    return () => clearInterval(t)
-  }, [startsAt, isScheduled])
+    return parts.join(' ')
+  }, [startsAt, isScheduled, nowMs])
 
   const trackCardView = () => {
     const viewerKey = getOrCreateViewerKey()

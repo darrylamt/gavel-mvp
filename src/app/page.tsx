@@ -8,6 +8,7 @@ const supabase = createClient(
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import AuctionCard from '@/components/auction/AuctionCard'
+import { SharedTickProvider } from '@/components/auction/SharedTickProvider'
 import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
 import HeroShowcaseCarousel from '@/components/home/HeroShowcaseCarousel'
 import ShopProductCard from '@/components/shop/ShopProductCard'
@@ -169,29 +170,31 @@ export default async function HomePage() {
             <Link href="/auctions" className="text-sm font-semibold underline">View all</Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-            {endingSoon.map((a: any) => (
-              (() => {
-                const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
-                return (
-              <AuctionCard
-                key={a.id}
-                id={a.id}
-                title={a.title}
-                currentPrice={a.current_price}
-                endsAt={a.ends_at}
-                startsAt={a.starts_at}
-                status={a.status}
-                imageUrl={a.image_url}
-                images={a.images}
-                bidderCount={counts.bidderCount}
-                watcherCount={counts.watcherCount}
-                compactMobile
-              />
-                )
-              })()
-            ))}
-          </div>
+          <SharedTickProvider>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+              {endingSoon.map((a: any) => (
+                (() => {
+                  const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
+                  return (
+                <AuctionCard
+                  key={a.id}
+                  id={a.id}
+                  title={a.title}
+                  currentPrice={a.current_price}
+                  endsAt={a.ends_at}
+                  startsAt={a.starts_at}
+                  status={a.status}
+                  imageUrl={a.image_url}
+                  images={a.images}
+                  bidderCount={counts.bidderCount}
+                  watcherCount={counts.watcherCount}
+                  compactMobile
+                />
+                  )
+                })()
+              ))}
+            </div>
+          </SharedTickProvider>
         </section>
       )}
 
@@ -203,29 +206,31 @@ export default async function HomePage() {
             <Link href="/auctions" className="text-sm font-semibold underline">View all</Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-            {startingSoon.map((a: any) => (
-              (() => {
-                const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
-                return (
-              <AuctionCard
-                key={a.id}
-                id={a.id}
-                title={a.title}
-                currentPrice={a.current_price}
-                endsAt={a.ends_at}
-                startsAt={a.starts_at}
-                status={a.status}
-                imageUrl={a.image_url}
-                images={a.images}
-                bidderCount={counts.bidderCount}
-                watcherCount={counts.watcherCount}
-                compactMobile
-              />
-                )
-              })()
-            ))}
-          </div>
+          <SharedTickProvider>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+              {startingSoon.map((a: any) => (
+                (() => {
+                  const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
+                  return (
+                <AuctionCard
+                  key={a.id}
+                  id={a.id}
+                  title={a.title}
+                  currentPrice={a.current_price}
+                  endsAt={a.ends_at}
+                  startsAt={a.starts_at}
+                  status={a.status}
+                  imageUrl={a.image_url}
+                  images={a.images}
+                  bidderCount={counts.bidderCount}
+                  watcherCount={counts.watcherCount}
+                  compactMobile
+                />
+                  )
+                })()
+              ))}
+            </div>
+          </SharedTickProvider>
         </section>
       )}
 
@@ -250,29 +255,31 @@ export default async function HomePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-          {auctions?.map((a) => (
-            (() => {
-              const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
-              return (
-            <AuctionCard
-              key={a.id}
-              id={a.id}
-              title={a.title}
-              currentPrice={a.current_price}
-              endsAt={a.ends_at}
-              startsAt={a.starts_at}
-              status={a.status}
-              imageUrl={a.image_url}
-              images={a.images}
-              bidderCount={counts.bidderCount}
-              watcherCount={counts.watcherCount}
-              compactMobile
-            />
-              )
-            })()
-          ))}
-        </div>
+        <SharedTickProvider>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+            {auctions?.map((a) => (
+              (() => {
+                const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
+                return (
+              <AuctionCard
+                key={a.id}
+                id={a.id}
+                title={a.title}
+                currentPrice={a.current_price}
+                endsAt={a.ends_at}
+                startsAt={a.starts_at}
+                status={a.status}
+                imageUrl={a.image_url}
+                images={a.images}
+                bidderCount={counts.bidderCount}
+                watcherCount={counts.watcherCount}
+                compactMobile
+              />
+                )
+              })()
+            ))}
+          </div>
+        </SharedTickProvider>
       </section>
 
       {/* NEW PRODUCTS SECTION */}

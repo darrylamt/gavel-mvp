@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { supabasePublic } from '@/lib/supabasePublicClient'
+import { useTopToast } from '@/components/ui/TopToastProvider'
 
 import AuctionHeader from '@/components/auction/AuctionHeader'
 import AuctionCountdown from '@/components/auction/AuctionCountdown'
@@ -61,6 +62,7 @@ type BidRecord = {
 }
 
 export default function AuctionDetailPage() {
+  const { notify } = useTopToast()
   const params = useParams<{ id?: string | string[] }>()
   const auctionId = useMemo(() => {
     const rawId = params?.id
@@ -507,7 +509,11 @@ export default function AuctionDetailPage() {
   const payNow = async () => {
     const { data: auth } = await supabase.auth.getUser()
     if (!auth.user || !auth.user.email) {
-      alert('You must be logged in')
+      notify({
+        title: 'Authentication Required',
+        description: 'You must be logged in to make payments',
+        variant: 'warning',
+      })
       return
     }
 
@@ -524,12 +530,20 @@ export default function AuctionDetailPage() {
     const data = await res.json()
 
     if (!res.ok) {
-      alert(data.error || 'Payment failed')
+      notify({
+        title: 'Payment Failed',
+        description: data.error || 'Unable to start payment',
+        variant: 'error',
+      })
       return
     }
 
     if (!data.authorization_url) {
-      alert('Payment initialization failed - no authorization URL received')
+      notify({
+        title: 'Payment Error',
+        description: 'Payment initialization failed - no authorization URL received',
+        variant: 'error',
+      })
       return
     }
 

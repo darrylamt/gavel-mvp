@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import { Package, CheckCircle2, Truck } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useTopToast } from '@/components/ui/TopToastProvider'
 
 type Order = {
   id: string
@@ -21,11 +23,14 @@ type Order = {
 }
 
 export default function MyOrdersPage() {
+  const { notify } = useTopToast()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [orderToConfirm, setOrderToConfirm] = useState<string | null>(null)
 
   useEffect(() => {
     loadOrders()
@@ -90,12 +95,15 @@ export default function MyOrdersPage() {
 
   const confirmDelivery = async (orderId: string) => {
     if (!userId) return
+    setOrderToConfirm(orderId)
+    setConfirmDialogOpen(true)
+  }
 
-    if (!confirm('Confirm that you have received this order in the described condition?')) {
-      return
-    }
+  const handleConfirmDelivery = async () => {
+    if (!orderToConfirm || !userId) return
 
-    setConfirmingOrderId(orderId)
+    setConfirmDialogOpen(false)
+    setConfirmingOrderId(orderToConfirm)
     setError(null)
 
     try {
@@ -103,7 +111,7 @@ export default function MyOrdersPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          order_id: orderId,
+          order_id: orderToConfirm,
           buyer_id: userId,
         }),
       })
@@ -111,9 +119,12 @@ export default function MyOrdersPage() {
       const data = await res.json()
 
       if (res.ok) {
-        // Reload orders to reflect the change
         await loadOrders()
-        alert('✓ Delivery confirmed! Thank you.')
+        notify({
+          title: 'Delivery Confirmed',
+          description: 'Thank you for confirming your delivery!',
+          variant: 'success',
+        })
       } else {
         setError(data.error || 'Failed to confirm delivery')
       }
@@ -121,6 +132,7 @@ export default function MyOrdersPage() {
       setError(err instanceof Error ? err.message : 'Failed to confirm delivery')
     } finally {
       setConfirmingOrderId(null)
+      setOrderToConfirm(null)
     }
   }
 
@@ -258,6 +270,20 @@ export default function MyOrdersPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialogOpen}
+        onClose={() => {
+          setConfirmDialogOpen(false)
+          setOrderToConfirm(null)
+        }}
+        onConfirm={handleConfirmDelivery}
+        title="Confirm Delivery"
+        description="Confirm that you have received this order in good condition? This will release payment to the seller."
+        confirmText="Confirm Delivery"
+        variant="success"
+        isLoading={confirmingOrderId === orderToConfirm}
+      />
     </div>
   )
 }

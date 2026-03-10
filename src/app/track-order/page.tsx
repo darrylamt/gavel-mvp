@@ -16,6 +16,8 @@ import {
   Star,
   Home,
 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useTopToast } from '@/components/ui/TopToastProvider'
 
 type TrackingHistory = {
   status: string
@@ -78,6 +80,8 @@ export default function TrackOrderPage() {
   const [error, setError] = useState<string | null>(null)
   const [rating, setRating] = useState(0)
   const [confirming, setConfirming] = useState(false)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const { notify } = useTopToast()
 
   useEffect(() => {
     if (trackingParam) {
@@ -116,11 +120,13 @@ export default function TrackOrderPage() {
 
   const confirmDelivery = async () => {
     if (!order || !order.id) return
+    setConfirmDialogOpen(true)
+  }
 
-    if (!confirm('Confirm that you have received this order in good condition?')) {
-      return
-    }
+  const handleConfirmDelivery = async () => {
+    if (!order || !order.id) return
 
+    setConfirmDialogOpen(false)
     setConfirming(true)
 
     try {
@@ -128,7 +134,11 @@ export default function TrackOrderPage() {
       const token = session?.access_token
 
       if (!token) {
-        alert('Please log in to confirm delivery')
+        notify({
+          title: 'Authentication Required',
+          description: 'Please log in to confirm delivery',
+          variant: 'warning',
+        })
         setConfirming(false)
         return
       }
@@ -148,13 +158,25 @@ export default function TrackOrderPage() {
       const data = await res.json()
 
       if (res.ok) {
-        alert('✓ Delivery confirmed! Thank you for your order.')
+        notify({
+          title: 'Delivery Confirmed',
+          description: 'Thank you for your order!',
+          variant: 'success',
+        })
         loadTracking(order.tracking_number)
       } else {
-        alert(data.error || 'Failed to confirm delivery')
+        notify({
+          title: 'Confirmation Failed',
+          description: data.error || 'Failed to confirm delivery',
+          variant: 'error',
+        })
       }
     } catch (err) {
-      alert('Failed to confirm delivery')
+      notify({
+        title: 'Error',
+        description: 'Failed to confirm delivery',
+        variant: 'error',
+      })
     } finally {
       setConfirming(false)
     }
@@ -451,6 +473,17 @@ export default function TrackOrderPage() {
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          isOpen={confirmDialogOpen}
+          onClose={() => setConfirmDialogOpen(false)}
+          onConfirm={handleConfirmDelivery}
+          title="Confirm Delivery"
+          description="Confirm that you have received this order in good condition? This will release payment to the seller."
+          confirmText="Confirm Delivery"
+          variant="success"
+          isLoading={confirming}
+        />
       </div>
     </div>
   )

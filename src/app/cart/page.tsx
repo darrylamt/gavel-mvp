@@ -7,9 +7,11 @@ import { useCart } from '@/hooks/useCart'
 import { supabase } from '@/lib/supabaseClient'
 import LocationDropdown from '@/components/ui/LocationDropdown'
 import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
+import { useTopToast } from '@/components/ui/TopToastProvider'
 
 export default function CartPage() {
   const { items, subtotal, removeFromCart, clearCart, incrementItem, decrementItem } = useCart()
+  const { notify } = useTopToast()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [fullName, setFullName] = useState('')
@@ -28,6 +30,7 @@ export default function CartPage() {
   const [discountAmount, setDiscountAmount] = useState(0)
   const [discountLoading, setDiscountLoading] = useState(false)
   const [discountError, setDiscountError] = useState<string | null>(null)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const total = Math.max(0, subtotal + deliveryFee - discountAmount)
 
   useEffect(() => {
@@ -122,18 +125,20 @@ export default function CartPage() {
   const handleCheckout = async () => {
     if (items.length === 0 || isCheckingOut) return
 
+    setCheckoutError(null)
+
     if (!fullName.trim() || !phone.trim() || !address.trim() || !city.trim()) {
-      alert('Please complete your delivery details before checkout.')
+      setCheckoutError('Please complete your delivery details before checkout.')
       return
     }
 
     if (!deliveryLocation.trim()) {
-      alert('Please select your delivery location before checkout.')
+      setCheckoutError('Please select your delivery location before checkout.')
       return
     }
 
     if (deliveryWarning) {
-      alert(deliveryWarning)
+      setCheckoutError(deliveryWarning)
       return
     }
 
@@ -143,7 +148,8 @@ export default function CartPage() {
       const { data: auth } = await supabase.auth.getUser()
 
       if (!auth.user || !auth.user.email) {
-        alert('Please sign in to continue checkout.')
+        setCheckoutError('Please sign in to continue checkout.')
+        setIsCheckingOut(false)
         return
       }
 
@@ -174,14 +180,22 @@ export default function CartPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert(data.error || 'Failed to start checkout')
+        notify({
+          title: 'Checkout Failed',
+          description: data.error || 'Failed to start checkout',
+          variant: 'error',
+        })
+        setIsCheckingOut(false)
         return
       }
 
       window.location.href = data.authorization_url
     } catch {
-      alert('Failed to start checkout')
-    } finally {
+      notify({
+        title: 'Checkout Error',
+        description: 'Failed to start checkout. Please try again.',
+        variant: 'error',
+      })
       setIsCheckingOut(false)
     }
   }
@@ -483,6 +497,12 @@ export default function CartPage() {
               </div>
             </div>
 
+            {checkoutError && (
+              <div className="mt-4 rounded-lg bg-rose-50 px-3 py-2.5 text-sm text-rose-800 border border-rose-200">
+                {checkoutError}
+              </div>
+            )}
+
             <button
               onClick={handleCheckout}
               disabled={isCheckingOut || items.length === 0}
@@ -491,6 +511,25 @@ export default function CartPage() {
               {isCheckingOut ? 'Redirecting…' : 'Checkout Now'}
             </button>
           </aside>
+        </div>
+      )}
+
+      {/* Sticky Mobile Checkout Button */}
+      {items.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white p-4 shadow-lg lg:hidden">
+          <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-gray-500">Total</p>
+              <p className="truncate text-lg font-bold text-gray-900">GHS {total.toLocaleString()}</p>
+            </div>
+            <button
+              onClick={handleCheckout}
+              disabled={isCheckingOut || items.length === 0}
+              className="shrink-0 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+            >
+              {isCheckingOut ? 'Processing...' : 'Checkout'}
+            </button>
+          </div>
         </div>
       )}
     </main>
