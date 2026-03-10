@@ -8,9 +8,9 @@ import { transitionPurchaseState } from '@/src/lib/payments/purchaseState'
 import { usePurchaseStore } from '@/src/state/purchaseStore'
 
 const PACKS: PurchasePack[] = [
-  { id: 'small', title: 'Small Pack (35 tokens)', tokens: 35 },
-  { id: 'medium', title: 'Medium Pack (120 tokens)', tokens: 120 },
-  { id: 'large', title: 'Large Pack (250 tokens)', tokens: 250 },
+  { id: 'small', title: 'Small Pack (10 tokens)', tokens: 10 },
+  { id: 'medium', title: 'Medium Pack (30 tokens)', tokens: 30 },
+  { id: 'large', title: 'Large Pack (70 tokens)', tokens: 70 },
 ]
 
 export default function PurchaseScreen() {

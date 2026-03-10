@@ -13,9 +13,9 @@ type RevenueCatWebhookEvent = {
 }
 
 const PRODUCT_TOKENS: Record<string, number> = {
-  small: 35,
-  medium: 120,
-  large: 250,
+  small: 10,
+  medium: 30,
+  large: 70,
 }
 
 function providerFromStore(store?: string): 'app_store' | 'play_billing' | null {

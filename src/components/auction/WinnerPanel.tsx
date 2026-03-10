@@ -93,7 +93,7 @@ export default function WinnerPanel({
             Time remaining: {remainingMs > 0 ? formatRemaining(remainingMs) : 'Expired'}
           </p>
         )}
-        <p className="mt-1 text-xs text-gray-500">Bid tokens are non-refundable, even if payment is missed.</p>
+        <p className="mt-1 text-xs text-gray-500">Tokens used for winning bids are consumed and not refunded.</p>
 
         <button
           onClick={onPay}

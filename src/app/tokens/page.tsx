@@ -8,44 +8,41 @@ import TokenPricingCard from '@/components/tokens/TokenPricingCard'
 const PACKS = [
   {
     id: 'small',
-    tokens: 35,
+    tokens: 10,
     price: 10,
-    oldPrice: 18,
     label: 'Starter',
     highlight: false,
     features: [
       'Buy with Paystack',
       'Instant delivery',
       'Use for bidding',
-      'Non-refundable',
+      'Refunded if you lose',
     ],
   },
   {
     id: 'medium',
-    tokens: 120,
-    price: 30,
-    oldPrice: 45,
+    tokens: 30,
+    price: 25,
     label: 'Most Popular',
     highlight: true,
     features: [
-      '120 tokens included',
+      '30 tokens included',
       'Buy with Paystack',
       'Instant delivery',
-      'Use for bidding',
+      'Refunded if you lose',
     ],
   },
   {
     id: 'large',
-    tokens: 250,
-    price: 55,
-    oldPrice: 80,
+    tokens: 70,
+    price: 50,
     label: 'Best Value',
     highlight: false,
     features: [
       'Buy with Paystack',
       'Instant delivery',
       'Use for bidding',
-      'Non-refundable',
+      'Refunded if you lose',
     ],
   },
 ]
@@ -94,8 +91,8 @@ export default function BuyTokensPage() {
           Tokens are used to place bids on auctions.
           More tokens means more chances to win.
         </p>
-        <p className="mt-3 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-          Limited-time reduced pricing
+        <p className="mt-3 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+          Tokens refunded if you don't win
         </p>
       </div>
 
@@ -107,7 +104,6 @@ export default function BuyTokensPage() {
             label={pack.label}
             tokens={pack.tokens}
             price={pack.price}
-            oldPrice={pack.oldPrice}
             highlight={pack.highlight}
             isLoading={loading === pack.id}
             features={pack.features}
@@ -122,7 +118,7 @@ export default function BuyTokensPage() {
       <div className="mt-12 text-center text-sm text-gray-500">
         <p>Payments are securely processed by Paystack.</p>
         <p className="mt-1">
-          Tokens are non-refundable once purchased.
+          Tokens used for losing bids are automatically refunded.
         </p>
       </div>
     </main>

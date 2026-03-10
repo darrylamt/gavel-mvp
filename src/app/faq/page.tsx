@@ -13,7 +13,7 @@ export default function FAQPage() {
       id: 'faq-1',
       question: 'How do I start bidding on Gavel?',
       answer:
-        'To start bidding, create a free account, buy tokens through Paystack, and place bids on any active auction. The minimum bid increment is set by each auction seller.',
+        'To start bidding, create a free account, buy tokens through Paystack, and place bids on any active auction. Tokens are refunded if you don\'t win. The minimum bid increment is set by each auction seller.',
     },
     {
       id: 'faq-2',
@@ -25,13 +25,13 @@ export default function FAQPage() {
       id: 'faq-3',
       question: 'How do tokens work?',
       answer:
-        'Tokens are digital credits used to place bids on Gavel. Each bid typically costs 1 token. Tokens are non-refundable and non-transferable. You can purchase them in packs (35, 120, or 250 tokens) via Paystack.',
+        'Tokens are digital credits used to place bids on Gavel. Each bid typically costs 1 token. Tokens used for losing bids are automatically refunded when the auction ends. You can purchase them in packs (10, 30, or 70 tokens) via Paystack.',
     },
     {
       id: 'faq-4',
       question: 'Can I get a refund if I lose an auction?',
       answer:
-        'Tokens used for losing bids are non-refundable. This is stated in our Terms of Service. However, if there is a technical issue with the auction itself, contact our support team.',
+        'Tokens used for losing bids are automatically refunded when the auction ends. If you win, those tokens are consumed as part of the bidding cost. Token purchases themselves are non-refundable.',
     },
     {
       id: 'faq-5',

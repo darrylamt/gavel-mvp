@@ -48,7 +48,7 @@ export default function AuthCallbackPage() {
                   .upsert(
                     {
                       id: session.user.id,
-                      token_balance: 100,
+                      token_balance: 0,
                     },
                     { 
                       onConflict: 'id',

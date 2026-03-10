@@ -95,6 +95,64 @@ export async function POST(req: Request) {
       }
     }
 
+    // REFUND TOKENS TO LOSING BIDDERS
+    // Get all bids for this auction
+    const { data: allBids } = await supabase
+      .from('bids')
+      .select('id, user_id')
+      .eq('auction_id', auction_id)
+
+    if (allBids && allBids.length > 0) {
+      const winningUserId = resolution.activeCandidate?.userId
+      const BID_TOKEN_COST = 1
+
+      // Group bids by user to count how many bids each user made
+      const bidCountByUser = new Map<string, number>()
+      for (const bid of allBids) {
+        const count = bidCountByUser.get(bid.user_id) || 0
+        bidCountByUser.set(bid.user_id, count + 1)
+      }
+
+      // Refund tokens to all losing bidders
+      const refundPromises = Array.from(bidCountByUser.entries()).map(async ([userId, bidCount]) => {
+        // Skip the winner - they don't get a refund
+        if (userId === winningUserId) {
+          return
+        }
+
+        // Refund tokens for all their bids
+        const refundAmount = bidCount * BID_TOKEN_COST
+
+        // Get current balance
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('token_balance')
+          .eq('id', userId)
+          .single()
+
+        if (profile) {
+          // Add refunded tokens back
+          await supabase
+            .from('profiles')
+            .update({
+              token_balance: (profile.token_balance || 0) + refundAmount,
+            })
+            .eq('id', userId)
+
+          // Log the refund transaction
+          await supabase.from('token_transactions').insert({
+            user_id: userId,
+            amount: refundAmount,
+            type: 'refund',
+            reference: `refund:auction:${auction_id}`,
+          })
+        }
+      })
+
+      // Wait for all refunds to complete
+      await Promise.allSettled(refundPromises)
+    }
+
     if (resolution.reason === 'auction_not_ended') {
       return NextResponse.json({ error: 'Auction not ended yet' }, { status: 400 })
     }

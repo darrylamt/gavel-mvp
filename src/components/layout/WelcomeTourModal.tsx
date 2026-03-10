@@ -20,7 +20,7 @@ const slides: Slide[] = [
   },
   {
     title: 'Token Refund Policy',
-    body: 'Bid tokens are consumed when used to place bids and are not refunded after auction settlement.',
+    body: 'Tokens used for losing bids are automatically refunded when the auction ends. If you win, those tokens are consumed.',
   },
   {
     title: 'Smart Auction Rules',

@@ -81,7 +81,7 @@ export default function ContactPage() {
             />
             <FaqRow
               question="Can I get a refund for tokens?"
-              answer="Token purchases are generally non-refundable once credited. Contact support if you were charged without receiving tokens."
+              answer="Tokens used for losing bids are automatically refunded when the auction ends. Token purchases themselves are non-refundable once credited. Contact support if you were charged without receiving tokens."
             />
             <FaqRow
               question="How do I contact support quickly?"

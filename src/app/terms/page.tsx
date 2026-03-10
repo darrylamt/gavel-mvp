@@ -47,7 +47,7 @@ const sections = [
     bullets: [
       'A successful bid placement deducts tokens',
       'Token deduction does not guarantee winning',
-      'Bid tokens are non-refundable even if you do not win',
+      'Bid tokens are refunded if you do not win the auction',
       'Gavel is not liable for third-party payment processor failures',
     ],
   },

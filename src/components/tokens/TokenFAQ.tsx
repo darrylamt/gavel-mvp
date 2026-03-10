@@ -31,8 +31,8 @@ export default function TokenFAQ() {
             Can I get a refund for tokens?
           </p>
           <p>
-            Token purchases are non-refundable once credited 
-            to your account.
+            Tokens used for losing bids are automatically refunded when the auction ends. 
+            If you win an auction, those tokens are consumed. Token purchases themselves are non-refundable.
           </p>
         </div>
 

@@ -11,9 +11,9 @@ type VerifyPayload = {
 }
 
 const PRODUCT_TOKENS: Record<string, number> = {
-  small: 35,
-  medium: 120,
-  large: 250,
+  small: 10,
+  medium: 30,
+  large: 70,
 }
 
 function resolveTokenAmount(productId: string): number {
