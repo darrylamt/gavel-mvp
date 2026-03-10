@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { createClient } from '@supabase/supabase-js'
 import { parseAuctionMeta } from '@/lib/auctionMeta'
 import { buildAuctionPath } from '@/lib/seo'
 import { normalizeAuctionImageUrls } from '@/lib/auctionImages'
@@ -10,29 +9,31 @@ type Props = {
 }
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+type AuctionSeoRecord = {
+  id: string
+  title: string | null
+  description: string | null
+  image_url?: string | null
+  images?: unknown
+  status: string | null
+  is_hidden?: boolean | null
+  is_private?: boolean | null
+}
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return {
-      title: 'Auction',
-      description: 'Auction details on Gavel Ghana.',
-    }
-  }
+  const response = await fetch(`${siteUrl}/api/auctions/${encodeURIComponent(id)}`, {
+    cache: 'no-store',
+  })
 
-  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey || supabaseAnonKey)
-
-  const { data } = await supabase
-    .from('auctions')
-    .select('id, title, description, current_price, images, image_url, status, is_hidden, is_private')
-    .eq('id', id)
-    .maybeSingle()
+  const payload = response.ok
+    ? ((await response.json()) as { auction?: AuctionSeoRecord })
+    : null
+  const data = payload?.auction ?? null
 
   if (!data) {
     return {
@@ -59,11 +60,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
 
   const { description } = parseAuctionMeta(data.description)
-  const metaDescription = (description || `Bid on ${data.title} on Gavel Ghana.`)
+  const auctionTitle = data.title || 'Auction'
+  const metaDescription = (description || `Bid on ${auctionTitle} on Gavel Ghana.`)
     .replace(/\s*•\s*/g, ' • ')
     .slice(0, 160)
 
-  const canonicalPath = buildAuctionPath(data.id, data.title)
+  const canonicalPath = buildAuctionPath(data.id, auctionTitle)
   const normalizedImages = normalizeAuctionImageUrls(
     (data as { images?: unknown }).images,
     (data as { image_url?: string | null }).image_url ?? null
@@ -71,7 +73,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const ogImage = normalizedImages[0] || `${siteUrl}/share/auction/${data.id}/opengraph-image`
 
   return {
-    title: data.title,
+    title: auctionTitle,
     description: metaDescription,
     robots: {
       index: true,
@@ -87,13 +89,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     openGraph: {
       type: 'website',
       url: `${siteUrl}${canonicalPath}`,
-      title: data.title,
+      title: auctionTitle,
       description: metaDescription,
       images: [{ url: ogImage }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: data.title,
+      title: auctionTitle,
       description: metaDescription,
       images: [ogImage],
     },

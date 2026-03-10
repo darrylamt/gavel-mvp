@@ -64,12 +64,22 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const { data: product } = await supabase
-    .from('shop_products')
-    .select('id, title, description, image_url, image_urls, status, category, price, stock')
-    .eq('id', id)
-    .eq('status', 'active')
-    .maybeSingle()
+  const response = await fetch(`${siteUrl}/api/shop-products/${encodeURIComponent(id)}`, {
+    cache: 'no-store',
+  })
+  const payload = response.ok
+    ? ((await response.json()) as {
+        product?: {
+          id: string
+          title: string
+          description: string | null
+          image_url: string | null
+          image_urls?: string[] | null
+          category?: string | null
+        }
+      })
+    : null
+  const product = payload?.product ?? null
 
   if (!product) {
     return {
