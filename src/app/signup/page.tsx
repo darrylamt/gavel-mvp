@@ -110,8 +110,8 @@ export default function SignupPage() {
         .eq('id', verifiedUser.id)
         .maybeSingle()
 
-      // Preserve existing token balance if any, otherwise start with 0
-      const tokenBalance = existingProfile && existingProfile.token_balance ? existingProfile.token_balance : 0
+      // Preserve existing token balance if any, otherwise give new users 3 free tokens
+      const tokenBalance = existingProfile && existingProfile.token_balance ? existingProfile.token_balance : 3
 
       const profileData: Record<string, string | number | boolean> = {
         id: verifiedUser.id,

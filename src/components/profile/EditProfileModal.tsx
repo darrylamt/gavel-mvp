@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize, UploadedFile } from '@/components/base/file-upload/file-upload'
@@ -43,6 +43,18 @@ export default function EditProfileModal({
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [saving, setSaving] = useState(false)
+
+  // Re-sync fields when the modal opens so newly loaded profile data is reflected
+  useEffect(() => {
+    if (open) {
+      setUsername(initialUsername ?? '')
+      setPhone(initialPhone ?? '')
+      setAddress(initialAddress ?? '')
+      setDeliveryLocation(initialDeliveryLocation ?? '')
+      setAvatarFile(null)
+      setUploadedFiles([])
+    }
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null
 

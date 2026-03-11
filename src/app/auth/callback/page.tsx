@@ -33,7 +33,7 @@ export default function AuthCallbackPage() {
 
         if (session) {
           if (session.access_token) {
-            // Ensure new users get 100 tokens (only if they don't have any)
+            // Ensure new users get 3 tokens (only if they don't have any)
             if (session.user?.id) {
               const { data: existingProfile } = await supabase
                 .from('profiles')
@@ -48,7 +48,7 @@ export default function AuthCallbackPage() {
                   .upsert(
                     {
                       id: session.user.id,
-                      token_balance: 0,
+                      token_balance: 3,
                     },
                     { 
                       onConflict: 'id',
