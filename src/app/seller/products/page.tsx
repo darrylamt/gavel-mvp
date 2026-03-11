@@ -156,13 +156,21 @@ export default function SellerProductsPage() {
     setLoading(true)
     setError(null)
 
+    // getUser() validates the session with the server and refreshes the token if needed
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setError('Your session has expired. Please sign in again.')
+      setLoading(false)
+      return
+    }
+
     const {
       data: { session },
     } = await supabase.auth.getSession()
 
     const token = session?.access_token
     if (!token) {
-      setError('Unauthorized')
+      setError('Your session has expired. Please sign in again.')
       setLoading(false)
       return
     }
@@ -432,12 +440,16 @@ export default function SellerProductsPage() {
     setError(null)
 
     try {
+      // getUser() validates with server and refreshes token if expired
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Your session has expired. Please sign in again.')
+
       const {
         data: { session },
       } = await supabase.auth.getSession()
 
       const token = session?.access_token
-      if (!token) throw new Error('Unauthorized')
+      if (!token) throw new Error('Your session has expired. Please sign in again.')
 
       const payload = {
         id: editingId,
@@ -508,12 +520,15 @@ export default function SellerProductsPage() {
     setError(null)
 
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Your session has expired. Please sign in again.')
+
       const {
         data: { session },
       } = await supabase.auth.getSession()
 
       const token = session?.access_token
-      if (!token) throw new Error('Unauthorized')
+      if (!token) throw new Error('Your session has expired. Please sign in again.')
 
       const res = await fetch('/api/admin/products', {
         method: 'DELETE',

@@ -37,6 +37,32 @@ export default function SellerApplyPage() {
   const [backOfIdFile, setBackOfIdFile] = useState<File | null>(null)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
 
+  const MAX_FILE_BYTES = 4 * 1024 * 1024 // 4 MB — keeps total POST under Vercel's 4.5 MB limit
+
+  const handleGhanaCardChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null
+    if (file && file.size > MAX_FILE_BYTES) {
+      setError('Ghana Card image is too large (max 4 MB). Please use a lower-resolution photo.')
+      event.target.value = ''
+      setGhanaCardFile(null)
+      return
+    }
+    setError(null)
+    setGhanaCardFile(file)
+  }
+
+  const handleBackOfIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null
+    if (file && file.size > MAX_FILE_BYTES) {
+      setError('Back of Ghana Card is too large (max 4 MB). Please use a lower-resolution photo.')
+      event.target.value = ''
+      setBackOfIdFile(null)
+      return
+    }
+    setError(null)
+    setBackOfIdFile(file)
+  }
+
   useEffect(() => {
     const load = async () => {
       setLoading(true)
@@ -214,22 +240,22 @@ export default function SellerApplyPage() {
               <input
                 type="file"
                 accept="image/*,application/pdf"
-                onChange={(event) => setGhanaCardFile(event.target.files?.[0] ?? null)}
+                onChange={handleGhanaCardChange}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">Needed to verify your legal identity for seller approval.</p>
+              <p className="mt-1 text-xs text-gray-500">Max 4 MB. Needed to verify your legal identity for seller approval.</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Upload back of Ghana Card</label>
               <input
                 type="file"
                 accept="image/*"
-                onChange={(event) => setBackOfIdFile(event.target.files?.[0] ?? null)}
+                onChange={handleBackOfIdChange}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">Needed to verify your identity and reduce fraud.</p>
+              <p className="mt-1 text-xs text-gray-500">Max 4 MB. Needed to verify your identity and reduce fraud.</p>
             </div>
             <div>
               <SellerTermsAndConditions onAccept={() => setAcceptedTerms(true)} />

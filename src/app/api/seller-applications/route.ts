@@ -97,12 +97,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
     }
 
-    if (idDocument.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'ID document is too large (max 10MB)' }, { status: 400 })
+    if (idDocument.size > 4 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Ghana Card image is too large (max 4 MB). Please use a lower-resolution photo.' }, { status: 400 })
     }
 
-    if (selfieWithCard.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Selfie with card is too large (max 10MB)' }, { status: 400 })
+    if (selfieWithCard.size > 4 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Back of Ghana Card image is too large (max 4 MB). Please use a lower-resolution photo.' }, { status: 400 })
     }
 
     const extension = idDocument.name.includes('.')
