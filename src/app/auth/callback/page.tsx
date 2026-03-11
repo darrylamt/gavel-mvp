@@ -41,8 +41,11 @@ export default function AuthCallbackPage() {
                 .eq('id', session.user.id)
                 .maybeSingle()
 
-              // Only set tokens if profile doesn't exist or has 0/null tokens
-              if (!existingProfile || !existingProfile.token_balance) {
+              const existingTokenBalance = existingProfile?.token_balance ?? null
+              const shouldNormalizeLegacySeed = existingTokenBalance === 100
+
+              // Set a starter balance for new users and normalize legacy 100-token seed accounts.
+              if (!existingProfile || !existingTokenBalance || shouldNormalizeLegacySeed) {
                 await supabase
                   .from('profiles')
                   .upsert(
