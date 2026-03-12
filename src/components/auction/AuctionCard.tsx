@@ -83,6 +83,26 @@ export default function AuctionCard({
     return parts.join(' ')
   }, [startsAt, isScheduled, nowMs])
 
+  const endCountdown = useMemo(() => {
+    if (isEnded || isScheduled) return null
+
+    const diff = new Date(endsAt).getTime() - nowMs
+    if (diff <= 0) return 'Ended'
+
+    const s = Math.floor((diff / 1000) % 60)
+    const m = Math.floor((diff / (1000 * 60)) % 60)
+    const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+    const parts: string[] = []
+    if (d) parts.push(`${d}d`)
+    if (h) parts.push(`${h}h`)
+    if (m) parts.push(`${m}m`)
+    parts.push(`${s}s`)
+
+    return parts.join(' ')
+  }, [endsAt, isEnded, isScheduled, nowMs])
+
   const trackCardView = () => {
     const viewerKey = getOrCreateViewerKey()
     if (!viewerKey) return
@@ -195,6 +215,12 @@ export default function AuctionCard({
 
         {isScheduled && startCountdown && (
           <span className="ml-3 text-xs text-gray-600">{startCountdown}</span>
+        )}
+
+        {!isScheduled && !isEnded && endCountdown && (
+          <div className="mt-2 inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+            ⏳ Ends in {endCountdown}
+          </div>
         )}
 
         {!isEnded && !isScheduled && typeof bidderCount === 'number' && (

@@ -1,12 +1,13 @@
 import { createServiceRoleClient } from '@/lib/serverSupabase'
 import { queueArkeselNotification } from './queue'
 
-export async function queueSellerApplicationReceivedNotification(userId: string, businessName: string) {
+export async function queueSellerApplicationReceivedNotification(userId: string, businessName: string, phoneOverride?: string | null) {
   return queueArkeselNotification({
     userId,
     message: `Hello! We've received your Gavel seller application for "${businessName}". We'll review it shortly and get back to you.`,
     category: 'transactional',
     dedupeKey: `seller-application-received:${userId}:${businessName}`,
+    phoneOverride: phoneOverride ?? null,
   })
 }
 
@@ -14,6 +15,7 @@ export async function queueSellerApplicationReviewedNotification(input: {
   userId: string
   status: 'approved' | 'rejected'
   reason?: string | null
+  phoneOverride?: string | null
 }) {
   const isApproved = input.status === 'approved'
   const message = isApproved
@@ -25,6 +27,7 @@ export async function queueSellerApplicationReviewedNotification(input: {
     message,
     category: 'transactional',
     dedupeKey: `seller-application-reviewed:${input.userId}:${input.status}`,
+    phoneOverride: input.phoneOverride ?? null,
   })
 }
 
@@ -36,7 +39,7 @@ export async function queueBidNotifications(input: {
   previousTopBidderUserId?: string | null
   sellerUserId?: string | null
 }) {
-  const tasks: Promise<any>[] = []
+  const tasks: Promise<unknown>[] = []
 
   tasks.push(
     queueArkeselNotification({
@@ -367,15 +370,20 @@ export async function queueAuctionCountdownNotification(input: {
 
   const service = createServiceRoleClient()
 
+  type ProfilePreferenceRow = {
+    id: string
+    [key: string]: boolean | string | null
+  }
+
   // Get profiles with preference check
   const { data: profiles } = await service
     .from('profiles')
     .select(`id, ${preferenceFields[input.timeRemaining]}`)
     .in('id', input.bidderUserIds)
 
-  const enabledUserIds = (profiles ?? [])
-    .filter((p: any) => p[preferenceFields[input.timeRemaining]] !== false)
-    .map((p: any) => p.id)
+  const enabledUserIds = ((profiles ?? []) as ProfilePreferenceRow[])
+    .filter((profile) => profile[preferenceFields[input.timeRemaining]] !== false)
+    .map((profile) => profile.id)
 
   if (enabledUserIds.length === 0) return
 

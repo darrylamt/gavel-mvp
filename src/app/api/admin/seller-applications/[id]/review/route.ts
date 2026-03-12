@@ -77,15 +77,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   const { data: reviewedApplication } = await service
     .from('seller_applications')
-    .select('user_id, business_name')
+    .select('user_id, business_name, phone')
     .eq('id', id)
-    .maybeSingle<{ user_id: string; business_name: string | null }>()
+    .maybeSingle<{ user_id: string; business_name: string | null; phone: string | null }>()
 
   if (reviewedApplication?.user_id) {
     await queueSellerApplicationReviewedNotification({
       userId: reviewedApplication.user_id,
       status: action,
       reason: action === 'rejected' ? rejectionReason : null,
+      phoneOverride: reviewedApplication.phone,
     })
 
     // Send email notification

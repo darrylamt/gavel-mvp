@@ -1,5 +1,3 @@
-import SemanticSearch from '@/components/search/SemanticSearch'
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -12,6 +10,7 @@ import { SharedTickProvider } from '@/components/auction/SharedTickProvider'
 import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
 import HeroShowcaseCarousel from '@/components/home/HeroShowcaseCarousel'
 import ShopProductCard from '@/components/shop/ShopProductCard'
+import SearchHero from '@/components/home/SearchHero'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,8 +25,9 @@ export default async function HomePage() {
       .order('created_at', { ascending: false })
       .limit(8)
     const products = productsRaw ?? [];
-  const nowIso = new Date().toISOString()
-  const next24HoursIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+  const now = new Date()
+  const nowIso = now.toISOString()
+  const next24HoursIso = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
 
   const { data: auctions } = await supabase
     .from('auctions')
@@ -133,12 +133,14 @@ export default async function HomePage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-14">
-        {/* Mobile Search Bar - only visible on mobile */}
-        <div className="md:hidden mb-6">
-          <SemanticSearch placeholder='Search auctions and products... e.g., "something for my skin"' fullWidth />
-        </div>
+      {/* Search on top, old hero section below */}
+      <div className="mb-6 sm:mb-8">
+        <SearchHero />
+      </div>
 
-      <HeroShowcaseCarousel />
+      <div className="mb-10 sm:mb-12">
+        <HeroShowcaseCarousel />
+      </div>
 
       <section className="mb-12">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -172,7 +174,7 @@ export default async function HomePage() {
 
           <SharedTickProvider>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-              {endingSoon.map((a: any) => (
+              {endingSoon.map((a) => (
                 (() => {
                   const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
                   return (
@@ -208,7 +210,7 @@ export default async function HomePage() {
 
           <SharedTickProvider>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-              {startingSoon.map((a: any) => (
+              {startingSoon.map((a) => (
                 (() => {
                   const counts = engagementCounts.get(a.id) ?? { bidderCount: 0, watcherCount: 0 }
                   return (
@@ -290,12 +292,11 @@ export default async function HomePage() {
             <Link href="/shop" className="text-sm font-semibold underline underline-offset-2">See all products</Link>
           </div>
           <div className="no-scrollbar mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-4">
-            {products.map((product: any) => (
+            {products.map((product) => (
               <div key={product.id} className="snap-start w-[72%] max-w-[232px] flex-none h-full sm:w-auto sm:max-w-none">
                 <ShopProductCard
                   id={product.id}
                   title={product.title}
-                  description={product.description}
                   price={product.price}
                   sellerBasePrice={product.seller_base_price}
                   commissionRate={product.commission_rate}

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 function CollapsibleSection({ title, children, defaultOpen = true }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -63,17 +63,6 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
 
     return ['All Products', ...unique]
   }, [initialCategory, productsWithCategory])
-
-  useEffect(() => {
-    const requested = initialCategory?.trim()
-
-    if (!requested || requested === 'All Products') {
-      setSelectedCategory('All Products')
-      return
-    }
-
-    setSelectedCategory(requested)
-  }, [initialCategory])
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -258,7 +247,6 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
                   key={product.id}
                   id={product.id}
                   title={product.title}
-                  description={product.description}
                   price={product.price}
                   sellerBasePrice={product.seller_base_price}
                   commissionRate={product.commission_rate}

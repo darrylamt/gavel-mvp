@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, LogOut, Heart, ShoppingCart, X, ChevronDown, Settings, Search } from 'lucide-react'
+import { Menu, LogOut, Heart, ShoppingCart, X, ChevronDown, Settings } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -12,7 +12,6 @@ import { useStarredAuctions } from '@/hooks/useStarredAuctions'
 import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useCart } from '@/hooks/useCart'
 import navLogo from '@/assets/branding/nav-logo.png'
-import SemanticSearch from '@/components/search/SemanticSearch'
 
 type ProfileData = {
   username: string | null
@@ -29,13 +28,11 @@ export default function Navbar() {
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
   const [profileRole, setProfileRole] = useState<string>('user')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-    const [searchOpen, setSearchOpen] = useState(false)
   const isAdmin = useIsAdmin()
   const { starredCount } = useStarredAuctions()
   const { starredProductCount } = useStarredProducts()
   const { itemCount } = useCart()
   const lockedScrollYRef = useRef(0)
-    const searchRef = useRef<HTMLDivElement>(null)
   const totalStarredCount = starredCount + starredProductCount
   const canBecomeSeller = !!user && profileRole !== 'seller' && profileRole !== 'admin'
 
@@ -142,31 +139,6 @@ export default function Navbar() {
     }
   }, [user])
 
-    // Close search on click outside or Escape key
-    useEffect(() => {
-      if (!searchOpen) return
-
-      const handleClickOutside = (event: MouseEvent) => {
-        if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-          setSearchOpen(false)
-        }
-      }
-
-      const handleEscape = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') {
-          setSearchOpen(false)
-        }
-      }
-
-      document.addEventListener('mousedown', handleClickOutside)
-      document.addEventListener('keydown', handleEscape)
-
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside)
-        document.removeEventListener('keydown', handleEscape)
-      }
-    }, [searchOpen])
-
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/login')
@@ -220,21 +192,6 @@ export default function Navbar() {
                 </div>
               </div>
 
-                {/* Desktop Search Dropdown */}
-                {searchOpen && (
-                  <div 
-                    ref={searchRef}
-                    className="hidden md:block absolute left-0 right-0 top-16 z-50 border-b border-gray-200 bg-white/95 backdrop-blur shadow-lg supports-[backdrop-filter]:bg-white/60"
-                  >
-                    <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-                      <SemanticSearch 
-                        placeholder='Search auctions and products... e.g., "something for my skin"' 
-                        fullWidth
-                      />
-                    </div>
-                  </div>
-                )}
-
               <button
                 onClick={() => router.push('/shop/sellers')}
                 className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
@@ -268,15 +225,6 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-              {/* Desktop Search */}
-              <button
-                onClick={() => setSearchOpen(!searchOpen)}
-                className="relative hidden rounded-lg border border-gray-200 p-2 transition-colors hover:bg-gray-50 md:inline-flex"
-                aria-label="Search"
-              >
-                <Search className="h-5 w-5 text-gray-700" />
-              </button>
-
             <button
               onClick={() => router.push('/starred')}
 

@@ -166,7 +166,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: message }, { status: 400 })
     }
 
-    await queueSellerApplicationReceivedNotification(auth.user.id, businessName)
+    await queueSellerApplicationReceivedNotification(auth.user.id, businessName, phone)
 
     return NextResponse.json({ application: data }, { status: 201 })
   } catch (error: unknown) {

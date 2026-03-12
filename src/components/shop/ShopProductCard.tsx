@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Heart, ShoppingCart } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useCart } from '@/hooks/useCart'
 import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useTopToast } from '@/components/ui/TopToastProvider'
@@ -12,7 +12,6 @@ import styles from './ShopProductCard.module.css'
 type Props = {
   id: string
   title: string
-  description: string | null
   price: number
   sellerBasePrice?: number | null
   commissionRate?: number | null
@@ -26,7 +25,6 @@ type Props = {
 export default function ShopProductCard({
   id,
   title,
-  description,
   price,
   sellerBasePrice,
   commissionRate,
@@ -50,16 +48,13 @@ export default function ShopProductCard({
   }, [imageUrl, imageUrls])
 
   const [activeImageSrc, setActiveImageSrc] = useState(images[0] ?? '')
+  const displayImageSrc = images.includes(activeImageSrc) ? activeImageSrc : (images[0] ?? '')
   const isStarred = isStarredProduct(id)
   const priceBreakdown = getBuyNowDiscountBreakdown({
     price,
     sellerBasePrice,
     commissionRate,
   })
-
-  useEffect(() => {
-    setActiveImageSrc(images[0] ?? '')
-  }, [images, id])
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault()
@@ -100,9 +95,9 @@ export default function ShopProductCard({
         </div>
 
         <Link href={href} className={styles.front}>
-          {activeImageSrc ? (
+          {displayImageSrc ? (
             <img
-              src={activeImageSrc}
+              src={displayImageSrc}
               alt={title}
               loading="lazy"
               decoding="async"
@@ -118,7 +113,7 @@ export default function ShopProductCard({
             {images.map((src, index) => (
               <li
                 key={`${src}-${index}`}
-                className={`${styles.thumbItem} ${activeImageSrc === src ? styles.thumbActive : ''}`}
+                className={`${styles.thumbItem} ${displayImageSrc === src ? styles.thumbActive : ''}`}
               >
                 <button
                   type="button"
@@ -161,8 +156,6 @@ export default function ShopProductCard({
         <Link href={href} className={styles.titleLink}>
           <h3 className={styles.title}>{title}</h3>
         </Link>
-
-        {description && <p className={styles.desc}>{description}</p>}
 
         {priceBreakdown.hasDiscount && priceBreakdown.previousPrice !== null ? (
           <>
