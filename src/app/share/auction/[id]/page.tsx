@@ -95,7 +95,7 @@ export default async function ShareAuctionPage({ params }: PageProps) {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16 text-center">
       <h1 className="text-3xl font-bold">{auction.title}</h1>
-      <p className="mt-3 text-gray-600">Current bid: GHS {auction.current_price.toLocaleString()}</p>
+      <p className="mt-3 text-gray-600">Current bid: GH₵ {auction.current_price.toLocaleString()}</p>
       <Link href={href} className="mt-6 inline-flex rounded-lg bg-black px-5 py-3 font-semibold text-white hover:bg-gray-800">
         View Auction
       </Link>

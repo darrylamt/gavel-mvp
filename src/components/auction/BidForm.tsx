@@ -71,8 +71,8 @@ export default function BidForm({
       {typeof minIncrement === 'number' && minIncrement > 0 && (
         <p className="mt-1 text-xs text-gray-500 text-center">
           {typeof maxIncrement === 'number' && maxIncrement > 0
-            ? `Allowed increment: +GHS ${minIncrement.toLocaleString()} to +GHS ${maxIncrement.toLocaleString()}`
-            : `Minimum increment: +GHS ${minIncrement.toLocaleString()}`}
+            ? `Allowed increment: +GH₵ ${minIncrement.toLocaleString()} to +GH₵ ${maxIncrement.toLocaleString()}`
+            : `Minimum increment: +GH₵ ${minIncrement.toLocaleString()}`}
         </p>
       )}
     </div>

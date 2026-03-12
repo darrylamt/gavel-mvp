@@ -200,7 +200,7 @@ export default function MyOrdersPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-gray-900">
-                    GHS {order.total_amount.toFixed(2)}
+                    GH₵ {order.total_amount.toFixed(2)}
                   </p>
                   {order.delivered ? (
                     <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
@@ -223,7 +223,7 @@ export default function MyOrdersPage() {
                       {item.quantity}x {item.title}
                     </span>
                     <span className="font-medium text-gray-900">
-                      GHS {item.unit_price.toFixed(2)}
+                      GH₵ {item.unit_price.toFixed(2)}
                     </span>
                   </div>
                 ))}

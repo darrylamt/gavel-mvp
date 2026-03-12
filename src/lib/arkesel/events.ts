@@ -41,7 +41,7 @@ export async function queueBidNotifications(input: {
   tasks.push(
     queueArkeselNotification({
       userId: input.bidderUserId,
-      message: `You're the highest bidder on "${input.auctionTitle}" at GHS ${input.bidderAmount}. Keep an eye on your bid!`,
+      message: `You're the highest bidder on "${input.auctionTitle}" at GH₵ ${input.bidderAmount}. Keep an eye on your bid!`,
       category: 'transactional',
       dedupeKey: `highest:${input.auctionId}:${input.bidderUserId}:${input.bidderAmount}`,
     })
@@ -51,7 +51,7 @@ export async function queueBidNotifications(input: {
     tasks.push(
       queueArkeselNotification({
         userId: input.previousTopBidderUserId,
-        message: `You've been outbid on "${input.auctionTitle}". New bid: GHS ${input.bidderAmount}. Place a new bid now!`,
+        message: `You've been outbid on "${input.auctionTitle}". New bid: GH₵ ${input.bidderAmount}. Place a new bid now!`,
         category: 'transactional',
         dedupeKey: `outbid:${input.auctionId}:${input.previousTopBidderUserId}:${input.bidderAmount}`,
       })
@@ -62,7 +62,7 @@ export async function queueBidNotifications(input: {
     tasks.push(
       queueArkeselNotification({
         userId: input.sellerUserId,
-        message: `New bid on "${input.auctionTitle}": GHS ${input.bidderAmount}. Check your Gavel account!`,
+        message: `New bid on "${input.auctionTitle}": GH₵ ${input.bidderAmount}. Check your Gavel account!`,
         category: 'transactional',
         dedupeKey: `seller-new-bid:${input.auctionId}:${input.bidderAmount}`,
       })
@@ -94,7 +94,7 @@ export async function queueAuctionClosedNotifications(input: {
 
   await queueArkeselNotification({
     userId: input.winnerUserId,
-    message: `Congratulations! You won "${input.auctionTitle}" for GHS ${input.winnerAmount}. Please proceed to payment.`,
+    message: `Congratulations! You won "${input.auctionTitle}" for GH₵ ${input.winnerAmount}. Please proceed to payment.`,
     category: 'transactional',
     dedupeKey: `auction-won:${input.auctionId}:${input.winnerUserId}`,
   })
@@ -102,7 +102,7 @@ export async function queueAuctionClosedNotifications(input: {
   if (input.sellerUserId) {
     await queueArkeselNotification({
       userId: input.sellerUserId,
-      message: `Your auction "${input.auctionTitle}" has sold for GHS ${input.winnerAmount}. Proceed to ship the item.`,
+      message: `Your auction "${input.auctionTitle}" has sold for GH₵ ${input.winnerAmount}. Proceed to ship the item.`,
       category: 'transactional',
       dedupeKey: `seller-item-sold:${input.auctionId}`,
     })
@@ -116,8 +116,8 @@ export async function queuePaymentNotifications(input: {
   type: 'reminder_30m' | 'final_reminder' | 'confirmed'
 }) {
   const messages = {
-    reminder_30m: `Payment reminder: Your auction "${input.auctionTitle}" requires payment of GHS ${input.amount}. Pay now to secure your item.`,
-    final_reminder: `FINAL: "${input.auctionTitle}" payment due GHS ${input.amount}. Complete payment to avoid cancellation.`,
+    reminder_30m: `Payment reminder: Your auction "${input.auctionTitle}" requires payment of GH₵ ${input.amount}. Pay now to secure your item.`,
+    final_reminder: `FINAL: "${input.auctionTitle}" payment due GH₵ ${input.amount}. Complete payment to avoid cancellation.`,
     confirmed: `Payment confirmed for "${input.auctionTitle}". Thank you! Your item will be shipped soon.`,
   }
 
@@ -182,7 +182,7 @@ export async function queueTokenNotifications(input: {
   let message = ''
 
   if (input.type === 'tokens_purchased') {
-    message = `You've purchased GHS ${input.amount} in Gavel tokens. Use them for instant payments!`
+    message = `You've purchased GH₵ ${input.amount} in Gavel tokens. Use them for instant payments!`
   } else if (input.type === 'low_balance') {
     message = `Your Gavel token balance is running low (${input.amount} tokens). Buy more to keep bidding.`
   }
@@ -251,13 +251,13 @@ export async function queueAuctionPaymentReceivedNotifications(input: {
     await Promise.allSettled([
       queueArkeselNotification({
         userId: input.sellerUserId,
-        message: `Payment received for "${input.auctionTitle}" (GHS ${input.amount}). Funds will be transferred soon.`,
+        message: `Payment received for "${input.auctionTitle}" (GH₵ ${input.amount}). Funds will be transferred soon.`,
         category: 'transactional',
         dedupeKey: `seller-auction-payment-received:${input.auctionId}:${input.sellerUserId}`,
       }),
       queueArkeselNotification({
         userId: input.sellerUserId,
-        message: `Your funds from "${input.auctionTitle}" (GHS ${input.amount}) are pending. Expect transfer within 2-3 business days.`,
+        message: `Your funds from "${input.auctionTitle}" (GH₵ ${input.amount}) are pending. Expect transfer within 2-3 business days.`,
         category: 'transactional',
         dedupeKey: `seller-auction-funds-pending:${input.auctionId}:${input.sellerUserId}`,
       }),
@@ -273,7 +273,7 @@ export async function queueShopOrderPaidNotifications(input: {
 }) {
   await queueArkeselNotification({
     userId: input.buyerUserId,
-    message: `Order ${input.orderId} confirmed! We've charged GHS ${input.totalAmount}. Your items will be shipped soon.`,
+    message: `Order ${input.orderId} confirmed! We've charged GH₵ ${input.totalAmount}. Your items will be shipped soon.`,
     category: 'transactional',
     dedupeKey: `shop-order-confirmed:${input.orderId}:${input.buyerUserId}`,
   })
@@ -283,7 +283,7 @@ export async function queueShopOrderPaidNotifications(input: {
       Promise.allSettled([
         queueArkeselNotification({
           userId: sellerId,
-          message: `Order ${input.orderId} has been paid in full (GHS ${input.totalAmount}). Please prepare and ship the items.`,
+          message: `Order ${input.orderId} has been paid in full (GH₵ ${input.totalAmount}). Please prepare and ship the items.`,
           category: 'transactional',
           dedupeKey: `shop-seller-payment-received:${input.orderId}:${sellerId}`,
         }),

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import SellerShell from '@/components/seller/SellerShell'
 import {
   Package,
   Truck,
@@ -32,6 +31,8 @@ type Order = {
   tracking_status: string
   total_amount: number
   delivery_address?: string
+  buyer_full_name?: string | null
+  buyer_phone?: string | null
   created_at: string
   customer: {
     id: string
@@ -232,18 +233,17 @@ export default function SellerOrdersPage() {
   const deliveredCount = orders.filter((o) => o.items.every((i) => i.delivered)).length
 
   return (
-    <SellerShell>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage your orders and update delivery status
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Manage your orders and update delivery status
+        </p>
+      </div>
 
-        {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-4">
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-4">
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -285,21 +285,21 @@ export default function SellerOrdersPage() {
           </div>
         </div>
 
-        {/* Error */}
-        {error && (
+      {/* Error */}
+      {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {successMessage && (
+      {successMessage && (
           <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
             {successMessage}
           </div>
         )}
 
-        {/* Orders List */}
-        <div className="rounded-lg border border-gray-200 bg-white">
+      {/* Orders List */}
+      <div className="rounded-lg border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
             <h2 className="font-semibold text-gray-900">Orders</h2>
             <button
@@ -356,7 +356,7 @@ export default function SellerOrdersPage() {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <p className="font-bold text-gray-900">
-                          GHS {order.total_amount.toFixed(2)}
+                          GH₵ {order.total_amount.toFixed(2)}
                         </p>
                       </div>
                       {expandedOrder === order.id ? (
@@ -379,12 +379,12 @@ export default function SellerOrdersPage() {
                           <div className="space-y-2 text-sm">
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 text-gray-400" />
-                              <span>{order.customer.username}</span>
+                              <span>{order.buyer_full_name || order.customer.username}</span>
                             </div>
-                            {order.customer.phone && (
+                            {(order.buyer_phone || order.customer.phone) && (
                               <div className="flex items-center gap-2">
                                 <Phone className="h-4 w-4 text-gray-400" />
-                                <span>{order.customer.phone}</span>
+                                <span>{order.buyer_phone || order.customer.phone}</span>
                               </div>
                             )}
                             {order.delivery_address && (
@@ -430,7 +430,7 @@ export default function SellerOrdersPage() {
                             <div className="flex-1">
                               <p className="font-medium text-gray-900">{item.title}</p>
                               <p className="text-sm text-gray-500">
-                                Qty: {item.quantity} × GHS {item.unit_price.toFixed(2)}
+                                Qty: {item.quantity} × GH₵ {item.unit_price.toFixed(2)}
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -482,7 +482,7 @@ export default function SellerOrdersPage() {
           )}
         </div>
 
-        {noteModalOpen && pendingStatusUpdate && (
+      {noteModalOpen && pendingStatusUpdate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
               <h3 className="text-base font-semibold text-gray-900">Update order status</h3>
@@ -518,8 +518,7 @@ export default function SellerOrdersPage() {
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </SellerShell>
+      )}
+    </div>
   )
 }

@@ -107,7 +107,7 @@ export default function ProductDetailActions({
             >
               {variants.map((option) => (
                 <option key={option.id} value={option.id}>
-                  {formatVariantLabel(option)} — GHS {formatGhsAmount(Number(option.price))} ({option.stock} in stock)
+                  {formatVariantLabel(option)} — GH₵ {formatGhsAmount(Number(option.price))} ({option.stock} in stock)
                 </option>
               ))}
             </select>
@@ -116,14 +116,14 @@ export default function ProductDetailActions({
 
         {priceBreakdown.hasDiscount && priceBreakdown.previousPrice !== null ? (
           <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
-            <p className="text-gray-500 line-through">GHS {formatGhsAmount(priceBreakdown.previousPrice)}</p>
-            <p className="text-lg font-semibold text-gray-900">GHS {formatGhsAmount(priceBreakdown.currentPrice)}</p>
+            <p className="text-gray-500 line-through">GH₵ {formatGhsAmount(priceBreakdown.previousPrice)}</p>
+            <p className="text-lg font-semibold text-gray-900">GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</p>
             <p className="font-semibold text-emerald-700">
-              You save GHS {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
+              You save GH₵ {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
             </p>
           </div>
         ) : (
-          <p className="w-full text-lg font-semibold text-gray-900">GHS {formatGhsAmount(priceBreakdown.currentPrice)}</p>
+          <p className="w-full text-lg font-semibold text-gray-900">GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</p>
         )}
 
         <input

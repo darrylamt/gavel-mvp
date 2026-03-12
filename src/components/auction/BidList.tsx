@@ -73,7 +73,7 @@ export default function BidList({ bids, currentUserId }: Props) {
 
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">
-                      GHS {bid.amount}
+                      GH₵ {bid.amount}
                     </span>
                     {isTop && <span>🏆</span>}
                   </div>

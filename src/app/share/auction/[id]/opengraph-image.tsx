@@ -55,7 +55,7 @@ export default async function Image({ params }: Props) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ fontSize: 22, opacity: 0.8 }}>Current bid</div>
-            <div style={{ fontSize: 56, fontWeight: 800 }}>GHS {price.toLocaleString()}</div>
+            <div style={{ fontSize: 56, fontWeight: 800 }}>GH₵ {price.toLocaleString()}</div>
           </div>
 
           <div style={{ fontSize: 38, fontWeight: 700 }}>Gavel</div>

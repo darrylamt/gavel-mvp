@@ -74,7 +74,7 @@ export default function PayPage() {
       
       <div className="border rounded-lg p-4 mb-6">
         <h2 className="font-semibold mb-2">{auction.title}</h2>
-        <p className="text-lg text-gray-700">Amount: GHS {auction.current_price}</p>
+        <p className="text-lg text-gray-700">Amount: GH₵ {auction.current_price}</p>
       </div>
 
       {error && (

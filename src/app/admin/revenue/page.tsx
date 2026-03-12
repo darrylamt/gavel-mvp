@@ -143,7 +143,7 @@ function MetricCard({ label, value, highlight = false }: { label: string; value:
   return (
     <div className={`rounded-xl border p-4 shadow-sm ${highlight ? 'bg-black text-white' : 'bg-white'}`}>
       <p className="text-xs uppercase tracking-wide opacity-80">{label}</p>
-      <p className="mt-2 text-2xl font-bold">GHS {Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+      <p className="mt-2 text-2xl font-bold">GH₵ {Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
     </div>
   )
 }

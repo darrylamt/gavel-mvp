@@ -405,12 +405,12 @@ export default function AuctionDetailPage() {
     const maxIncrement = auction?.max_increment == null ? null : Number(auction.max_increment)
 
     if (Number.isFinite(minIncrement) && minIncrement > 0 && increment < minIncrement) {
-      setBidError(`Bid must be at least GHS ${minIncrement.toLocaleString()} above current price`)
+      setBidError(`Bid must be at least GH₵ ${minIncrement.toLocaleString()} above current price`)
       return
     }
 
     if (maxIncrement != null && Number.isFinite(maxIncrement) && maxIncrement > 0 && increment > maxIncrement) {
-      setBidError(`Bid cannot be more than GHS ${maxIncrement.toLocaleString()} above current price`)
+      setBidError(`Bid cannot be more than GH₵ ${maxIncrement.toLocaleString()} above current price`)
       return
     }
 
@@ -674,7 +674,7 @@ export default function AuctionDetailPage() {
                         <li key={`${zone.location_value}-${zone.delivery_price}`} className="flex items-center justify-between gap-3">
                           <span className="truncate">{locationLabel}</span>
                           <span className="whitespace-nowrap">
-                            GHS {Number(zone.delivery_price).toLocaleString()} · {zone.delivery_time_days} day(s)
+                            GH₵ {Number(zone.delivery_price).toLocaleString()} · {zone.delivery_time_days} day(s)
                           </span>
                         </li>
                       )

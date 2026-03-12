@@ -10,7 +10,6 @@ type SellerDeliveryRow = {
   order_created_at: string
   buyer_full_name: string | null
   buyer_phone: string | null
-  buyer_email: string | null
   delivery_address: string | null
   delivery_city: string | null
   delivery_notes: string | null
@@ -19,9 +18,6 @@ type SellerDeliveryRow = {
   unit_price: number
   delivered_by_seller: boolean
   delivered_at: string | null
-  seller_payout_provider: string | null
-  seller_payout_account_name: string | null
-  seller_payout_account_number: string | null
 }
 
 export default function SellerDeliveriesPage() {
@@ -143,7 +139,6 @@ export default function SellerDeliveriesPage() {
                   <th className="py-2">Product</th>
                   <th className="py-2">Buyer</th>
                   <th className="py-2">Delivery</th>
-                  <th className="py-2">Payout Snapshot</th>
                   <th className="py-2">Status</th>
                 </tr>
               </thead>
@@ -154,22 +149,16 @@ export default function SellerDeliveriesPage() {
                     <td className="py-2">{row.order_id.slice(0, 8)}…</td>
                     <td className="py-2">
                       <p className="font-medium text-gray-900">{row.product_title}</p>
-                      <p className="text-xs text-gray-500">Qty: {row.quantity} · Unit: GHS {Number(row.unit_price).toLocaleString()}</p>
+                      <p className="text-xs text-gray-500">Qty: {row.quantity} · Unit: GH₵ {Number(row.unit_price).toLocaleString()}</p>
                     </td>
                     <td className="py-2">
                       <p className="font-medium text-gray-900">{row.buyer_full_name || 'N/A'}</p>
                       <p className="text-xs text-gray-500">{row.buyer_phone || 'No phone'}</p>
-                      <p className="text-xs text-gray-500">{row.buyer_email || 'No email'}</p>
                     </td>
                     <td className="py-2">
                       <p className="text-gray-900">{row.delivery_address || 'N/A'}</p>
                       <p className="text-xs text-gray-500">{row.delivery_city || 'No city'}</p>
                       {row.delivery_notes ? <p className="mt-1 text-xs text-gray-500">Note: {row.delivery_notes}</p> : null}
-                    </td>
-                    <td className="py-2">
-                      <p className="font-medium text-gray-900">{row.seller_payout_provider || 'N/A'}</p>
-                      <p className="text-xs text-gray-500">{row.seller_payout_account_name || 'No account name'}</p>
-                      <p className="text-xs text-gray-500">{row.seller_payout_account_number || 'No account number'}</p>
                     </td>
                     <td className="py-2 whitespace-nowrap">
                       {row.delivered_by_seller ? (

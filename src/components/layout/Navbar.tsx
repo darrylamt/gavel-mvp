@@ -350,6 +350,12 @@ export default function Navbar() {
                 {/* Desktop Dropdown */}
                 <div className="hidden group-hover:flex absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg flex-col z-50">
                   <button
+                    onClick={() => router.push('/profile/orders')}
+                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
+                  >
+                    Track Orders
+                  </button>
+                  <button
                     onClick={() => router.push('/profile')}
                     className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
                   >
@@ -490,6 +496,17 @@ export default function Navbar() {
                 >
                   Auctions
                 </button>
+                {user && (
+                  <button
+                    onClick={() => {
+                      router.push('/profile/orders')
+                      setMobileMenuOpen(false)
+                    }}
+                    className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
+                  >
+                    Track Orders
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     router.push('/shop')

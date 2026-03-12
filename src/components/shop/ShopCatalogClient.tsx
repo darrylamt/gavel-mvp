@@ -197,7 +197,7 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
                   priceFilter === 'under50' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                Under GHS 50
+                Under GH₵ 50
               </button>
               <button
                 onClick={() => setPriceFilter('50to200')}
@@ -205,7 +205,7 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
                   priceFilter === '50to200' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                GHS 50 - 200
+                GH₵ 50 - 200
               </button>
               <button
                 onClick={() => setPriceFilter('above200')}
@@ -213,7 +213,7 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
                   priceFilter === 'above200' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                Above GHS 200
+                Above GH₵ 200
               </button>
             </div>
           </CollapsibleSection>

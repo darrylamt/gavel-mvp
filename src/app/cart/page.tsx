@@ -308,7 +308,7 @@ export default function CartPage() {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-gray-900">{item.title}</p>
                       {item.variantLabel ? <p className="text-xs text-gray-500">{item.variantLabel}</p> : null}
-                      <p className="text-xs text-gray-500">GHS {item.price.toLocaleString()} each</p>
+                      <p className="text-xs text-gray-500">GH₵ {item.price.toLocaleString()} each</p>
                       <p className="text-xs text-gray-500">In stock: {item.availableStock}</p>
                     </div>
                   </div>
@@ -334,7 +334,7 @@ export default function CartPage() {
                     </div>
 
                     <div className="text-sm font-semibold text-gray-900 md:text-left">
-                      GHS {(item.price * item.quantity).toLocaleString()}
+                      GH₵ {(item.price * item.quantity).toLocaleString()}
                     </div>
 
                     <button
@@ -368,7 +368,7 @@ export default function CartPage() {
                   </div>
 
                   <div className="hidden text-sm font-semibold text-gray-900 md:block">
-                    GHS {(item.price * item.quantity).toLocaleString()}
+                    GH₵ {(item.price * item.quantity).toLocaleString()}
                   </div>
 
                   <div className="hidden md:flex md:justify-end">
@@ -465,18 +465,18 @@ export default function CartPage() {
 
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Sub Total</span>
-                <span className="font-medium">GHS {subtotal.toLocaleString()}</span>
+                <span className="font-medium">GH₵ {subtotal.toLocaleString()}</span>
               </div>
               {discountAmount > 0 ? (
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Discount</span>
-                  <span className="font-medium text-green-700">- GHS {discountAmount.toLocaleString()}</span>
+                  <span className="font-medium text-green-700">- GH₵ {discountAmount.toLocaleString()}</span>
                 </div>
               ) : null}
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Delivery Fee</span>
                 <span className="font-medium">
-                  {quoteLoading ? 'Calculating…' : `GHS ${deliveryFee.toLocaleString()}`}
+                  {quoteLoading ? 'Calculating…' : `GH₵ ${deliveryFee.toLocaleString()}`}
                 </span>
               </div>
               {estimatedDeliveryDays ? (
@@ -493,7 +493,7 @@ export default function CartPage() {
             <div className="mt-4 border-t pt-3">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total</span>
-                <span className="text-lg font-extrabold">GHS {total.toLocaleString()}</span>
+                <span className="text-lg font-extrabold">GH₵ {total.toLocaleString()}</span>
               </div>
             </div>
 
@@ -520,7 +520,7 @@ export default function CartPage() {
           <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-xs text-gray-500">Total</p>
-              <p className="truncate text-lg font-bold text-gray-900">GHS {total.toLocaleString()}</p>
+              <p className="truncate text-lg font-bold text-gray-900">GH₵ {total.toLocaleString()}</p>
             </div>
             <button
               onClick={handleCheckout}

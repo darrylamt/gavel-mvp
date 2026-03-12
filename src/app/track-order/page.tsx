@@ -447,7 +447,7 @@ export default function TrackOrderPage() {
                             <span className="text-gray-600">
                               {item.title} × {item.quantity}
                             </span>
-                            <span className="font-medium">GHS {item.unit_price.toFixed(2)}</span>
+                            <span className="font-medium">GH₵ {item.unit_price.toFixed(2)}</span>
                           </div>
                         ))}
                       </div>
@@ -466,7 +466,7 @@ export default function TrackOrderPage() {
                   </div>
                   <div className="flex justify-between border-t border-gray-100 pt-2">
                     <span className="font-medium text-gray-900">Total Amount</span>
-                    <span className="font-bold text-gray-900">GHS {order.total_amount.toFixed(2)}</span>
+                    <span className="font-bold text-gray-900">GH₵ {order.total_amount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

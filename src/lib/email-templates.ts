@@ -87,7 +87,7 @@ export const emailTemplates = {
           </p>
           <div style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 24px 0;">
             <p style="color: #374151; margin: 0 0 12px 0; font-size: 18px;">
-              Winning bid: <strong style="color: #10b981;">GHS ${data.winningBid}</strong>
+              Winning bid: <strong style="color: #10b981;">GH₵ ${data.winningBid}</strong>
             </p>
             <p style="color: #6b7280; margin: 0; font-size: 14px;">Winner: ${data.winnerEmail}</p>
             ${data.winnerPhone ? `<p style="color: #6b7280; margin: 4px 0 0 0; font-size: 14px;">Phone: ${data.winnerPhone}</p>` : ''}
@@ -126,7 +126,7 @@ export const emailTemplates = {
             Someone just placed a bid on <strong>${data.auctionTitle}</strong>.
           </p>
           <p style="color: #374151; margin: 16px 0; font-size: 18px;">
-            Bid amount: <strong style="color: #111827;">GHS ${data.bidAmount}</strong>
+            Bid amount: <strong style="color: #111827;">GH₵ ${data.bidAmount}</strong>
           </p>
           <p style="color: #6b7280; margin: 0; font-size: 14px;">
             Total bids: ${data.bidsCount}
@@ -180,7 +180,7 @@ export const emailTemplates = {
                   <p style="color: #111827; margin: 0 0 4px 0; font-size: 15px; font-weight: 500;">${item.name}</p>
                   <p style="color: #6b7280; margin: 0; font-size: 14px;">Qty: ${item.quantity}</p>
                 </div>
-                <p style="color: #111827; margin: 0; font-size: 15px; font-weight: 600;">GHS ${item.price.toFixed(2)}</p>
+                <p style="color: #111827; margin: 0; font-size: 15px; font-weight: 600;">GH₵ ${item.price.toFixed(2)}</p>
               </div>
             </div>
           `
@@ -190,7 +190,7 @@ export const emailTemplates = {
           <div style="margin-top: 24px; padding-top: 16px; border-top: 2px solid #111827;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <p style="color: #111827; margin: 0; font-size: 18px; font-weight: 600;">Total</p>
-              <p style="color: #111827; margin: 0; font-size: 24px; font-weight: 700;">GHS ${data.total.toFixed(2)}</p>
+              <p style="color: #111827; margin: 0; font-size: 24px; font-weight: 700;">GH₵ ${data.total.toFixed(2)}</p>
             </div>
           </div>
 
@@ -231,7 +231,7 @@ export const emailTemplates = {
             The auction for <strong>${data.auctionTitle}</strong> is ending soon!
           </p>
           <p style="color: #374151; margin: 16px 0; font-size: 18px;">
-            Current bid: <strong style="color: #111827;">GHS ${data.currentBid}</strong>
+            Current bid: <strong style="color: #111827;">GH₵ ${data.currentBid}</strong>
           </p>
           <p style="color: #dc2626; margin: 0; font-size: 14px; font-weight: 600;">
             Ends at: ${data.endsAt}
@@ -350,7 +350,7 @@ export const emailTemplates = {
           </p>
           <div style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 24px 0;">
             <p style="color: #6b7280; margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Amount Due</p>
-            <p style="color: #111827; margin: 0 0 16px 0; font-size: 24px; font-weight: 700;">GHS ${data.winningBid.toFixed(2)}</p>
+            <p style="color: #111827; margin: 0 0 16px 0; font-size: 24px; font-weight: 700;">GH₵ ${data.winningBid.toFixed(2)}</p>
             <p style="color: #6b7280; margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Payment Due</p>
             <p style="color: #dc2626; margin: 0; font-size: 14px; font-weight: 600;">${data.dueDate}</p>
           </div>

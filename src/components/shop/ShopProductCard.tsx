@@ -168,14 +168,14 @@ export default function ShopProductCard({
           <>
             <p className={styles.priceRow}>
               <span className={styles.oldPrice}>GHS {formatGhsAmount(priceBreakdown.previousPrice)}</span>
-              <span className={styles.price}>GHS {formatGhsAmount(priceBreakdown.currentPrice)}</span>
+              <span className={styles.price}>GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</span>
             </p>
             <p className={styles.discountText}>
-              Save GHS {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
+              Save GH₵ {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
             </p>
           </>
         ) : (
-          <p className={styles.price}>GHS {formatGhsAmount(priceBreakdown.currentPrice)}</p>
+          <p className={styles.price}>GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</p>
         )}
 
         {stock > 0 && stock <= 5 && <p className={styles.lowStock}>Only {stock} left in stock</p>}

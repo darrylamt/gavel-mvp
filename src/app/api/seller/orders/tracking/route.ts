@@ -153,8 +153,8 @@ export async function GET(request: Request) {
           tracking_number,
           tracking_status,
           total_amount,
-          delivery_address,
-          created_at,
+          delivery_address,          buyer_full_name,
+          buyer_phone,          created_at,
           user_id
         )
       `)
@@ -198,6 +198,8 @@ export async function GET(request: Request) {
           tracking_status: order.tracking_status,
           total_amount: order.total_amount,
           delivery_address: order.delivery_address,
+          buyer_full_name: order.buyer_full_name,
+          buyer_phone: order.buyer_phone,
           created_at: order.created_at,
           customer: customerMap.get(order.user_id) || { username: 'Customer' },
           items: [],
