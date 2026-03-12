@@ -68,6 +68,17 @@ export async function POST(req: Request) {
     }
 
     const paidAmount = Number(json.data.amount) / 100
+    const paystackCustomerEmail = String(json?.data?.customer?.email || '').trim()
+    let buyerAuthUser: { email?: string | null } | null = null
+    let buyerEmail = String(metadata.buyer_email || '').trim() || paystackCustomerEmail || null
+
+    if (!buyerEmail && metadata.user_id) {
+      const { data: buyerAuthLookup } = await supabase.auth.admin.getUserById(metadata.user_id)
+      buyerAuthUser = buyerAuthLookup.user
+        ? { email: buyerAuthLookup.user.email ?? null }
+        : null
+      buyerEmail = String(buyerAuthUser?.email || '').trim() || null
+    }
 
     const { data: orderId, error: processError } = await supabase.rpc('process_shop_payment', {
       p_reference: String(json.data.reference),
@@ -75,7 +86,7 @@ export async function POST(req: Request) {
       p_total_amount: paidAmount,
       p_items: metadata.items,
       p_delivery: metadata.delivery ?? {},
-      p_buyer_email: metadata.buyer_email ?? null,
+      p_buyer_email: buyerEmail,
     })
 
     if (processError) {
@@ -84,28 +95,28 @@ export async function POST(req: Request) {
 
       if (lowerMessage.includes('process_shop_payment')) {
         return NextResponse.json(
-          { error: 'Shop checkout migration missing. Run the latest SQL migrations (including deliveries), then retry verification.' },
+          { error: 'Shop checkout migration missing. Run the latest SQL migrations, especially 20260312_shop_checkout_schema_reconcile.sql, then retry verification.' },
           { status: 500 }
         )
       }
 
       if (lowerMessage.includes('paystack_reference') && lowerMessage.includes('does not exist')) {
         return NextResponse.json(
-          { error: 'Database schema mismatch: paystack_reference missing on payments/shop_orders. Run the SQL fix script and retry.' },
+          { error: 'Database schema mismatch: paystack_reference missing on payments/shop_orders. Run 20260312_shop_checkout_schema_reconcile.sql and retry.' },
           { status: 500 }
         )
       }
 
       if (lowerMessage.includes('null value in column "email"') && lowerMessage.includes('shop_orders')) {
         return NextResponse.json(
-          { error: 'Database schema mismatch: shop_orders.email is required. Run the shop_orders SQL patch and retry.' },
+          { error: 'Database schema mismatch: shop_orders.email is required. Run 20260312_shop_checkout_schema_reconcile.sql and retry.' },
           { status: 500 }
         )
       }
 
       if (lowerMessage.includes('title_snapshot') && lowerMessage.includes('shop_order_items') && lowerMessage.includes('does not exist')) {
         return NextResponse.json(
-          { error: 'Database schema mismatch: shop_order_items.title_snapshot missing. Run the shop_order_items SQL patch and retry.' },
+          { error: 'Database schema mismatch: shop_order_items.title_snapshot missing. Run 20260312_shop_checkout_schema_reconcile.sql and retry.' },
           { status: 500 }
         )
       }
@@ -238,14 +249,19 @@ export async function POST(req: Request) {
       })
 
       // Send order confirmation email
-      const { data: { user: buyerAuth } } = await supabase.auth.admin.getUserById(metadata.user_id)
+      if (!buyerAuthUser) {
+        const { data: buyerAuthLookup } = await supabase.auth.admin.getUserById(metadata.user_id)
+        buyerAuthUser = buyerAuthLookup.user
+          ? { email: buyerAuthLookup.user.email ?? null }
+          : null
+      }
       const { data: buyerProfile } = await supabase
         .from('profiles')
         .select('username')
         .eq('id', metadata.user_id)
         .single()
 
-      if (buyerAuth?.email) {
+      if (buyerAuthUser?.email) {
         const deliveryAddress = [
           metadata.delivery?.address,
           metadata.delivery?.city,
@@ -255,8 +271,8 @@ export async function POST(req: Request) {
 
         const deliveryLocation = metadata.delivery?.city || 'Not specified'
 
-        await sendNotificationEmail(buyerAuth.email, 'orderConfirmation', {
-          userName: buyerProfile?.username || metadata.delivery?.full_name || buyerAuth.email.split('@')[0] || 'there',
+        await sendNotificationEmail(buyerAuthUser.email, 'orderConfirmation', {
+          userName: buyerProfile?.username || metadata.delivery?.full_name || buyerAuthUser.email.split('@')[0] || 'there',
           orderRef: paymentReference,
           total: paidAmount,
           items: metadata.items.map((item) => ({
