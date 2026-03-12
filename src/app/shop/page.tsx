@@ -66,19 +66,7 @@ export default async function ShopPage({
         '@type': 'ListItem',
         position: index + 1,
         url: `${siteUrl}/shop/${product.id}`,
-        item: {
-          '@type': 'Product',
-          name: product.title,
-          image: product.image_url || undefined,
-          category: product.category || undefined,
-          offers: {
-            '@type': 'Offer',
-            priceCurrency: 'GHS',
-            price: Number(product.price).toFixed(2),
-            availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-            url: `${siteUrl}/shop/${product.id}`,
-          },
-        },
+        name: product.title,
       })),
     },
   }

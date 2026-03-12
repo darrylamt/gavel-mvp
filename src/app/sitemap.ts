@@ -8,9 +8,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticUrls: MetadataRoute.Sitemap = [
     { url: `${siteUrl}/`, changeFrequency: 'daily', priority: 1 },
     { url: `${siteUrl}/auctions`, changeFrequency: 'hourly', priority: 0.9 },
+    { url: `${siteUrl}/auctions/winners`, changeFrequency: 'daily', priority: 0.6 },
     { url: `${siteUrl}/shop`, changeFrequency: 'hourly', priority: 0.9 },
+    { url: `${siteUrl}/shop/sellers`, changeFrequency: 'daily', priority: 0.7 },
     { url: `${siteUrl}/tokens`, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${siteUrl}/contact`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${siteUrl}/faq`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${siteUrl}/privacy`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${siteUrl}/terms`, changeFrequency: 'yearly', priority: 0.3 },
   ]
@@ -51,5 +54,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  return [...staticUrls, ...auctionUrls, ...shopUrls]
+  const { data: shops } = await supabase
+    .from('shops')
+    .select('id')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1000)
+
+  const shopFrontUrls: MetadataRoute.Sitemap = (shops ?? []).map((shop) => ({
+    url: `${siteUrl}/shop/seller/${shop.id}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }))
+
+  return [...staticUrls, ...auctionUrls, ...shopUrls, ...shopFrontUrls]
 }

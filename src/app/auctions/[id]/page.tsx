@@ -578,16 +578,20 @@ export default function AuctionDetailPage() {
     (auction.seller_name || auction.seller_shop_name || '').trim() || 'External Seller'
   const structuredData = {
     '@context': 'https://schema.org',
-    '@type': 'Product',
+    '@type': 'WebPage',
     name: auction.title,
     description: formattedDescription || `Auction listing for ${auction.title}`,
-    image: [imageUrl],
-    offers: {
-      '@type': 'Offer',
-      priceCurrency: 'GHS',
-      price: auction.current_price,
-      availability: hasEnded ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
-      url: productUrl,
+    url: productUrl,
+    primaryImageOfPage: imageUrl,
+    about: {
+      '@type': 'Thing',
+      name: auction.title,
+      image: imageUrl,
+      description: formattedDescription || `Auction listing for ${auction.title}`,
+      seller: {
+        '@type': 'Organization',
+        name: sellerDisplayName,
+      },
     },
   }
 

@@ -63,19 +63,16 @@ export default async function SellerShopPage({ params }: Props) {
     description: shopProfile.description || undefined,
     image: shopProfile.cover_image_url || undefined,
     url: `${siteUrl}/shop/seller/${shopProfile.id}`,
-    makesOffer: sellerProducts.slice(0, 24).map((product) => ({
-      '@type': 'Offer',
-      url: `${siteUrl}/shop/${product.id}`,
-      itemOffered: {
-        '@type': 'Product',
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: `${shopProfile.name} products`,
+      itemListElement: sellerProducts.slice(0, 24).map((product, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: `${siteUrl}/shop/${product.id}`,
         name: product.title,
-        image: product.image_url || undefined,
-        category: product.category || undefined,
-      },
-      priceCurrency: 'GHS',
-      price: Number(product.price).toFixed(2),
-      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-    })),
+      })),
+    },
   }
 
   return (
