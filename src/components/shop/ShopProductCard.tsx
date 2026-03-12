@@ -159,10 +159,10 @@ export default function ShopProductCard({
 
         {priceBreakdown.hasDiscount && priceBreakdown.previousPrice !== null ? (
           <>
-            <p className={styles.priceRow}>
-              <span className={styles.oldPrice}>GHS {formatGhsAmount(priceBreakdown.previousPrice)}</span>
-              <span className={styles.price}>GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</span>
-            </p>
+            <div className={styles.priceStack}>
+              <p className={styles.oldPrice}>GH₵ {formatGhsAmount(priceBreakdown.previousPrice)}</p>
+              <p className={styles.price}>GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</p>
+            </div>
             <p className={styles.discountText}>
               Save GH₵ {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
             </p>
