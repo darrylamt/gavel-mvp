@@ -121,6 +121,13 @@ export async function POST(req: Request) {
         )
       }
 
+      if (lowerMessage.includes('tracking_number') && lowerMessage.includes('shop_orders') && lowerMessage.includes('null value')) {
+        return NextResponse.json(
+          { error: 'Database schema mismatch: shop_orders.tracking_number is required. Run 20260312_shop_checkout_tracking_fix.sql and retry.' },
+          { status: 500 }
+        )
+      }
+
       return NextResponse.json({ error: message || 'Failed to process shop payment' }, { status: 500 })
     }
 
