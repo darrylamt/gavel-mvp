@@ -135,7 +135,6 @@ export default async function SellerShopPage({ params }: Props) {
               key={product.id}
               id={product.id}
               title={product.title}
-              description={product.description}
               price={product.price}
               sellerBasePrice={product.seller_base_price}
               commissionRate={product.commission_rate}

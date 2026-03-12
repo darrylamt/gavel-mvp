@@ -121,7 +121,6 @@ export default function StarredContentClient({ auctions, products, engagementCou
                   key={product.id}
                   id={product.id}
                   title={product.title}
-                  description={product.description}
                   price={product.price}
                   sellerBasePrice={product.seller_base_price}
                   commissionRate={product.commission_rate}

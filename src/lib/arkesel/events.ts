@@ -366,23 +366,30 @@ export async function queueAuctionCountdownNotification(input: {
     '1h': 'sms_auction_countdown_1h',
     '30m': 'sms_auction_countdown_30m',
     '5m': 'sms_auction_countdown_5m',
-  }
+  } as const
 
   const service = createServiceRoleClient()
 
   type ProfilePreferenceRow = {
     id: string
-    [key: string]: boolean | string | null
+    sms_auction_countdown_10h: boolean | null
+    sms_auction_countdown_5h: boolean | null
+    sms_auction_countdown_1h: boolean | null
+    sms_auction_countdown_30m: boolean | null
+    sms_auction_countdown_5m: boolean | null
   }
+
+  const preferenceField = preferenceFields[input.timeRemaining]
 
   // Get profiles with preference check
   const { data: profiles } = await service
     .from('profiles')
-    .select(`id, ${preferenceFields[input.timeRemaining]}`)
+    .select('id, sms_auction_countdown_10h, sms_auction_countdown_5h, sms_auction_countdown_1h, sms_auction_countdown_30m, sms_auction_countdown_5m')
     .in('id', input.bidderUserIds)
 
-  const enabledUserIds = ((profiles ?? []) as ProfilePreferenceRow[])
-    .filter((profile) => profile[preferenceFields[input.timeRemaining]] !== false)
+  const enabledUserIds = (profiles ?? [])
+    .filter((profile): profile is ProfilePreferenceRow => typeof profile.id === 'string')
+    .filter((profile) => profile[preferenceField] !== false)
     .map((profile) => profile.id)
 
   if (enabledUserIds.length === 0) return

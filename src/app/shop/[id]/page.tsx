@@ -424,7 +424,6 @@ export default async function ShopProductDetailPage({ params }: Props) {
                 key={latestProduct.id}
                 id={latestProduct.id}
                 title={latestProduct.title}
-                description={latestProduct.description}
                 price={latestProduct.price}
                 sellerBasePrice={latestProduct.seller_base_price}
                 commissionRate={latestProduct.commission_rate}
