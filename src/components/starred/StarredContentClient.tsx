@@ -27,6 +27,8 @@ type ShopProduct = {
   title: string
   description: string | null
   price: number
+  seller_base_price: number | null
+  commission_rate: number | null
   stock: number
   category: string
   image_url: string | null
@@ -121,6 +123,8 @@ export default function StarredContentClient({ auctions, products, engagementCou
                   title={product.title}
                   description={product.description}
                   price={product.price}
+                  sellerBasePrice={product.seller_base_price}
+                  commissionRate={product.commission_rate}
                   imageUrl={product.image_url}
                   stock={product.stock}
                   categoryLabel={product.category}

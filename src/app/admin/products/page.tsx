@@ -9,6 +9,8 @@ type ShopProduct = {
   title: string
   description: string | null
   price: number
+  seller_base_price: number | null
+  commission_rate: number | null
   stock: number
   status: 'draft' | 'active' | 'sold_out' | 'archived'
   category: string
@@ -25,6 +27,8 @@ type ShopProductVariant = {
   size: string | null
   sku: string | null
   price: number
+  seller_base_price: number | null
+  commission_rate: number | null
   stock: number
   image_url?: string | null
   is_default: boolean
@@ -69,6 +73,8 @@ function createEmptyVariant(): ProductVariantDraft {
 }
 
 export default function AdminProductsPage() {
+  const DEFAULT_COMMISSION_PERCENT = 10
+
   const [products, setProducts] = useState<ShopProduct[]>([])
   const [shops, setShops] = useState<ShopOption[]>([])
   const [categories, setCategories] = useState<ShopCategoryOption[]>([])
@@ -87,6 +93,7 @@ export default function AdminProductsPage() {
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
   const [status, setStatus] = useState<ShopProduct['status']>('active')
+  const [commissionPercent, setCommissionPercent] = useState(String(DEFAULT_COMMISSION_PERCENT))
   const [category, setCategory] = useState('Other')
   const [shopId, setShopId] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
@@ -97,6 +104,21 @@ export default function AdminProductsPage() {
   const [aiDescriptionLoading, setAiDescriptionLoading] = useState(false)
   const [aiDescriptionError, setAiDescriptionError] = useState<string | null>(null)
   const [descriptionGeneratedByAi, setDescriptionGeneratedByAi] = useState(false)
+
+  const parsedCommission = Number(commissionPercent)
+  const hasValidCommission = Number.isFinite(parsedCommission) && parsedCommission >= 0 && parsedCommission <= 100
+  const parsedBasePrice = Number(price)
+  const hasValidBasePrice = Number.isFinite(parsedBasePrice) && parsedBasePrice >= 0
+  const computedListedPrice = hasValidBasePrice && hasValidCommission
+    ? Number((parsedBasePrice * (1 + parsedCommission / 100)).toFixed(2))
+    : null
+
+  const computedDefaultListedPrice = hasValidBasePrice
+    ? Number((parsedBasePrice * 1.1).toFixed(2))
+    : null
+
+  const isDiscountedFromDefault =
+    computedListedPrice !== null && computedDefaultListedPrice !== null && computedListedPrice < computedDefaultListedPrice
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -165,6 +187,7 @@ export default function AdminProductsPage() {
     setPrice('')
     setStock('')
     setStatus('active')
+    setCommissionPercent(String(DEFAULT_COMMISSION_PERCENT))
     setCategory(categories[0]?.name ?? 'Other')
     setShopId(shops[0]?.id ?? '')
     setImageUrls([])
@@ -190,7 +213,16 @@ export default function AdminProductsPage() {
     setEditingId(product.id)
     setTitle(product.title)
     setDescription(product.description ?? '')
-    setPrice(String(product.price))
+    const commission = Number.isFinite(Number(product.commission_rate))
+      ? Number(product.commission_rate)
+      : DEFAULT_COMMISSION_PERCENT
+    const basePrice =
+      typeof product.seller_base_price === 'number' && Number.isFinite(product.seller_base_price)
+        ? Number(product.seller_base_price)
+        : Number((Number(product.price) / (1 + commission / 100)).toFixed(2))
+
+    setPrice(String(basePrice))
+    setCommissionPercent(String(commission))
     setStock(String(product.stock))
     setStatus(product.status)
     setCategory(product.category || categories[0]?.name || 'Other')
@@ -391,6 +423,7 @@ export default function AdminProductsPage() {
         title,
         description,
         price: Number(price),
+        commission_percent: Number(commissionPercent),
         stock: Number(stock),
         status,
         category,
@@ -552,7 +585,29 @@ export default function AdminProductsPage() {
                         <span>{product.title}</span>
                       </div>
                     </td>
-                    <td className="py-2">GHS {Number(product.price).toLocaleString()}</td>
+                    <td className="py-2">
+                      {(() => {
+                        const base =
+                          typeof product.seller_base_price === 'number' && Number.isFinite(product.seller_base_price)
+                            ? Number(product.seller_base_price)
+                            : null
+
+                        const baseline = base !== null ? Number((base * 1.1).toFixed(2)) : null
+                        const current = Number(product.price)
+                        const showDiscount = baseline !== null && current < baseline
+
+                        if (showDiscount && baseline !== null) {
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 line-through">GHS {baseline.toLocaleString()}</span>
+                              <span className="font-semibold text-emerald-700">GHS {current.toLocaleString()}</span>
+                            </div>
+                          )
+                        }
+
+                        return <span>GHS {current.toLocaleString()}</span>
+                      })()}
+                    </td>
                     <td className="py-2">{product.stock}</td>
                     <td className="py-2">{product.category}</td>
                     <td className="py-2">{shops.find((shop) => shop.id === product.shop_id)?.name || '—'}</td>
@@ -647,8 +702,34 @@ export default function AdminProductsPage() {
             {!useVariants ? (
               <>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Price (GHS)</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Seller Price (GHS)</label>
                   <input type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="w-full rounded-lg border px-3 py-2" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Commission (%)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    value={commissionPercent}
+                    onChange={(event) => setCommissionPercent(event.target.value)}
+                    className="w-full rounded-lg border px-3 py-2"
+                  />
+                </div>
+                <div className="md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  {computedListedPrice === null ? (
+                    <span>Enter a valid seller price and commission to preview final listing price.</span>
+                  ) : isDiscountedFromDefault && computedDefaultListedPrice !== null ? (
+                    <span>
+                      Listing price preview: <span className="line-through text-gray-500">GHS {computedDefaultListedPrice.toLocaleString()}</span>{' '}
+                      <span className="font-semibold text-emerald-700">GHS {computedListedPrice.toLocaleString()}</span>
+                    </span>
+                  ) : (
+                    <span>
+                      Listing price preview: <span className="font-semibold">GHS {computedListedPrice.toLocaleString()}</span>
+                    </span>
+                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Stock</label>

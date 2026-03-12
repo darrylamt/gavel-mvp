@@ -6,6 +6,7 @@ import ProductDetailActions from '@/components/shop/ProductDetailActions'
 import ShopProductCard from '@/components/shop/ShopProductCard'
 import ProductReviewsSection from '@/components/shop/ProductReviewsSection'
 import ProductImageGallery from '@/components/shop/ProductImageGallery'
+import { formatGhsAmount, getBuyNowDiscountBreakdown } from '@/lib/buyNowPricing'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -29,6 +30,8 @@ type RelatedProduct = {
   title: string
   description: string | null
   price: number
+  seller_base_price: number | null
+  commission_rate: number | null
   stock: number
   image_url: string | null
   image_urls?: string[]
@@ -41,6 +44,8 @@ type ProductVariant = {
   size: string | null
   sku: string | null
   price: number
+  seller_base_price: number | null
+  commission_rate: number | null
   stock: number
   image_url: string | null
   is_default: boolean
@@ -137,7 +142,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
 
   const { data: product } = await supabase
     .from('shop_products')
-    .select('id, title, description, price, stock, image_url, image_urls, status, created_by, category, shop_id')
+    .select('id, title, description, price, seller_base_price, commission_rate, stock, image_url, image_urls, status, created_by, category, shop_id')
     .eq('id', id)
     .eq('status', 'active')
     .maybeSingle()
@@ -159,7 +164,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
 
   const { data: latestProducts } = await supabase
     .from('shop_products')
-    .select('id, title, description, price, stock, image_url, category')
+    .select('id, title, description, price, seller_base_price, commission_rate, stock, image_url, category')
     .eq('status', 'active')
     .neq('id', product.id)
     .order('created_at', { ascending: false })
@@ -175,7 +180,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
 
   const { data: variantRows } = await supabase
     .from('shop_product_variants')
-    .select('id, color, size, sku, price, stock, image_url, is_default, is_active')
+    .select('id, color, size, sku, price, seller_base_price, commission_rate, stock, image_url, is_default, is_active')
     .eq('product_id', product.id)
     .eq('is_active', true)
     .order('is_default', { ascending: false })
@@ -197,7 +202,20 @@ export default async function ShopProductDetailPage({ params }: Props) {
   )
   const mainImage = galleryImages[0] ?? null
   const hasVariants = variants.length > 0
-  const minVariantPrice = hasVariants ? Math.min(...variants.map((variant) => Number(variant.price ?? 0))) : Number(product.price)
+  const lowestPricedVariant = hasVariants
+    ? variants.reduce((lowest, current) => (Number(current.price ?? 0) < Number(lowest.price ?? 0) ? current : lowest), variants[0])
+    : null
+  const headlinePricing = hasVariants
+    ? getBuyNowDiscountBreakdown({
+        price: Number(lowestPricedVariant?.price ?? 0),
+        sellerBasePrice: lowestPricedVariant?.seller_base_price,
+        commissionRate: lowestPricedVariant?.commission_rate,
+      })
+    : getBuyNowDiscountBreakdown({
+        price: Number(product.price),
+        sellerBasePrice: product.seller_base_price,
+        commissionRate: product.commission_rate,
+      })
   const totalVariantStock = hasVariants ? variants.reduce((sum, variant) => sum + Number(variant.stock ?? 0), 0) : Number(product.stock)
   const displaySku = product.id.slice(0, 8).toUpperCase()
   const productUrl = `${siteUrl}/shop/${product.id}`
@@ -320,9 +338,25 @@ export default async function ShopProductDetailPage({ params }: Props) {
           <div className="mt-4 border-t border-gray-200" />
 
           <div className="mt-6 flex items-center justify-between gap-3">
-            <p className="text-4xl font-bold text-gray-900">
-              {hasVariants ? 'From ' : ''}GHS {Number(minVariantPrice).toLocaleString()}
-            </p>
+            <div>
+              {headlinePricing.hasDiscount && headlinePricing.previousPrice !== null ? (
+                <>
+                  <p className="text-sm text-gray-500 line-through">
+                    {hasVariants ? 'From ' : ''}GHS {formatGhsAmount(headlinePricing.previousPrice)}
+                  </p>
+                  <p className="text-4xl font-bold text-gray-900">
+                    {hasVariants ? 'From ' : ''}GHS {formatGhsAmount(headlinePricing.currentPrice)}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-emerald-700">
+                    Save GHS {formatGhsAmount(headlinePricing.discountAmount)} ({headlinePricing.discountPercent}% off)
+                  </p>
+                </>
+              ) : (
+                <p className="text-4xl font-bold text-gray-900">
+                  {hasVariants ? 'From ' : ''}GHS {formatGhsAmount(headlinePricing.currentPrice)}
+                </p>
+              )}
+            </div>
             <p className="text-sm font-medium text-gray-500">{totalVariantStock > 0 ? `${totalVariantStock} in stock` : 'Out of stock'}</p>
           </div>
 
@@ -331,6 +365,8 @@ export default async function ShopProductDetailPage({ params }: Props) {
               productId={product.id}
               title={product.title}
               price={Number(product.price)}
+              sellerBasePrice={product.seller_base_price}
+              commissionRate={product.commission_rate}
               imageUrl={product.image_url}
               stock={Number(product.stock)}
               variants={variants.map((variant) => ({
@@ -339,6 +375,8 @@ export default async function ShopProductDetailPage({ params }: Props) {
                 size: variant.size,
                 sku: variant.sku,
                 price: Number(variant.price ?? 0),
+                sellerBasePrice: variant.seller_base_price,
+                commissionRate: variant.commission_rate,
                 stock: Number(variant.stock ?? 0),
                 imageUrl: variant.image_url,
                 isDefault: !!variant.is_default,
@@ -388,6 +426,8 @@ export default async function ShopProductDetailPage({ params }: Props) {
                 title={latestProduct.title}
                 description={latestProduct.description}
                 price={latestProduct.price}
+                sellerBasePrice={latestProduct.seller_base_price}
+                commissionRate={latestProduct.commission_rate}
                 imageUrl={latestProduct.image_url}
                 stock={latestProduct.stock}
                 categoryLabel={latestProduct.category}

@@ -20,6 +20,8 @@ type ShopProduct = {
   title: string
   description: string | null
   price: number
+  seller_base_price: number | null
+  commission_rate: number | null
   stock: number
   category: string
   image_url: string | null
@@ -42,7 +44,7 @@ export default async function SellerShopPage({ params }: Props) {
       .maybeSingle(),
     supabase
       .from('shop_products')
-      .select('id, title, description, price, stock, category, image_url')
+      .select('id, title, description, price, seller_base_price, commission_rate, stock, category, image_url')
       .eq('shop_id', sellerId)
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
@@ -138,6 +140,8 @@ export default async function SellerShopPage({ params }: Props) {
               title={product.title}
               description={product.description}
               price={product.price}
+              sellerBasePrice={product.seller_base_price}
+              commissionRate={product.commission_rate}
               imageUrl={product.image_url}
               stock={product.stock}
               categoryLabel={product.category}

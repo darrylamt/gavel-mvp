@@ -5,6 +5,7 @@ import { Heart } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useTopToast } from '@/components/ui/TopToastProvider'
+import { formatGhsAmount, getBuyNowDiscountBreakdown } from '@/lib/buyNowPricing'
 
 type VariantOption = {
   id: string
@@ -12,6 +13,8 @@ type VariantOption = {
   size: string | null
   sku?: string | null
   price: number
+  sellerBasePrice?: number | null
+  commissionRate?: number | null
   stock: number
   imageUrl?: string | null
   isDefault?: boolean
@@ -21,6 +24,8 @@ type Props = {
   productId: string
   title: string
   price: number
+  sellerBasePrice?: number | null
+  commissionRate?: number | null
   imageUrl: string | null
   stock: number
   variantId?: string | null
@@ -33,7 +38,18 @@ function formatVariantLabel(option: VariantOption) {
   return parts.join(' / ') || option.sku || 'Default'
 }
 
-export default function ProductDetailActions({ productId, title, price, imageUrl, stock, variantId = null, variantLabel = null, variants = [] }: Props) {
+export default function ProductDetailActions({
+  productId,
+  title,
+  price,
+  sellerBasePrice,
+  commissionRate,
+  imageUrl,
+  stock,
+  variantId = null,
+  variantLabel = null,
+  variants = [],
+}: Props) {
   const { addToCart } = useCart()
   const [quantity, setQuantity] = useState(1)
   const { isStarredProduct, toggleStarredProduct } = useStarredProducts()
@@ -51,6 +67,13 @@ export default function ProductDetailActions({ productId, title, price, imageUrl
 
   const effectivePrice = selectedVariant ? Number(selectedVariant.price) : Number(price)
   const effectiveStock = selectedVariant ? Number(selectedVariant.stock) : Number(stock)
+  const effectiveSellerBasePrice = selectedVariant ? selectedVariant.sellerBasePrice : sellerBasePrice
+  const effectiveCommissionRate = selectedVariant ? selectedVariant.commissionRate : commissionRate
+  const priceBreakdown = getBuyNowDiscountBreakdown({
+    price: effectivePrice,
+    sellerBasePrice: effectiveSellerBasePrice,
+    commissionRate: effectiveCommissionRate,
+  })
   const selectedVariantLabel = selectedVariant
     ? formatVariantLabel(selectedVariant)
     : variantLabel
@@ -84,11 +107,23 @@ export default function ProductDetailActions({ productId, title, price, imageUrl
             >
               {variants.map((option) => (
                 <option key={option.id} value={option.id}>
-                  {formatVariantLabel(option)} — GHS {Number(option.price).toLocaleString()} ({option.stock} in stock)
+                  {formatVariantLabel(option)} — GHS {formatGhsAmount(Number(option.price))} ({option.stock} in stock)
                 </option>
               ))}
             </select>
           </div>
+        )}
+
+        {priceBreakdown.hasDiscount && priceBreakdown.previousPrice !== null ? (
+          <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
+            <p className="text-gray-500 line-through">GHS {formatGhsAmount(priceBreakdown.previousPrice)}</p>
+            <p className="text-lg font-semibold text-gray-900">GHS {formatGhsAmount(priceBreakdown.currentPrice)}</p>
+            <p className="font-semibold text-emerald-700">
+              You save GHS {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
+            </p>
+          </div>
+        ) : (
+          <p className="w-full text-lg font-semibold text-gray-900">GHS {formatGhsAmount(priceBreakdown.currentPrice)}</p>
         )}
 
         <input

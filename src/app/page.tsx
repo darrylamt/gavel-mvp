@@ -21,7 +21,7 @@ export default async function HomePage() {
     // Fetch latest buy now products
     const { data: productsRaw } = await supabase
       .from('shop_products')
-      .select('id, title, description, price, stock, category, image_url, image_urls')
+      .select('id, title, description, price, seller_base_price, commission_rate, stock, category, image_url, image_urls')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(8)
@@ -297,6 +297,8 @@ export default async function HomePage() {
                   title={product.title}
                   description={product.description}
                   price={product.price}
+                  sellerBasePrice={product.seller_base_price}
+                  commissionRate={product.commission_rate}
                   imageUrls={product.image_urls}
                   imageUrl={product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : product.image_url}
                   stock={product.stock}

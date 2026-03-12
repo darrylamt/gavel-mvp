@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCart } from '@/hooks/useCart'
 import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useTopToast } from '@/components/ui/TopToastProvider'
+import { formatGhsAmount, getBuyNowDiscountBreakdown } from '@/lib/buyNowPricing'
 import styles from './ShopProductCard.module.css'
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
   title: string
   description: string | null
   price: number
+  sellerBasePrice?: number | null
+  commissionRate?: number | null
   imageUrl: string | null
   imageUrls?: string[] | null
   stock: number
@@ -25,6 +28,8 @@ export default function ShopProductCard({
   title,
   description,
   price,
+  sellerBasePrice,
+  commissionRate,
   imageUrl,
   imageUrls,
   stock,
@@ -46,6 +51,11 @@ export default function ShopProductCard({
 
   const [activeImageSrc, setActiveImageSrc] = useState(images[0] ?? '')
   const isStarred = isStarredProduct(id)
+  const priceBreakdown = getBuyNowDiscountBreakdown({
+    price,
+    sellerBasePrice,
+    commissionRate,
+  })
 
   useEffect(() => {
     setActiveImageSrc(images[0] ?? '')
@@ -154,7 +164,19 @@ export default function ShopProductCard({
 
         {description && <p className={styles.desc}>{description}</p>}
 
-        <p className={styles.price}>GHS {Number(price).toLocaleString()}</p>
+        {priceBreakdown.hasDiscount && priceBreakdown.previousPrice !== null ? (
+          <>
+            <p className={styles.priceRow}>
+              <span className={styles.oldPrice}>GHS {formatGhsAmount(priceBreakdown.previousPrice)}</span>
+              <span className={styles.price}>GHS {formatGhsAmount(priceBreakdown.currentPrice)}</span>
+            </p>
+            <p className={styles.discountText}>
+              Save GHS {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
+            </p>
+          </>
+        ) : (
+          <p className={styles.price}>GHS {formatGhsAmount(priceBreakdown.currentPrice)}</p>
+        )}
 
         {stock > 0 && stock <= 5 && <p className={styles.lowStock}>Only {stock} left in stock</p>}
       </div>

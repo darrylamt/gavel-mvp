@@ -36,6 +36,7 @@ type ProductVariantInput = {
   image_url?: string | null
   price: number
   stock: number
+  commission_rate?: number
   is_default?: boolean
   is_active?: boolean
 }
@@ -49,9 +50,53 @@ type ProductVariantRow = {
   image_url: string | null
   price: number
   seller_base_price: number | null
+  commission_rate: number
   stock: number
   is_default: boolean
   is_active: boolean
+}
+
+const DEFAULT_COMMISSION_PERCENT = 10
+
+function normalizeCommissionPercent(raw: unknown, fallback = DEFAULT_COMMISSION_PERCENT) {
+  const value = Number(raw)
+  if (!Number.isFinite(value)) {
+    return fallback
+  }
+
+  if (value < 0 || value > 100) {
+    throw new Error('Commission must be between 0 and 100')
+  }
+
+  return Number(value.toFixed(2))
+}
+
+function applyCommission(basePrice: number, commissionPercent: number) {
+  return Number((basePrice * (1 + commissionPercent / 100)).toFixed(2))
+}
+
+function toSellerBasePrice(listingPrice: number, commissionPercent: number) {
+  const divisor = 1 + commissionPercent / 100
+  if (!Number.isFinite(divisor) || divisor <= 0) {
+    return Number(listingPrice.toFixed(2))
+  }
+
+  return Number((listingPrice / divisor).toFixed(2))
+}
+
+async function getGlobalBuyNowCommissionPercent() {
+  const { data } = await service
+    .from('platform_settings')
+    .select('buy_now_commission_percent')
+    .eq('id', 1)
+    .maybeSingle<{ buy_now_commission_percent: number | null }>()
+
+  const value = Number(data?.buy_now_commission_percent)
+  if (!Number.isFinite(value)) {
+    return DEFAULT_COMMISSION_PERCENT
+  }
+
+  return normalizeCommissionPercent(value, DEFAULT_COMMISSION_PERCENT)
 }
 
 async function requireProductManager(request: Request): Promise<{ error: NextResponse } | AccessContext> {
@@ -242,13 +287,14 @@ function normalizeVariantInput(rawVariants: unknown): ProductVariantInput[] | nu
 async function syncProductVariants(params: {
   productId: string
   variants: ProductVariantInput[]
-  role: 'admin' | 'seller'
+  commissionPercent: number
 }) {
-  const { productId, variants, role } = params
+  const { productId, variants, commissionPercent } = params
 
   const normalized = variants.map((variant) => {
-    const listingPrice = role === 'seller' ? Number((variant.price * 1.1).toFixed(2)) : Number(variant.price.toFixed(2))
-    const sellerBasePrice = role === 'seller' ? Number(variant.price.toFixed(2)) : null
+    const basePrice = Number(variant.price.toFixed(2))
+    const listingPrice = applyCommission(basePrice, commissionPercent)
+    const sellerBasePrice = basePrice
     return {
       id: variant.id,
       color: variant.color ?? null,
@@ -257,6 +303,7 @@ async function syncProductVariants(params: {
       image_url: variant.image_url ?? null,
       price: listingPrice,
       seller_base_price: sellerBasePrice,
+      commission_rate: commissionPercent,
       stock: Math.max(0, Math.floor(variant.stock)),
       is_default: Boolean(variant.is_default),
       is_active: variant.is_active === undefined ? true : Boolean(variant.is_active),
@@ -292,6 +339,7 @@ async function syncProductVariants(params: {
           image_url: variant.image_url,
           price: variant.price,
           seller_base_price: variant.seller_base_price,
+          commission_rate: variant.commission_rate,
           stock: variant.stock,
           is_default: variant.is_default,
           is_active: variant.is_active,
@@ -314,6 +362,7 @@ async function syncProductVariants(params: {
           image_url: variant.image_url,
           price: variant.price,
           seller_base_price: variant.seller_base_price,
+          commission_rate: variant.commission_rate,
           stock: variant.stock,
           is_default: variant.is_default,
           is_active: variant.is_active,
@@ -364,7 +413,7 @@ async function hydrateProductsWithVariants<T extends { id: string }>(products: T
   const productIds = products.map((product) => product.id)
   const { data: variants, error } = await service
     .from('shop_product_variants')
-    .select('id, product_id, color, size, sku, image_url, price, seller_base_price, stock, is_default, is_active')
+    .select('id, product_id, color, size, sku, image_url, price, seller_base_price, commission_rate, stock, is_default, is_active')
     .in('product_id', productIds)
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: true })
@@ -407,7 +456,7 @@ export async function GET(request: Request) {
 
   const query = service
     .from('shop_products')
-    .select('id, title, description, price, seller_base_price, stock, status, category, image_url, image_urls, created_at, created_by, shop_id')
+    .select('id, title, description, price, seller_base_price, commission_rate, stock, status, category, image_url, image_urls, created_at, created_by, shop_id')
     .order('created_at', { ascending: false })
     .limit(300)
 
@@ -452,6 +501,10 @@ export async function POST(request: Request) {
     const imageUrls = Array.isArray(body.image_urls) ? body.image_urls.filter((u: any) => typeof u === 'string' && u.trim() !== '') : []
     const price = Number(body.price)
     const stock = Number(body.stock)
+    const globalCommissionPercent = await getGlobalBuyNowCommissionPercent()
+    const commissionPercent = auth.role === 'admin'
+      ? normalizeCommissionPercent(body.commission_percent, globalCommissionPercent)
+      : globalCommissionPercent
     const variants = normalizeVariantInput(body.variants)
 
     if (!title) {
@@ -490,8 +543,8 @@ export async function POST(request: Request) {
 
     const effectivePrice = Number.isFinite(price) && price >= 0 ? price : 0
     const effectiveStock = Number.isFinite(stock) && stock >= 0 ? Math.floor(stock) : 0
-    const listingPrice = auth.role === 'seller' ? Number((effectivePrice * 1.1).toFixed(2)) : effectivePrice
-    const sellerBasePrice = auth.role === 'seller' ? Number(effectivePrice.toFixed(2)) : null
+    const listingPrice = applyCommission(effectivePrice, commissionPercent)
+    const sellerBasePrice = Number(effectivePrice.toFixed(2))
 
     const { data, error } = await service
       .from('shop_products')
@@ -500,6 +553,7 @@ export async function POST(request: Request) {
         description: description || null,
         price: listingPrice,
         seller_base_price: sellerBasePrice,
+        commission_rate: commissionPercent,
         stock: effectiveStock,
         status,
         category,
@@ -509,7 +563,7 @@ export async function POST(request: Request) {
         created_by: selectedShop.owner_id,
         shop_id: selectedShop.id,
       })
-      .select('id, title, description, price, seller_base_price, stock, status, category, image_urls, created_at, created_by, shop_id')
+      .select('id, title, description, price, seller_base_price, commission_rate, stock, status, category, image_urls, created_at, created_by, shop_id')
       .single()
 
     if (error) {
@@ -520,7 +574,7 @@ export async function POST(request: Request) {
       await syncProductVariants({
         productId: String(data.id),
         variants,
-        role: auth.role,
+        commissionPercent,
       })
     }
 
@@ -576,6 +630,10 @@ export async function PATCH(request: Request) {
     const imageUrls = Array.isArray(body.image_urls) ? body.image_urls.filter((u: unknown) => typeof u === 'string' && (u as string).trim() !== '') : []
     const price = Number(body.price)
     const stock = Number(body.stock)
+    const globalCommissionPercent = await getGlobalBuyNowCommissionPercent()
+    const commissionPercent = auth.role === 'admin'
+      ? normalizeCommissionPercent(body.commission_percent, globalCommissionPercent)
+      : globalCommissionPercent
     const variants = normalizeVariantInput(body.variants)
 
     if (!id) {
@@ -618,13 +676,14 @@ export async function PATCH(request: Request) {
 
     const effectivePrice = Number.isFinite(price) && price >= 0 ? price : 0
     const effectiveStock = Number.isFinite(stock) && stock >= 0 ? Math.floor(stock) : 0
-    const listingPrice = auth.role === 'seller' ? Number((effectivePrice * 1.1).toFixed(2)) : effectivePrice
-    const sellerBasePrice = auth.role === 'seller' ? Number(effectivePrice.toFixed(2)) : null
+    const listingPrice = applyCommission(effectivePrice, commissionPercent)
+    const sellerBasePrice = Number(effectivePrice.toFixed(2))
 
     const updatePayload: {
       title: string
       description: string | null
       price: number
+      commission_rate: number
       stock: number
       status: string
       category: string
@@ -644,10 +703,8 @@ export async function PATCH(request: Request) {
       image_urls: imageUrls,
       shop_id: selectedShop.id,
       created_by: selectedShop.owner_id,
-    }
-
-    if (auth.role === 'seller') {
-      updatePayload.seller_base_price = sellerBasePrice ?? 0
+      seller_base_price: sellerBasePrice,
+      commission_rate: commissionPercent,
     }
 
     const updateQuery = service
@@ -660,7 +717,7 @@ export async function PATCH(request: Request) {
     }
 
     const { data, error } = await updateQuery
-      .select('id, title, description, price, seller_base_price, stock, status, category, image_url, image_urls, created_at, created_by, shop_id')
+      .select('id, title, description, price, seller_base_price, commission_rate, stock, status, category, image_url, image_urls, created_at, created_by, shop_id')
       .single()
 
     if (error) {
@@ -671,7 +728,7 @@ export async function PATCH(request: Request) {
       await syncProductVariants({
         productId: String(data.id),
         variants,
-        role: auth.role,
+        commissionPercent,
       })
     }
 

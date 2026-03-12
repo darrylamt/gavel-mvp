@@ -28,6 +28,8 @@ type ShopProduct = {
   title: string
   description: string | null
   price: number
+  seller_base_price: number | null
+  commission_rate: number | null
   stock: number
   category: string
   image_url: string | null
@@ -47,7 +49,7 @@ export default async function StarredAuctionsPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('shop_products')
-      .select('id, title, description, price, stock, category, image_url')
+      .select('id, title, description, price, seller_base_price, commission_rate, stock, category, image_url')
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
   ])

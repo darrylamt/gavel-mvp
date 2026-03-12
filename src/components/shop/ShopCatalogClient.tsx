@@ -24,6 +24,8 @@ type ShopProduct = {
   title: string
   description: string | null
   price: number
+  seller_base_price: number | null
+  commission_rate: number | null
   stock: number
   category: string
   image_url: string | null
@@ -258,6 +260,8 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
                   title={product.title}
                   description={product.description}
                   price={product.price}
+                  sellerBasePrice={product.seller_base_price}
+                  commissionRate={product.commission_rate}
                   imageUrls={product.image_urls}
                   imageUrl={product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : product.image_url}
                   stock={product.stock}

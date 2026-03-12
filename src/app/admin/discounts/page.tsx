@@ -16,26 +16,70 @@ type DiscountRow = {
 }
 
 export default function AdminDiscountsPage() {
+  const BASELINE_COMMISSION = 10
+
   const [discounts, setDiscounts] = useState<DiscountRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [globalSaving, setGlobalSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [globalError, setGlobalError] = useState<string | null>(null)
+  const [globalSuccess, setGlobalSuccess] = useState<string | null>(null)
 
   const [code, setCode] = useState('')
   const [percentOff, setPercentOff] = useState('10')
   const [maxUses, setMaxUses] = useState('')
   const [endsAt, setEndsAt] = useState('')
+  const [globalCommissionPercent, setGlobalCommissionPercent] = useState('10')
+
+  const parsedGlobalCommission = Number(globalCommissionPercent)
+  const hasValidGlobalCommission = Number.isFinite(parsedGlobalCommission)
+    && parsedGlobalCommission >= 0
+    && parsedGlobalCommission <= BASELINE_COMMISSION
+  const globalDiscountPercent = hasValidGlobalCommission
+    ? Number((BASELINE_COMMISSION - parsedGlobalCommission).toFixed(2))
+    : null
+
+  const getAdminToken = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    return session?.access_token || null
+  }
+
+  const loadGlobalBuyNowDiscount = async () => {
+    setGlobalError(null)
+
+    const token = await getAdminToken()
+    if (!token) {
+      setGlobalError('Unauthorized')
+      return
+    }
+
+    const res = await fetch('/api/admin/discounts/buy-now-commission', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+
+    const payload = await res.json().catch(() => null)
+
+    if (!res.ok) {
+      setGlobalError(payload?.error || 'Failed to load Buy Now discount settings')
+      return
+    }
+
+    const percent = Number(payload?.commission_percent)
+    if (Number.isFinite(percent)) {
+      setGlobalCommissionPercent(String(percent))
+    }
+  }
 
   const loadDiscounts = async () => {
     setLoading(true)
     setError(null)
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    const token = session?.access_token
+    const token = await getAdminToken()
     if (!token) {
       setError('Unauthorized')
       setLoading(false)
@@ -60,7 +104,7 @@ export default function AdminDiscountsPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      void loadDiscounts()
+      void Promise.all([loadDiscounts(), loadGlobalBuyNowDiscount()])
     }, 0)
 
     return () => clearTimeout(timer)
@@ -71,11 +115,7 @@ export default function AdminDiscountsPage() {
     setError(null)
     setSuccess(null)
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    const token = session?.access_token
+    const token = await getAdminToken()
     if (!token) {
       setError('Unauthorized')
       setSaving(false)
@@ -117,11 +157,7 @@ export default function AdminDiscountsPage() {
     setError(null)
     setSuccess(null)
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    const token = session?.access_token
+    const token = await getAdminToken()
     if (!token) {
       setError('Unauthorized')
       return
@@ -150,11 +186,95 @@ export default function AdminDiscountsPage() {
     await loadDiscounts()
   }
 
+  const saveGlobalBuyNowDiscount = async () => {
+    setGlobalSaving(true)
+    setGlobalError(null)
+    setGlobalSuccess(null)
+
+    const token = await getAdminToken()
+    if (!token) {
+      setGlobalError('Unauthorized')
+      setGlobalSaving(false)
+      return
+    }
+
+    const res = await fetch('/api/admin/discounts/buy-now-commission', {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        commission_percent: Number(globalCommissionPercent),
+        apply_to_existing: true,
+      }),
+    })
+
+    const payload = await res.json().catch(() => null)
+    if (!res.ok) {
+      setGlobalError(payload?.error || 'Failed to save Buy Now discount')
+      setGlobalSaving(false)
+      return
+    }
+
+    const discountPercent = Number(payload?.discount_percent)
+    setGlobalSuccess(
+      Number.isFinite(discountPercent)
+        ? `Saved. Global Buy Now discount is now ${discountPercent}% from the 10% baseline.`
+        : 'Saved global Buy Now discount.'
+    )
+
+    await loadGlobalBuyNowDiscount()
+    setGlobalSaving(false)
+  }
+
   return (
     <AdminShell>
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
         <h2 className="text-xl font-semibold">Discount Codes</h2>
         <p className="mt-1 text-sm text-gray-500">Create checkout discount codes with percentage off, expiry time, and usage limits.</p>
+      </div>
+
+      <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">Global Buy Now Discount</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Baseline commission is 10%. Set a lower global commission to discount all Buy Now listings.
+        </p>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Commission (%)</label>
+            <input
+              type="number"
+              min={0}
+              max={10}
+              step="0.1"
+              value={globalCommissionPercent}
+              onChange={(event) => setGlobalCommissionPercent(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+            <span className="block text-xs uppercase tracking-wide text-gray-500">Baseline</span>
+            <span className="font-semibold">{BASELINE_COMMISSION}%</span>
+          </div>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            <span className="block text-xs uppercase tracking-wide text-emerald-700">Global Discount</span>
+            <span className="font-semibold">{globalDiscountPercent !== null ? `${globalDiscountPercent}%` : '—'}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            onClick={saveGlobalBuyNowDiscount}
+            disabled={globalSaving || !hasValidGlobalCommission}
+            className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+          >
+            {globalSaving ? 'Applying…' : 'Apply to All Products'}
+          </button>
+          {globalError ? <p className="text-sm text-red-600">{globalError}</p> : null}
+          {globalSuccess ? <p className="text-sm text-green-700">{globalSuccess}</p> : null}
+        </div>
       </div>
 
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
