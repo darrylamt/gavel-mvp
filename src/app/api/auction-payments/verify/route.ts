@@ -160,15 +160,30 @@ export async function POST(req: Request) {
     const commissionAmount = grossAmount * 0.10 // 10% commission
     const payoutAmount = grossAmount * 0.90 // 90% to seller
 
-    // Get seller's default payout account
-    const { data: payoutAccount } = await supabase
+    // Prefer default payout account; fallback to newest account with a recipient code.
+    const { data: defaultPayoutAccount } = await supabase
       .from('seller_payout_accounts')
       .select('recipient_code')
       .eq('seller_id', auctionMeta.created_by)
       .eq('is_default', true)
       .maybeSingle()
 
-    if (payoutAccount?.recipient_code) {
+    let recipientCode = defaultPayoutAccount?.recipient_code ?? null
+
+    if (!recipientCode) {
+      const { data: fallbackPayoutAccount } = await supabase
+        .from('seller_payout_accounts')
+        .select('recipient_code')
+        .eq('seller_id', auctionMeta.created_by)
+        .not('recipient_code', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      recipientCode = fallbackPayoutAccount?.recipient_code ?? null
+    }
+
+    if (recipientCode) {
       const scheduledRelease = new Date()
       scheduledRelease.setDate(scheduledRelease.getDate() + 5) // 5 days from now
 
@@ -179,7 +194,7 @@ export async function POST(req: Request) {
         gross_amount: grossAmount,
         commission_amount: commissionAmount,
         payout_amount: payoutAmount,
-        recipient_code: payoutAccount.recipient_code,
+        recipient_code: recipientCode,
         status: 'pending',
         scheduled_release_at: scheduledRelease.toISOString(),
       })
@@ -190,7 +205,7 @@ export async function POST(req: Request) {
         console.log('Payout record created for auction:', auction_id)
       }
     } else {
-      console.warn('No default payout account found for seller:', auctionMeta.created_by)
+      console.warn('No payout account with recipient code found for seller:', auctionMeta.created_by)
     }
   }
 
