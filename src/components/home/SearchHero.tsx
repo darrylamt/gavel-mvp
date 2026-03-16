@@ -52,6 +52,7 @@ export default function SearchHero() {
     const timer = setTimeout(async () => {
       if (search.trim().length < 2) {
         setResults([])
+        setShowDropdown(false)
         return
       }
 
@@ -135,7 +136,7 @@ export default function SearchHero() {
             </div>
 
             {/* Dropdown Results */}
-            {showDropdown && (search.trim().length > 0 || search === '') && (
+            {showDropdown && search.trim().length > 0 && (
               <div className={styles.dropdown}>
                 {loading ? (
                   <div className={styles.dropdownItem}>
