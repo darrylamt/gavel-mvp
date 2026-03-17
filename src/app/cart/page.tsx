@@ -415,6 +415,7 @@ export default function CartPage() {
                 value={deliveryLocation || null}
                 onChange={setDeliveryLocation}
                 placeholder="Select delivery location"
+                isBuyer={true}
               />
               {!deliveryLocation && (
                 <p className="text-xs text-amber-700">

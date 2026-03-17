@@ -43,6 +43,7 @@ export default function EditProfileModal({
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [saving, setSaving] = useState(false)
+  const [isSeller, setIsSeller] = useState(false)
 
   // Re-sync fields when the modal opens so newly loaded profile data is reflected
   useEffect(() => {
@@ -53,8 +54,22 @@ export default function EditProfileModal({
       setDeliveryLocation(initialDeliveryLocation ?? '')
       setAvatarFile(null)
       setUploadedFiles([])
+      
+      // Check if user is a seller
+      const checkSeller = async () => {
+        const { data: sellerData } = await supabase
+          .from('seller_applications')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'approved')
+          .maybeSingle()
+        
+        setIsSeller(!!sellerData)
+      }
+      
+      checkSeller()
     }
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null
 
@@ -194,6 +209,7 @@ export default function EditProfileModal({
               value={deliveryLocation || null}
               onChange={setDeliveryLocation}
               placeholder="Select your default location"
+              isBuyer={!isSeller}
             />
           </div>
 

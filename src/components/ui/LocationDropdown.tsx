@@ -10,6 +10,7 @@ interface LocationDropdownProps {
   onChange: (value: string) => void
   placeholder?: string
   disabled?: boolean
+  isBuyer?: boolean
 }
 
 export default function LocationDropdown({
@@ -18,25 +19,32 @@ export default function LocationDropdown({
   onChange,
   placeholder = 'Select location...',
   disabled = false,
+  isBuyer = false,
 }: LocationDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  // Filter out "All" locations for buyers
+  const availableLocations = useMemo(() => {
+    if (!isBuyer) return locations
+    return locations.filter(loc => !loc.location.includes('(All)'))
+  }, [locations, isBuyer])
+
   const selectedLocation = useMemo(
-    () => locations.find(loc => loc.value === value),
-    [locations, value]
+    () => availableLocations.find(loc => loc.value === value),
+    [availableLocations, value]
   )
 
   const filteredLocations = useMemo(() => {
-    if (!searchQuery.trim()) return locations
+    if (!searchQuery.trim()) return availableLocations
     const query = searchQuery.toLowerCase()
-    return locations.filter(
+    return availableLocations.filter(
       loc =>
         loc.location.toLowerCase().includes(query) ||
         loc.region.toLowerCase().includes(query)
     )
-  }, [locations, searchQuery])
+  }, [availableLocations, searchQuery])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

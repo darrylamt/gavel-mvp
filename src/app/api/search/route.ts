@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
     // Call the search_listings function
     const { data, error } = await supabase.rpc('search_listings', {
-      query_embedding: `[${queryEmbedding.join(',')}]`,
+      query_embedding: queryEmbedding,
       match_threshold: 0.3,
       match_count: 20,
     })
