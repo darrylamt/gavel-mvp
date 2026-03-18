@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       // Search auctions
       const { data: auctionData } = await supabase
         .from('auctions')
-        .select('id, title, description, current_price as price, image_url, images')
+        .select('id, title, description, current_price, image_url, images')
         .eq('status', 'active')
         .or(`title.ilike.%${cleanQuery}%,description.ilike.%${cleanQuery}%`)
         .limit(10)
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
           title: item.title,
           description: item.description,
           category: null,
-          price: item.price || 0,
+          price: item.current_price || 0,
           image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : null),
           type: 'auction' as const,
           similarity: 0.8
