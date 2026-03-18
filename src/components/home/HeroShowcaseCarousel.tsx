@@ -20,7 +20,7 @@ export default function HeroShowcaseCarousel() {
     <section className="mb-12 grid gap-4 md:grid-cols-[1.35fr_1fr]">
       <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Online auctions & buy-now deals</p>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-gray-900 md:text-5xl">Find quality products from trusted sellers.</h1>
+        <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-gray-900 md:text-5xl">Find quality products from trusted sellers.</h2>
         <p className="mt-4 max-w-2xl text-sm text-gray-600 md:text-base">
           Bid on live auctions, explore fixed-price products, and discover fresh listings across electronics, home, fashion, and more.
         </p>

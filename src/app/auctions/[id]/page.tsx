@@ -578,21 +578,33 @@ export default function AuctionDetailPage() {
     (auction.seller_name || auction.seller_shop_name || '').trim() || 'External Seller'
   const structuredData = {
     '@context': 'https://schema.org',
-    '@type': 'WebPage',
+    '@type': 'AuctionEvent',
     name: auction.title,
     description: formattedDescription || `Auction listing for ${auction.title}`,
     url: productUrl,
-    primaryImageOfPage: imageUrl,
-    about: {
-      '@type': 'Thing',
-      name: auction.title,
-      image: imageUrl,
-      description: formattedDescription || `Auction listing for ${auction.title}`,
+    image: imageUrl,
+    startDate: auction.starts_at,
+    endDate: auction.ends_at,
+    eventStatus: hasEnded ? 'https://schema.org/EventCancelled' : 'https://schema.org/EventScheduled',
+    location: {
+      '@type': 'VirtualLocation',
+      url: productUrl
+    },
+    organizer: {
+      '@type': 'Organization',
+      name: 'Gavel Ghana',
+      url: siteUrl
+    },
+    offers: {
+      '@type': 'Offer',
+      price: liveCurrentPrice,
+      priceCurrency: 'GHS',
+      availability: 'https://schema.org/InStock',
       seller: {
         '@type': 'Organization',
         name: sellerDisplayName,
-      },
-    },
+      }
+    }
   }
 
   return (

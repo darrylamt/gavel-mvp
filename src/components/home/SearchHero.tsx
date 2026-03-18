@@ -116,7 +116,7 @@ export default function SearchHero() {
             </p>
           )}
           <h1 className={styles.heading}>
-            {user ? 'What are you looking for?' : 'Find your next win'}
+            {user ? 'Online Auctions in Ghana — Find Your Next Win on Gavel' : 'Online Auctions in Ghana — Find Your Next Win on Gavel'}
           </h1>
 
           {/* Search Form */}
