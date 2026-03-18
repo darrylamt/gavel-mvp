@@ -41,4 +41,4 @@ create policy "Admins can modify platform settings"
 alter function public.normalize_profile_starter_tokens() set search_path = public;
 alter function public.update_payouts_updated_at() set search_path = public;
 alter function public.set_sms_notifications_updated_at() set search_path = public;
-alter function public.search_listings(vector, double precision, integer) set search_path = public;
+alter function public.search_listings(vector, double precision, integer) set search_path = public, extensions;

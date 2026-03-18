@@ -24,9 +24,6 @@ export async function POST(req: Request) {
 
     const cleanQuery = query.trim()
 
-    // Generate embedding for the search query
-    const queryEmbedding = await generateEmbedding(cleanQuery)
-
     // Use service role to call the search function
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -37,28 +34,79 @@ export async function POST(req: Request) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Call the search_listings function
-    const { data, error } = await supabase.rpc('search_listings', {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.3,
-      match_count: 20,
-    })
+    // Try semantic search first, fallback to text search
+    let results: SearchResult[] = []
 
-    if (error) {
-      console.error('Search error:', error)
-      throw new Error(`Search failed: ${error.message}`)
+    try {
+      // Generate embedding for the search query
+      const queryEmbedding = await generateEmbedding(cleanQuery)
+
+      // Call the search_listings function
+      const { data, error } = await supabase.rpc('search_listings', {
+        query_embedding: `[${queryEmbedding.join(',')}]`,
+        match_threshold: 0.3,
+        match_count: 20,
+      })
+
+      if (!error && data) {
+        results = (data || []) as SearchResult[]
+      }
+    } catch (embeddingError) {
+      console.warn('Embedding search failed, falling back to text search:', embeddingError)
     }
 
-    const results = (data || []) as SearchResult[]
+    // If no results from semantic search, try text-based search
+    if (results.length === 0) {
+      // Search auctions
+      const { data: auctionData } = await supabase
+        .from('auctions')
+        .select('id, title, description, current_price as price, image_url, images')
+        .eq('status', 'active')
+        .or(`title.ilike.%${cleanQuery}%,description.ilike.%${cleanQuery}%`)
+        .limit(10)
+
+      // Search products
+      const { data: productData } = await supabase
+        .from('shop_products')
+        .select('id, title, description, price, image_url, image_urls, category')
+        .eq('status', 'active')
+        .or(`title.ilike.%${cleanQuery}%,description.ilike.%${cleanQuery}%,category.ilike.%${cleanQuery}%`)
+        .limit(10)
+
+      results = [
+        ...(auctionData || []).map(item => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          category: null,
+          price: item.price || 0,
+          image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : null),
+          type: 'auction' as const,
+          similarity: 0.8
+        })),
+        ...(productData || []).map(item => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          category: item.category,
+          price: item.price,
+          image_url: item.image_url || (item.image_urls && item.image_urls.length > 0 ? item.image_urls[0] : null),
+          type: 'product' as const,
+          similarity: 0.8
+        }))
+      ]
+    }
 
     return NextResponse.json({
-      results,
+      results: results.slice(0, 20),
       noResults: results.length === 0,
       query: cleanQuery,
     })
   } catch (error) {
     console.error('Search API error:', error)
     const message = error instanceof Error ? error.message : 'Search failed'
+    const details = error instanceof Error ? error.stack : ''
+    console.error('Error details:', details)
     return NextResponse.json({ error: message, results: [], noResults: true }, { status: 500 })
   }
 }

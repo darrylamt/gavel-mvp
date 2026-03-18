@@ -35,10 +35,10 @@ AS $$
     current_price as price,
     image_url,
     'auction' as type,
-    1 - (embedding <=> query_embedding) as similarity
+    1.0 / (1.0 + (embedding <-> query_embedding)) as similarity
   FROM auctions
   WHERE embedding IS NOT NULL
-    AND 1 - (embedding <=> query_embedding) > match_threshold
+    AND (embedding <-> query_embedding) < match_threshold
     AND status IN ('active', 'scheduled')
   UNION ALL
   SELECT 
@@ -52,10 +52,10 @@ AS $$
       ELSE image_url
     END as image_url,
     'product' as type,
-    1 - (embedding <=> query_embedding) as similarity
+    1.0 / (1.0 + (embedding <-> query_embedding)) as similarity
   FROM shop_products
   WHERE embedding IS NOT NULL
-    AND 1 - (embedding <=> query_embedding) > match_threshold
+    AND (embedding <-> query_embedding) < match_threshold
     AND status = 'active'
   ORDER BY similarity DESC
   LIMIT match_count;

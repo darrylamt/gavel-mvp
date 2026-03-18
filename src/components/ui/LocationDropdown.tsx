@@ -25,11 +25,10 @@ export default function LocationDropdown({
   const [searchQuery, setSearchQuery] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Filter out "All" locations for buyers
+  // Filter out "All" locations
   const availableLocations = useMemo(() => {
-    if (!isBuyer) return locations
     return locations.filter(loc => !loc.location.includes('(All)'))
-  }, [locations, isBuyer])
+  }, [locations])
 
   const selectedLocation = useMemo(
     () => availableLocations.find(loc => loc.value === value),

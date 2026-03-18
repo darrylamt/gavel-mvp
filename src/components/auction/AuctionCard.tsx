@@ -213,6 +213,12 @@ export default function AuctionCard({
           </span>
         )}
 
+        {reservePrice != null && (
+          <span className="inline-block ml-2 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">
+            Reserve
+          </span>
+        )}
+
         {isScheduled && startCountdown && (
           <span className="ml-3 text-xs text-gray-600">{startCountdown}</span>
         )}

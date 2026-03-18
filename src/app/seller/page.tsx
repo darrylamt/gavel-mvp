@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import PieChartCard from '@/components/base/PieChartCard'
+import SellerProfileNotification from '@/components/seller/SellerProfileNotification'
 
 type SellerAuction = {
   id: string
@@ -95,6 +96,8 @@ export default function SellerDashboardPage() {
 
   return (
     <>
+      <SellerProfileNotification />
+
       <section className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
         <h2 className="text-xl font-semibold">Seller Dashboard</h2>
         <p className="mt-1 text-sm text-gray-500">Use My Auctions for auction listings and My Products for buy-now inventory.</p>

@@ -14,17 +14,14 @@ import SearchHero from '@/components/home/SearchHero'
 
 export const dynamic = 'force-dynamic'
 
-
-
 export default async function HomePage() {
-    // Fetch latest buy now products
-    const { data: productsRaw } = await supabase
+    // Fetch products - most recent first
+    const { data: products } = await supabase
       .from('shop_products')
       .select('id, title, description, price, seller_base_price, commission_rate, stock, category, image_url, image_urls')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(8)
-    const products = productsRaw ?? [];
   const now = new Date()
   const nowIso = now.toISOString()
   const next24HoursIso = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
@@ -288,25 +285,24 @@ export default async function HomePage() {
       {products && products.length > 0 && (
         <section className="mt-12 mb-12">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-bold text-gray-900">New Products (Buy Now)</h2>
+            <h2 className="text-xl font-bold text-gray-900">Featured Products</h2>
             <Link href="/shop" className="text-sm font-semibold underline underline-offset-2">See all products</Link>
           </div>
-          <div className="no-scrollbar mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6">
             {products.map((product) => (
-              <div key={product.id} className="snap-start w-[72%] max-w-[232px] flex-none h-full sm:w-auto sm:max-w-none">
-                <ShopProductCard
-                  id={product.id}
-                  title={product.title}
-                  price={product.price}
-                  sellerBasePrice={product.seller_base_price}
-                  commissionRate={product.commission_rate}
-                  imageUrls={product.image_urls}
-                  imageUrl={product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : product.image_url}
-                  stock={product.stock}
-                  categoryLabel={product.category}
-                  compactMobile
-                />
-              </div>
+              <ShopProductCard
+                key={product.id}
+                id={product.id}
+                title={product.title}
+                price={product.price}
+                sellerBasePrice={product.seller_base_price}
+                commissionRate={product.commission_rate}
+                imageUrls={product.image_urls}
+                imageUrl={product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : product.image_url}
+                stock={product.stock}
+                categoryLabel={product.category}
+                compactMobile
+              />
             ))}
           </div>
         </section>

@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, LogOut, Heart, ShoppingCart, X, ChevronDown, Settings } from 'lucide-react'
+import { Menu, LogOut, Heart, ShoppingCart, X, ChevronDown, Settings, Bell } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -12,6 +12,7 @@ import { useStarredAuctions } from '@/hooks/useStarredAuctions'
 import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useCart } from '@/hooks/useCart'
 import navLogo from '@/assets/branding/nav-logo.png'
+import NotificationsDropdown from '@/components/layout/NotificationsDropdown'
 
 type ProfileData = {
   username: string | null
@@ -151,6 +152,14 @@ export default function Navbar() {
     <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 md:sticky">
       <div className="w-full px-4 md:px-6">
         <div className="flex h-16 items-center justify-between">
+          {/* Mobile Menu Button (Left) */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Menu className="h-5 w-5 text-gray-700" />
+          </button>
+
           {/* Logo */}
           <div className="flex items-center gap-8">
             <button
@@ -252,6 +261,10 @@ export default function Navbar() {
               )}
             </button>
 
+            <div className="hidden md:block">
+              <NotificationsDropdown />
+            </div>
+
           {/* Actions */}
             {!loading && user && (
               <button
@@ -340,13 +353,11 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Mobile Menu */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Menu className="h-5 w-5 text-gray-700" />
-            </button>
+            {/* Bell Icon (Mobile Right) */}
+            <div className="md:hidden">
+              <NotificationsDropdown />
+            </div>
+
           </div>
         </div>
 
