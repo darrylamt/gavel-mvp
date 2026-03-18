@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { queueSMS } from '@/lib/arkesel/queue'
+import { queueArkeselNotification } from '@/lib/arkesel/queue'
 
 export async function POST(request: Request) {
   try {
@@ -27,10 +27,11 @@ export async function POST(request: Request) {
     }
 
     // Queue the SMS
-    await queueSMS({
-      phone,
-      message,
+    await queueArkeselNotification({
       userId: user.id,
+      message,
+      phoneOverride: phone,
+      category: 'transactional',
     })
 
     return NextResponse.json({ success: true })
