@@ -102,7 +102,7 @@ export async function POST(req: Request) {
         .eq('id', payout_id)
 
       if (updateError) {
-        console.error('Failed to update payout with transfer code:', updateError)
+        console.error('Failed to update payout with transfer code:', payout_id, updateError)
       }
 
       return NextResponse.json({

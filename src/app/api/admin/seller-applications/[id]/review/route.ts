@@ -141,7 +141,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         const preferredName = (application?.business_name || '').trim() || 'Seller Shop'
         const baseSlug = `${toSlug(preferredName)}-${sellerId.slice(0, 6)}`
 
-        for (let index = 0; index < 5; index += 1) {
+        for (let index = 0; index < 10; index += 1) {
           const slug = index === 0 ? baseSlug : `${baseSlug}-${index}`
           const { error: createShopError } = await service
             .from('shops')

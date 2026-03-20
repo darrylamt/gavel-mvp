@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { queuePayoutHeldNotification } from '@/lib/arkesel/events'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -72,16 +73,18 @@ export async function POST(req: Request) {
       // Find pending payouts for this order
       const { data: payouts, error: payoutsError } = await supabase
         .from('payouts')
-        .select('id, status')
+        .select('id, status, seller_id')
         .eq('order_id', order_id)
         .in('status', ['pending', 'on_hold'])
 
       if (!payoutsError && payouts && payouts.length > 0) {
         for (const payout of payouts) {
           if (payout.status === 'on_hold') {
-            // Don't trigger payout, notify admin instead
-            console.log('Order confirmed but payout on hold:', payout.id)
-            // TODO: Notify admin
+            // Payout is held — notify seller their delivery was confirmed but payout is still under review
+            console.error('Order confirmed but payout on hold — admin review needed:', payout.id)
+            if (payout.seller_id) {
+              await queuePayoutHeldNotification({ sellerUserId: payout.seller_id })
+            }
           } else if (payout.status === 'pending') {
             // Trigger payout immediately
             await supabase
@@ -90,11 +93,15 @@ export async function POST(req: Request) {
               .eq('id', payout.id)
 
             // Initiate the transfer
-            await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/payouts/initiate`, {
+            const initiateRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/payouts/initiate`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ payout_id: payout.id }),
             })
+            if (!initiateRes.ok) {
+              const errData = await initiateRes.json().catch(() => ({}))
+              console.error('Failed to initiate payout for order:', order_id, errData)
+            }
           }
         }
       }
@@ -148,26 +155,32 @@ export async function POST(req: Request) {
       // Find pending payout for this auction
       const { data: payouts, error: payoutsError } = await supabase
         .from('payouts')
-        .select('id, status')
+        .select('id, status, seller_id')
         .eq('auction_id', auction_id)
         .in('status', ['pending', 'on_hold'])
 
       if (!payoutsError && payouts && payouts.length > 0) {
         for (const payout of payouts) {
           if (payout.status === 'on_hold') {
-            console.log('Auction confirmed but payout on hold:', payout.id)
-            // TODO: Notify admin
+            console.error('Auction confirmed but payout on hold — admin review needed:', payout.id)
+            if (payout.seller_id) {
+              await queuePayoutHeldNotification({ sellerUserId: payout.seller_id })
+            }
           } else if (payout.status === 'pending') {
             await supabase
               .from('payouts')
               .update({ payout_trigger: 'buyer_confirmed' })
               .eq('id', payout.id)
 
-            await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/payouts/initiate`, {
+            const initiateRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/payouts/initiate`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ payout_id: payout.id }),
             })
+            if (!initiateRes.ok) {
+              const errData = await initiateRes.json().catch(() => ({}))
+              console.error('Failed to initiate payout for auction:', auction_id, errData)
+            }
           }
         }
       }

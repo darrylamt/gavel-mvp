@@ -5,140 +5,152 @@ import navLogo from '@/assets/branding/nav-logo.png'
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-50 py-10 sm:pt-16 lg:pt-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-x-12 gap-y-16 md:grid-cols-3 lg:grid-cols-6">
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 lg:pr-8">
-            <Link href="/" className="inline-flex hover:opacity-80">
-              <Image src={navLogo} alt="Gavel" className="h-10 w-auto" />
+    <footer className="bg-gray-950 text-gray-400">
+
+      {/* Top CTA strip */}
+      <div className="border-b border-white/[0.08]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <p className="text-white font-bold text-lg">Ready to start bidding?</p>
+            <p className="text-sm text-gray-400 mt-0.5">Join thousands of buyers and sellers across Ghana.</p>
+          </div>
+          <div className="flex gap-3 flex-shrink-0">
+            <Link
+              href="/auctions"
+              className="rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
+            >
+              Browse Auctions
             </Link>
+            <Link
+              href="/seller/apply"
+              className="rounded-lg border border-white/20 px-5 py-2.5 text-sm font-semibold text-white hover:border-white/40 transition-colors"
+            >
+              Sell on Gavel
+            </Link>
+          </div>
+        </div>
+      </div>
 
-            <p className="mt-7 text-base leading-relaxed text-gray-600">
-              A modern auction platform where bids are powered by tokens, auctions are transparent,
-              and winning is seamless.
+      {/* Main grid */}
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4 lg:grid-cols-5">
+
+          {/* Brand */}
+          <div className="col-span-2 lg:col-span-2">
+            <Link href="/" className="inline-flex hover:opacity-80 transition-opacity">
+              <Image src={navLogo} alt="Gavel" className="h-9 w-auto brightness-0 invert" />
+            </Link>
+            <p className="mt-5 text-sm leading-relaxed text-gray-400 max-w-xs">
+              Ghana&apos;s modern auction and marketplace platform — powered by live bidding, tokens, and seamless payments.
             </p>
-
-            <ul className="mt-9 flex items-center space-x-3">
-              <li>
-                <a
-                  href="https://x.com/gavelgh"
-                  aria-label="Twitter"
-                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-white transition-all duration-200 hover:bg-blue-600 focus:bg-blue-600"
-                >
-                  <Twitter className="h-4 w-4" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.facebook.com/share/1XVgK95jJh/"
-                  aria-label="Facebook"
-                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-white transition-all duration-200 hover:bg-blue-600 focus:bg-blue-600"
-                >
-                  <Facebook className="h-4 w-4" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.instagram.com/gavel.gh/"
-                  aria-label="Instagram"
-                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-white transition-all duration-200 hover:bg-blue-600 focus:bg-blue-600"
-                >
-                  <Instagram className="h-4 w-4" />
-                </a>
-              </li>
-            </ul>
+            <div className="mt-6 flex items-center gap-2">
+              <a
+                href="https://x.com/gavelgh"
+                aria-label="Twitter"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-gray-400 hover:border-orange-500 hover:text-orange-400 transition-colors"
+              >
+                <Twitter className="h-3.5 w-3.5" />
+              </a>
+              <a
+                href="https://www.facebook.com/share/1XVgK95jJh/"
+                aria-label="Facebook"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-gray-400 hover:border-orange-500 hover:text-orange-400 transition-colors"
+              >
+                <Facebook className="h-3.5 w-3.5" />
+              </a>
+              <a
+                href="https://www.instagram.com/gavel.gh/"
+                aria-label="Instagram"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-gray-400 hover:border-orange-500 hover:text-orange-400 transition-colors"
+              >
+                <Instagram className="h-3.5 w-3.5" />
+              </a>
+            </div>
           </div>
 
+          {/* Company */}
           <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-gray-400">Company</p>
-
-            <ul className="mt-6 space-y-4">
-              <li>
-                <Link href="/" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href="/auctions" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  Auctions
-                </Link>
-              </li>
-              <li>
-                <Link href="/tokens" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  Tokens
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="/seller/apply" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  Become a Seller
-                </Link>
-              </li>
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">Company</p>
+            <ul className="mt-5 space-y-3">
+              {[
+                { href: '/', label: 'About' },
+                { href: '/auctions', label: 'Auctions' },
+                { href: '/shop', label: 'Shop' },
+                { href: '/tokens', label: 'Tokens' },
+                { href: '/seller/apply', label: 'Become a Seller' },
+              ].map(({ href, label }) => (
+                <li key={label}>
+                  <Link href={href} className="text-sm text-gray-400 hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Help */}
           <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-gray-400">Help</p>
-
-            <ul className="mt-6 space-y-4">
-              <li>
-                <Link href="/faq" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  FAQs
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  Contact Support
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  Terms & Conditions
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="flex text-base text-black transition-all duration-200 hover:text-blue-600 focus:text-blue-600">
-                  Privacy Policy
-                </Link>
-              </li>
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">Help</p>
+            <ul className="mt-5 space-y-3">
+              {[
+                { href: '/faq', label: 'FAQs' },
+                { href: '/contact', label: 'Contact Support' },
+                { href: '/terms', label: 'Terms & Conditions' },
+                { href: '/privacy', label: 'Privacy Policy' },
+              ].map(({ href, label }) => (
+                <li key={label}>
+                  <Link href={href} className="text-sm text-gray-400 hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          <div className="col-span-2 md:col-span-1 lg:col-span-2 lg:pl-8">
-            <p className="text-sm font-semibold uppercase tracking-widest text-gray-400">Subscribe to newsletter</p>
-
-            <form className="mt-6" action="#" method="POST">
-              <div>
-                <label htmlFor="newsletter-email" className="sr-only">Email</label>
-                <input
-                  id="newsletter-email"
-                  name="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  className="block w-full rounded-md border border-gray-200 bg-white p-4 text-black placeholder-gray-500 caret-blue-600 transition-all duration-200 focus:border-blue-600 focus:outline-none"
-                />
-              </div>
-
+          {/* Newsletter */}
+          <div className="col-span-2 md:col-span-4 lg:col-span-1">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">Newsletter</p>
+            <p className="mt-2 text-sm text-gray-400 leading-relaxed">
+              Get notified about hot new auctions.
+            </p>
+            <form className="mt-4 flex flex-col gap-2" action="#" method="POST">
+              <input
+                type="email"
+                name="email"
+                placeholder="your@email.com"
+                className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-orange-500 transition-colors w-full"
+              />
               <button
                 type="submit"
-                className="mt-3 inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-4 font-semibold text-white transition-all duration-200 hover:bg-blue-700 focus:bg-blue-700"
+                className="rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
               >
                 Subscribe
               </button>
             </form>
           </div>
         </div>
-
-        <hr className="my-10 mt-16 border-gray-200" />
-
-        <p className="text-center text-sm text-gray-600">
-          © {new Date().getFullYear()} Gavel. All rights reserved.
-        </p>
       </div>
+
+      {/* Bottom bar */}
+      <div className="border-t border-white/[0.08]">
+        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-gray-500">
+            © {new Date().getFullYear()} Gavel Ghana Ltd. All rights reserved.
+          </p>
+          <div className="flex items-center gap-5">
+            {[
+              { href: '/terms', label: 'Terms' },
+              { href: '/privacy', label: 'Privacy' },
+              { href: '/contact', label: 'Contact' },
+            ].map(({ href, label }) => (
+              <Link key={label} href={href} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
     </footer>
   )
 }

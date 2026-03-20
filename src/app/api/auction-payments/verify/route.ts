@@ -32,7 +32,6 @@ export async function POST(req: Request) {
   const json = await res.json()
 
   if (!json.status) {
-    console.error('Paystack verification failed:', json)
     return NextResponse.json(
       { error: 'Verification failed' },
       { status: 400 }
@@ -49,7 +48,6 @@ export async function POST(req: Request) {
   const { metadata } = json.data
 
   if (metadata?.type !== 'auction_payment') {
-    console.error('Invalid payment type:', metadata?.type)
     return NextResponse.json(
       { error: 'Invalid payment type' },
       { status: 400 }
@@ -155,10 +153,12 @@ export async function POST(req: Request) {
   }
 
   // 5️⃣ Create payout record with escrow (hold for 5 days or until buyer confirms delivery)
+  const COMMISSION_RATE = 0.10
+
   if (auctionMeta?.created_by) {
     const grossAmount = Number(json.data.amount) / 100
-    const commissionAmount = grossAmount * 0.10 // 10% commission
-    const payoutAmount = grossAmount * 0.90 // 90% to seller
+    const commissionAmount = grossAmount * COMMISSION_RATE
+    const payoutAmount = grossAmount * (1 - COMMISSION_RATE)
 
     // Prefer default payout account; fallback to newest account with a recipient code.
     const { data: defaultPayoutAccount } = await supabase
@@ -201,14 +201,11 @@ export async function POST(req: Request) {
 
       if (payoutError) {
         console.error('Failed to create payout record:', payoutError)
-      } else {
-        console.log('Payout record created for auction:', auction_id)
       }
     } else {
       console.warn('No payout account with recipient code found for seller:', auctionMeta.created_by)
     }
   }
 
-  console.log('Payment successful for auction:', auction_id)
   return NextResponse.json({ success: true })
 }

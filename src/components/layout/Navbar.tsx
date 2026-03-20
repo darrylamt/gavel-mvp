@@ -1,8 +1,9 @@
 'use client'
 
-import { Menu, LogOut, Heart, ShoppingCart, X, ChevronDown, Settings, Bell } from 'lucide-react'
+import { Menu, LogOut, Heart, ShoppingCart, X, ChevronDown, Settings } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuthUser } from '@/hooks/useAuthUser'
@@ -45,22 +46,21 @@ export default function Navbar() {
         .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
         .join(' ')
         .trim()
-
     return fullName || null
   }
 
+  // Lock scroll when drawer open
   useEffect(() => {
-    if (!mobileMenuOpen) {
-      return
-    }
+    if (!mobileMenuOpen) return
 
     lockedScrollYRef.current = window.scrollY
-
-    const previousBodyOverflow = document.body.style.overflow
-    const previousBodyPosition = document.body.style.position
-    const previousBodyTop = document.body.style.top
-    const previousBodyWidth = document.body.style.width
-    const previousHtmlOverflow = document.documentElement.style.overflow
+    const prev = {
+      bodyOverflow: document.body.style.overflow,
+      bodyPosition: document.body.style.position,
+      bodyTop: document.body.style.top,
+      bodyWidth: document.body.style.width,
+      htmlOverflow: document.documentElement.style.overflow,
+    }
 
     document.documentElement.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
@@ -69,11 +69,11 @@ export default function Navbar() {
     document.body.style.width = '100%'
 
     return () => {
-      document.documentElement.style.overflow = previousHtmlOverflow
-      document.body.style.overflow = previousBodyOverflow
-      document.body.style.position = previousBodyPosition
-      document.body.style.top = previousBodyTop
-      document.body.style.width = previousBodyWidth
+      document.documentElement.style.overflow = prev.htmlOverflow
+      document.body.style.overflow = prev.bodyOverflow
+      document.body.style.position = prev.bodyPosition
+      document.body.style.top = prev.bodyTop
+      document.body.style.width = prev.bodyWidth
       window.scrollTo(0, lockedScrollYRef.current)
     }
   }, [mobileMenuOpen])
@@ -101,13 +101,7 @@ export default function Navbar() {
       if (!profile?.username && metadataFullName) {
         await supabase
           .from('profiles')
-          .upsert(
-            {
-              id: user.id,
-              username: metadataFullName,
-            },
-            { onConflict: 'id' }
-          )
+          .upsert({ id: user.id, username: metadataFullName }, { onConflict: 'id' })
       }
 
       setProfileUsername(nextUsername)
@@ -118,26 +112,12 @@ export default function Navbar() {
 
     loadProfile()
 
-    /* Subscribe to profile changes */
     const subscription = supabase
       .channel(`profile:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.id}`,
-        },
-        () => {
-          loadProfile()
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, loadProfile)
       .subscribe()
 
-    return () => {
-      subscription.unsubscribe()
-    }
+    return () => { subscription.unsubscribe() }
   }, [user])
 
   const handleLogout = async () => {
@@ -145,450 +125,302 @@ export default function Navbar() {
     router.push('/login')
   }
 
-
+  const closeMenu = () => setMobileMenuOpen(false)
 
   return (
     <>
-    <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 md:sticky">
-      <div className="w-full px-4 md:px-6">
-        <div className="flex h-16 items-center justify-between">
-          {/* Mobile Menu Button (Left) */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Menu className="h-5 w-5 text-gray-700" />
-          </button>
+      {/* ── Main header ── */}
+      <header className="fixed inset-x-0 top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 md:sticky">
+        <div className="mx-auto max-w-7xl px-4 md:px-6">
+          <div className="flex h-14 items-center justify-between gap-2">
 
-          {/* Logo */}
-          <div className="flex items-center gap-8">
-            <button
-              onClick={() => router.push('/')}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-            >
-              <Image src={navLogo} alt="Gavel" className="h-8 w-auto" priority />
-            </button>
+            {/* Left: hamburger + logo + desktop nav */}
+            <div className="flex items-center gap-2 md:gap-6 min-w-0">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="md:hidden flex-shrink-0 -ml-1 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu className="h-5 w-5 text-gray-700" />
+              </button>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-6">
-              <div className="relative group">
-                <button
-                  className="inline-flex items-center gap-1 text-sm font-medium uppercase tracking-wide text-gray-700 transition-colors hover:text-black"
-                >
-                  MARKET
-                  <ChevronDown className="h-4 w-4" />
-                </button>
+              <Link href="/" className="flex-shrink-0 flex items-center hover:opacity-80 transition-opacity">
+                <Image src={navLogo} alt="Gavel" className="h-7 w-auto" priority />
+              </Link>
 
-                <div className="invisible absolute left-0 top-full z-50 mt-3 w-44 rounded-lg border border-gray-200 bg-white p-1 opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100">
-                  <button
-                    onClick={() => router.push('/auctions')}
-                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-black"
-                  >
-                    Auctions
+              {/* Desktop nav */}
+              <nav className="hidden md:flex items-center gap-0.5">
+                {/* Market dropdown */}
+                <div className="relative group">
+                  <button className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                    Market
+                    <ChevronDown className="h-3.5 w-3.5 opacity-60" />
                   </button>
-                  <button
-                    onClick={() => router.push('/auctions/winners')}
-                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-black"
-                  >
-                    Recent Winners
-                  </button>
-                  <button
-                    onClick={() => router.push('/shop')}
-                    className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-black"
-                  >
-                    Buy Now
-                  </button>
+                  <div className="invisible absolute left-0 top-full z-50 pt-1.5 opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-150">
+                    <div className="w-44 rounded-xl border border-gray-100 bg-white py-1 shadow-xl shadow-black/5">
+                      {[
+                        { href: '/auctions', label: 'Auctions' },
+                        { href: '/auctions/winners', label: 'Recent Winners' },
+                        { href: '/shop', label: 'Buy Now' },
+                      ].map(({ href, label }) => (
+                        <Link key={href} href={href} className="flex px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                          {label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                onClick={() => router.push('/shop/sellers')}
-                className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
-              >
-                SHOPS
-              </button>
-              {!loading && user && profileRole === 'seller' && (
-                <button
-                  onClick={() => router.push('/seller')}
-                  className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
-                >
-                  SELLER
-                </button>
-              )}
-                {isAdmin && (
-                  <button
-                    onClick={() => router.push('/admin')}
-                    className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
-                  >
-                    ADMIN
-                  </button>
+                <Link href="/shop/sellers" className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                  Shops
+                </Link>
+                {!loading && user && profileRole === 'seller' && (
+                  <Link href="/seller" className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                    Seller
+                  </Link>
                 )}
-              <button
-                onClick={() => router.push('/tokens')}
-                className="text-sm font-medium uppercase tracking-wide text-gray-700 hover:text-black transition-colors"
-              >
-                TOKENS
-              </button>
-            </nav>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push('/starred')}
-
-              className="relative hidden rounded-lg border border-gray-200 p-2 transition-colors hover:bg-gray-50 md:inline-flex"
-              aria-label="Starred auctions"
-            >
-              <Heart className="h-5 w-5 text-gray-700" />
-              {totalStarredCount > 0 && (
-                <span className="absolute -top-1 -right-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
-                  {totalStarredCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => router.push('/cart')}
-              className="relative hidden rounded-lg border border-gray-200 p-2 transition-colors hover:bg-gray-50 md:inline-flex"
-              aria-label="Cart"
-            >
-              <ShoppingCart className="h-5 w-5 text-gray-700" />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
-                  {itemCount}
-                </span>
-              )}
-            </button>
-
-            <div className="hidden md:block">
-              <NotificationsDropdown />
+                {isAdmin && (
+                  <Link href="/admin" className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                    Admin
+                  </Link>
+                )}
+                <Link href="/tokens" className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                  Tokens
+                </Link>
+              </nav>
             </div>
 
-          {/* Actions */}
-            {!loading && user && (
-              <button
-                onClick={() => router.push('/tokens')}
-                className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors"
+            {/* Right: actions */}
+            <div className="flex items-center gap-1">
+              {/* Desktop: starred, cart, notifications */}
+              <Link
+                href="/starred"
+                className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                aria-label="Starred items"
               >
-                <span className="text-lg">🪙</span>
-                <span className="font-semibold text-amber-700 text-sm">
-                  {tokens ?? 0}
-                </span>
-              </button>
-            )}
+                <Heart className="h-[1.1rem] w-[1.1rem]" />
+                {totalStarredCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-red-500 flex items-center justify-center text-[9px] font-bold text-white px-1 leading-none">
+                    {totalStarredCount}
+                  </span>
+                )}
+              </Link>
 
-            {!loading && canBecomeSeller && (
-              <button
-                onClick={() => router.push('/seller/apply')}
-                className="hidden md:inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              <Link
+                href="/cart"
+                className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                aria-label="Cart"
               >
-                Become a Seller
-              </button>
-            )}
+                <ShoppingCart className="h-[1.1rem] w-[1.1rem]" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-orange-500 flex items-center justify-center text-[9px] font-bold text-white px-1 leading-none">
+                    {itemCount}
+                  </span>
+                )}
+              </Link>
 
-            {/* User Profile / Auth */}
-            {!loading && !user ? (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => router.push('/login')}
-                  className="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 md:px-4"
-                >
+              <div className="hidden md:block">
+                <NotificationsDropdown />
+              </div>
+
+              {/* Token balance */}
+              {!loading && user && (
+                <Link href="/tokens" className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors">
+                  <span className="text-sm leading-none">🪙</span>
+                  <span className="font-semibold text-amber-700 text-sm leading-none">{tokens ?? 0}</span>
+                </Link>
+              )}
+
+              {/* Become a seller */}
+              {!loading && canBecomeSeller && (
+                <Link href="/seller/apply" className="hidden lg:flex items-center rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap">
+                  Sell on Gavel
+                </Link>
+              )}
+
+              {/* Auth */}
+              {!loading && !user ? (
+                <Link href="/login" className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-black transition-colors whitespace-nowrap">
                   Sign In
-                </button>
-              </div>
-            ) : (
-              <div className="relative hidden md:block group">
-                <AvatarLabelGroup
-                  size="md"
-                  src={profileAvatarUrl || null}
-                  alt={user?.email || 'User'}
-                  title={profileUsername || user?.email || 'User'}
-                  subtitle={user?.email || undefined}
-                  onClick={() => router.push('/profile')}
-                />
-
-                {/* Desktop Dropdown */}
-                <div className="hidden group-hover:flex absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg flex-col z-50">
-                  <button
-                    onClick={() => router.push('/profile/orders')}
-                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
-                  >
-                    Track Orders
-                  </button>
-                  <button
+                </Link>
+              ) : !loading && user ? (
+                <div className="relative hidden md:block group">
+                  <AvatarLabelGroup
+                    size="md"
+                    src={profileAvatarUrl || null}
+                    alt={user?.email || 'User'}
+                    title={profileUsername || user?.email || 'User'}
+                    subtitle={user?.email || undefined}
                     onClick={() => router.push('/profile')}
-                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
-                  >
-                    My Profile
-                  </button>
-                  {profileRole === 'seller' && (
-                    <button
-                      onClick={() => router.push('/seller')}
-                      className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
-                    >
-                      Seller Dashboard
+                  />
+                  <div className="hidden group-hover:flex absolute right-0 top-full mt-1.5 w-48 bg-white border border-gray-100 rounded-xl shadow-xl shadow-black/5 flex-col z-50 overflow-hidden py-1">
+                    {[
+                      { href: '/profile/orders', label: 'Track Orders' },
+                      { href: '/profile', label: 'My Profile' },
+                      ...(profileRole === 'seller' ? [{ href: '/seller', label: 'Seller Dashboard' }] : []),
+                      { href: '/tokens', label: 'Buy Tokens' },
+                      { href: '/profile/settings', label: 'Settings' },
+                    ].map(({ href, label }) => (
+                      <button key={href} onClick={() => router.push(href)} className="px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                        {label}
+                      </button>
+                    ))}
+                    <div className="h-px bg-gray-100 my-1" />
+                    <button onClick={handleLogout} className="px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2">
+                      <LogOut className="h-3.5 w-3.5" />
+                      Log Out
                     </button>
-                  )}
-                  <button
-                    onClick={() => router.push('/tokens')}
-                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
-                  >
-                    Buy Tokens
-                  </button>
-                  <button
-                    onClick={() => router.push('/profile/settings')}
-                    className="px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 transition-colors"
-                  >
-                    Settings
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Log Out
-                  </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : null}
 
-            {/* Bell Icon (Mobile Right) */}
-            <div className="md:hidden">
-              <NotificationsDropdown />
+              {/* Mobile: notifications */}
+              <div className="md:hidden">
+                <NotificationsDropdown />
+              </div>
             </div>
 
           </div>
         </div>
+      </header>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-[70] bg-white md:hidden">
-            <div className="flex h-16 items-center justify-between bg-white px-4">
+      {/* Spacer for fixed nav on mobile */}
+      <div className="h-14 md:hidden" aria-hidden="true" />
+
+      {/* ── Mobile drawer overlay ── */}
+      <div
+        className={`fixed inset-0 z-[60] bg-black/40 md:hidden transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={closeMenu}
+        aria-hidden="true"
+      />
+
+      {/* ── Mobile side drawer ── */}
+      <div
+        className={`fixed inset-y-0 left-0 z-[70] flex flex-col bg-white md:hidden shadow-2xl transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ width: 'min(85vw, 340px)' }}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between h-14 px-4 border-b border-gray-100 flex-shrink-0">
+          <Link href="/" onClick={closeMenu}>
+            <Image src={navLogo} alt="Gavel" className="h-7 w-auto" />
+          </Link>
+          <button onClick={closeMenu} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Close menu">
+            <X className="h-5 w-5 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+
+          {/* Profile or auth */}
+          {user ? (
+            <div className="px-4 py-4 border-b border-gray-100">
               <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100"
-                aria-label="Close menu"
+                onClick={() => { router.push('/profile'); closeMenu() }}
+                className="flex items-center gap-3 w-full text-left"
               >
-                <X className="h-5 w-5" />
-              </button>
-
-              <button onClick={() => {
-                router.push('/')
-                setMobileMenuOpen(false)
-              }} className="rounded p-1">
-                <Image src={navLogo} alt="Gavel" className="h-7 w-auto" priority />
-              </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    router.push('/starred')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="relative rounded-lg bg-white p-2"
-                  aria-label="Starred auctions"
-                >
-                  <Heart className="h-5 w-5 text-gray-700" />
-                  {starredCount > 0 && (
-                    <span className="absolute -top-1 -right-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
-                      {starredCount}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => {
-                    router.push('/cart')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="relative rounded-lg bg-white p-2"
-                  aria-label="Cart"
-                >
-                  <ShoppingCart className="h-5 w-5 text-gray-700" />
-                  {itemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
-                      {itemCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex h-[calc(100dvh-4rem)] flex-col items-center bg-white px-8 pt-6 text-center">
-              {user && (
-                <button
-                  onClick={() => {
-                    router.push('/profile')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="mb-8 flex flex-col items-center gap-2"
-                >
-                  {profileAvatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={profileAvatarUrl}
-                      alt={profileUsername || user.email || 'User'}
-                      className="h-16 w-16 rounded-full border border-gray-200 object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-lg font-semibold text-gray-700">
-                      {(profileUsername || user.email || 'U').charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <p className="max-w-[12rem] truncate text-base font-semibold text-gray-900">
-                    {profileUsername || user.email || 'User'}
-                  </p>
-                  <p className="rounded-md bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-                    Tokens: {tokens ?? 0}
-                  </p>
-                </button>
-              )}
-
-              <nav className="flex flex-col items-center gap-5">
-                <button
-                  onClick={() => {
-                    router.push('/auctions')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
-                >
-                  Auctions
-                </button>
-                {user && (
-                  <button
-                    onClick={() => {
-                      router.push('/profile/orders')
-                      setMobileMenuOpen(false)
-                    }}
-                    className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
-                  >
-                    Track Orders
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    router.push('/shop')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
-                >
-                  Buy Now
-                </button>
-                <button
-                  onClick={() => {
-                    router.push('/shop/sellers')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
-                >
-                  Shops
-                </button>
-                <button
-                  onClick={() => {
-                    router.push('/tokens')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
-                >
-                  Tokens
-                </button>
-                <button
-                  onClick={() => {
-                    router.push('/contact')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
-                >
-                  Contact
-                </button>
-                {isAdmin && (
-                  <button
-                    onClick={() => {
-                      router.push('/admin')
-                      setMobileMenuOpen(false)
-                    }}
-                    className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
-                  >
-                    Admin
-                  </button>
-                )}
-                {user && profileRole === 'seller' && (
-                  <button
-                    onClick={() => {
-                      router.push('/seller')
-                      setMobileMenuOpen(false)
-                    }}
-                    className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:text-black"
-                  >
-                    Seller Dashboard
-                  </button>
-                )}
-                {canBecomeSeller && (
-                  <button
-                    onClick={() => {
-                      router.push('/seller/apply')
-                      setMobileMenuOpen(false)
-                    }}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-50"
-                  >
-                    Become a Seller
-                  </button>
-                )}
-              </nav>
-
-              <div className="mt-10 flex flex-col items-center gap-3 text-sm text-gray-700">
-                {user ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        router.push('/profile/settings')
-                        setMobileMenuOpen(false)
-                      }}
-                      className="flex items-center gap-2 font-medium text-gray-900 transition hover:text-black"
-                    >
-                      <Settings className="h-4 w-4" />
-                      Settings
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleLogout()
-                        setMobileMenuOpen(false)
-                      }}
-                      className="font-medium text-red-600 transition hover:text-red-700"
-                    >
-                      Log Out
-                    </button>
-                  </>
+                {profileAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profileAvatarUrl} alt="" className="h-10 w-10 rounded-full object-cover flex-shrink-0" />
                 ) : (
-                  <>
-                    <button
-                      onClick={() => {
-                        router.push('/login')
-                        setMobileMenuOpen(false)
-                      }}
-                      className="font-medium transition hover:text-black"
-                    >
-                      Log in
-                    </button>
-                    <button
-                      onClick={() => {
-                        router.push('/signup')
-                        setMobileMenuOpen(false)
-                      }}
-                      className="font-medium transition hover:text-black"
-                    >
-                      Create account
-                    </button>
-                  </>
+                  <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-700 flex-shrink-0">
+                    {(profileUsername || user.email || 'U').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{profileUsername || user.email}</p>
+                  <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                </div>
+              </button>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link href="/tokens" onClick={closeMenu} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold">
+                  🪙 {tokens ?? 0} tokens
+                </Link>
+                {canBecomeSeller && (
+                  <Link href="/seller/apply" onClick={closeMenu} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700">
+                    Become a Seller
+                  </Link>
                 )}
               </div>
             </div>
+          ) : (
+            <div className="px-4 py-4 border-b border-gray-100 flex gap-2">
+              <Link href="/login" onClick={closeMenu} className="flex-1 text-center rounded-xl bg-gray-900 py-2.5 text-sm font-semibold text-white">
+                Sign In
+              </Link>
+              <Link href="/signup" onClick={closeMenu} className="flex-1 text-center rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-700">
+                Sign Up
+              </Link>
+            </div>
+          )}
+
+          {/* Nav links */}
+          <nav className="px-3 py-2 pb-4">
+            <p className="px-3 pt-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Marketplace
+            </p>
+            {[
+              { href: '/auctions', label: 'Auctions' },
+              { href: '/shop', label: 'Buy Now' },
+              { href: '/shop/sellers', label: 'Shops' },
+              { href: '/auctions/winners', label: 'Recent Winners' },
+              { href: '/tokens', label: 'Tokens' },
+              { href: '/contact', label: 'Contact' },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={closeMenu}
+                className="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+
+            {user && (
+              <>
+                <p className="px-3 pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  My Account
+                </p>
+                {[
+                  { href: '/profile/orders', label: 'Track Orders' },
+                  { href: '/profile', label: 'My Profile' },
+                  { href: '/starred', label: 'Starred Items' },
+                  { href: '/cart', label: 'Cart' },
+                  ...(profileRole === 'seller' ? [{ href: '/seller', label: 'Seller Dashboard' }] : []),
+                  ...(isAdmin ? [{ href: '/admin', label: 'Admin Panel' }] : []),
+                ].map(({ href, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={closeMenu}
+                    className="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </>
+            )}
+          </nav>
+        </div>
+
+        {/* Drawer footer */}
+        {user && (
+          <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 flex items-center gap-4">
+            <Link href="/profile/settings" onClick={closeMenu} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
+              <Settings className="h-4 w-4" />
+              Settings
+            </Link>
+            <button
+              onClick={() => { handleLogout(); closeMenu() }}
+              className="ml-auto flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              Log Out
+            </button>
           </div>
         )}
       </div>
-    </header>
-    <div className="h-16 md:hidden" aria-hidden="true" />
     </>
   )
 }

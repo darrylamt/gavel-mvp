@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { queuePayoutHeldNotification } from '@/lib/arkesel/events'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -76,11 +77,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // TODO: Notify seller
-    // await queueSellerNotification({
-    //   userId: payout.seller_id,
-    //   message: 'Your payout is currently under review. Our team will resolve this within 48 hours.'
-    // })
+    await queuePayoutHeldNotification({ sellerUserId: payout.seller_id })
 
     return NextResponse.json({
       success: true,

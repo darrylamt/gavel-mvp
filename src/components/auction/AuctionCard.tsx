@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Heart, Info, Lock } from 'lucide-react'
 import { useStarredAuctions } from '@/hooks/useStarredAuctions'
@@ -33,12 +33,10 @@ type AuctionCardProps = {
 export default function AuctionCard({
   id,
   title,
-  description,
   startingPrice,
   currentPrice,
   endsAt,
   startsAt,
-  status,
   imageUrl,
   images,
   reservePrice,
@@ -59,72 +57,53 @@ export default function AuctionCard({
   const isEnded = timeLeftMs <= 0
   const startsAtMs = startsAt ? new Date(startsAt).getTime() : 0
   const isScheduled = !isEnded && startsAtMs > nowMs
+  const isLive = !isEnded && !isScheduled
   const canToggleStar = !isEnded || starred
 
   const [openTip, setOpenTip] = useState<'min' | 'max' | null>(null)
 
   const startCountdown = useMemo(() => {
     if (!startsAt || !isScheduled) return null
-
     const diff = new Date(startsAt).getTime() - nowMs
     if (diff <= 0) return 'Starting...'
-
     const s = Math.floor((diff / 1000) % 60)
     const m = Math.floor((diff / (1000 * 60)) % 60)
     const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
     const d = Math.floor(diff / (1000 * 60 * 60 * 24))
-
     const parts: string[] = []
     if (d) parts.push(`${d}d`)
     if (h) parts.push(`${h}h`)
     if (m) parts.push(`${m}m`)
     parts.push(`${s}s`)
-
     return parts.join(' ')
   }, [startsAt, isScheduled, nowMs])
 
   const endCountdown = useMemo(() => {
     if (isEnded || isScheduled) return null
-
     const diff = new Date(endsAt).getTime() - nowMs
     if (diff <= 0) return 'Ended'
-
     const s = Math.floor((diff / 1000) % 60)
     const m = Math.floor((diff / (1000 * 60)) % 60)
     const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
     const d = Math.floor(diff / (1000 * 60 * 60 * 24))
-
     const parts: string[] = []
     if (d) parts.push(`${d}d`)
     if (h) parts.push(`${h}h`)
     if (m) parts.push(`${m}m`)
     parts.push(`${s}s`)
-
     return parts.join(' ')
   }, [endsAt, isEnded, isScheduled, nowMs])
 
   const trackCardView = () => {
     const viewerKey = getOrCreateViewerKey()
     if (!viewerKey) return
-
-    const body = JSON.stringify({
-      auction_id: id,
-      viewer_key: viewerKey,
-      action: 'view',
-    })
-
+    const body = JSON.stringify({ auction_id: id, viewer_key: viewerKey, action: 'view' })
     void getSessionHeaders().then((headers) => {
       headers['Content-Type'] = 'application/json'
-      return fetch('/api/auctions/engagement', {
-        method: 'POST',
-        headers,
-        body,
-        keepalive: true,
-      })
+      return fetch('/api/auctions/engagement', { method: 'POST', headers, body, keepalive: true })
     }).catch(() => {
       if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-        const payload = new Blob([body], { type: 'application/json' })
-        navigator.sendBeacon('/api/auctions/engagement', payload)
+        navigator.sendBeacon('/api/auctions/engagement', new Blob([body], { type: 'application/json' }))
       }
     })
   }
@@ -133,164 +112,161 @@ export default function AuctionCard({
     <Link
       href={buildAuctionPath(id, title)}
       onClick={trackCardView}
-      className={`group block overflow-hidden border bg-white transition hover:shadow-lg ${
-        compactMobile ? 'rounded-xl sm:rounded-2xl' : 'rounded-2xl'
-      }`}
+      className="group block rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
     >
-      {/* IMAGE */}
-      <div className={`bg-gray-100 overflow-hidden relative ${compactMobile ? 'h-28 sm:h-48' : 'h-48'}`}>
+      {/* ── Image ── */}
+      <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
+        {/* Status badge — top left */}
+        <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none ${
+              isEnded
+                ? 'bg-gray-800/80 text-white'
+                : isScheduled
+                ? 'bg-gray-100/90 text-gray-700 backdrop-blur-sm'
+                : 'bg-green-500 text-white'
+            }`}
+          >
+            {isLive && <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}
+            {isEnded ? 'Ended' : isScheduled ? 'Scheduled' : 'Live'}
+          </span>
+          {isPrivate && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-purple-500/90 px-2 py-0.5 text-[10px] font-bold text-white leading-none backdrop-blur-sm">
+              <Lock className="h-2.5 w-2.5" />
+              Private
+            </span>
+          )}
+          {reservePrice != null && (
+            <span className="inline-flex rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold text-white leading-none backdrop-blur-sm">
+              Reserve
+            </span>
+          )}
+        </div>
+
+        {/* Heart — top right */}
         {!isEnded && (
           <button
             type="button"
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              if (!canToggleStar) return
-              toggleStarred(id)
-            }}
-            aria-label={starred ? 'Remove from starred auctions' : 'Add to starred auctions'}
-            title={canToggleStar ? (starred ? 'Remove from starred auctions' : 'Add to starred auctions') : 'Ended auctions cannot be starred'}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (canToggleStar) toggleStarred(id) }}
+            aria-label={starred ? 'Remove from starred' : 'Add to starred'}
             disabled={!canToggleStar}
-            className={`absolute left-2 top-2 z-10 rounded-full p-2 shadow-sm transition ${
-              canToggleStar
-                ? 'bg-white/90 text-gray-700 hover:bg-white'
-                : 'bg-white/70 text-gray-400 cursor-not-allowed'
+            className={`absolute right-2 top-2 z-10 rounded-full p-1.5 shadow-sm transition-all ${
+              canToggleStar ? 'bg-white/90 hover:bg-white hover:scale-110' : 'bg-white/60 cursor-not-allowed'
             }`}
           >
-            <Heart className={`h-4 w-4 ${starred ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+            <Heart className={`h-3.5 w-3.5 ${starred ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
           </button>
         )}
 
+        {/* Image */}
         {primaryImage ? (
           <img
             src={primaryImage}
             alt={title}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+            className="h-full w-full object-cover group-hover:scale-[1.04] transition-transform duration-300"
           />
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-            No image
-          </div>
+          <div className="h-full flex items-center justify-center text-gray-300 text-xs">No image</div>
         )}
 
+        {/* Image count — bottom right */}
         {galleryImages.length > 1 && (
-          <div className="absolute right-2 top-2 bg-black text-white text-xs px-2 py-1 rounded">{galleryImages.length} images</div>
+          <span className="absolute right-2 bottom-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+            {galleryImages.length} imgs
+          </span>
         )}
       </div>
 
-      {/* CONTENT */}
-      <div className={compactMobile ? 'p-2.5 sm:p-4' : 'p-4'}>
-        <h3 className={`font-semibold leading-tight mb-1.5 group-hover:underline ${compactMobile ? 'text-xs sm:text-lg' : 'text-lg'}`}>
+      {/* ── Content ── */}
+      <div className="p-3 sm:p-4">
+        <h3 className={`font-semibold leading-snug line-clamp-2 group-hover:text-orange-600 transition-colors ${compactMobile ? 'text-xs sm:text-sm' : 'text-sm'}`}>
           {title}
         </h3>
 
-        <p className={`text-gray-500 mb-1 ${compactMobile ? 'hidden sm:block sm:text-sm' : 'text-sm'}`}>Current bid</p>
-
-        <p className={`font-bold mb-1 ${compactMobile ? 'text-sm sm:text-2xl' : 'text-2xl'}`}>GHS {currentPrice.toLocaleString()}</p>
+        {/* Price */}
+        <p className={`font-bold text-gray-900 mt-1.5 ${compactMobile ? 'text-sm sm:text-lg' : 'text-lg'}`}>
+          GHS {currentPrice.toLocaleString()}
+        </p>
 
         {startingPrice != null && (
-          <p className="text-sm text-gray-500 mb-1">Starting: GHS {startingPrice.toLocaleString()}</p>
+          <p className={`text-gray-400 ${compactMobile ? 'hidden sm:block text-xs' : 'text-xs'}`}>
+            Starting: GHS {startingPrice.toLocaleString()}
+          </p>
         )}
 
-        <span
-          className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
-            isEnded
-              ? 'bg-red-100 text-red-700'
-              : isScheduled
-              ? 'bg-gray-100 text-gray-700'
-              : 'bg-green-100 text-green-700'
-          }`}
-        >
-          {isEnded ? 'Ended' : isScheduled ? 'Scheduled' : 'Live'}
-        </span>
-
-        {isPrivate && (
-          <span className="inline-block ml-2 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700 flex items-center gap-1">
-            <Lock size={12} />
-            Private
-          </span>
+        {/* Countdown */}
+        {isLive && endCountdown && (
+          <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-orange-50 border border-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">
+            ⏳ {endCountdown}
+          </div>
         )}
-
-        {reservePrice != null && (
-          <span className="inline-block ml-2 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">
-            Reserve
-          </span>
-        )}
-
         {isScheduled && startCountdown && (
-          <span className="ml-3 text-xs text-gray-600">{startCountdown}</span>
-        )}
-
-        {!isScheduled && !isEnded && endCountdown && (
-          <div className="mt-2 inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-            ⏳ Ends in {endCountdown}
+          <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-gray-50 border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-600">
+            ⏰ Starts in {startCountdown}
           </div>
         )}
 
-        {!isEnded && !isScheduled && typeof bidderCount === 'number' && (
-          <div className="mt-3 text-xs font-medium text-blue-700">
-            {bidderCount} bidder{bidderCount === 1 ? '' : 's'} participating
+        {/* Bidder/watcher counts — hidden on compact mobile */}
+        {!isEnded && (
+          <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 ${compactMobile ? 'hidden sm:flex' : 'flex'}`}>
+            {typeof bidderCount === 'number' && isLive && (
+              <span className="text-xs text-gray-500">
+                <span className="font-semibold text-gray-700">{bidderCount}</span> bidder{bidderCount === 1 ? '' : 's'}
+              </span>
+            )}
+            {typeof watcherCount === 'number' && (
+              <span className="text-xs text-gray-500">
+                <span className="font-semibold text-gray-700">{watcherCount}</span> watching
+              </span>
+            )}
           </div>
         )}
 
-        {!isEnded && typeof watcherCount === 'number' && (
-          <div className={`text-xs font-medium ${!isScheduled && typeof bidderCount === 'number' ? 'mt-1' : 'mt-3'} text-purple-700`}>
-            {watcherCount} watching
+        {/* Increment info — desktop only */}
+        {(minIncrement != null || maxIncrement != null) && (
+          <div className={`flex flex-wrap gap-3 text-xs text-gray-400 mt-2 ${compactMobile ? 'hidden sm:flex' : 'flex'}`}>
+            {minIncrement != null && (
+              <div className="relative flex items-center gap-1">
+                <span>Min +{minIncrement}</span>
+                <button
+                  type="button"
+                  className="rounded p-0.5 hover:bg-gray-100"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenTip((p) => (p === 'min' ? null : 'min')) }}
+                  onMouseEnter={() => setOpenTip('min')}
+                  onMouseLeave={() => setOpenTip((p) => (p === 'min' ? null : p))}
+                >
+                  <Info className="h-3 w-3" />
+                </button>
+                {openTip === 'min' && (
+                  <div className="absolute left-0 top-5 z-20 w-52 rounded-lg border bg-white p-2 text-[11px] text-gray-600 shadow-lg">
+                    The next bid must be at least this amount above the current highest bid.
+                  </div>
+                )}
+              </div>
+            )}
+            {maxIncrement != null && (
+              <div className="relative flex items-center gap-1">
+                <span>Max +{maxIncrement}</span>
+                <button
+                  type="button"
+                  className="rounded p-0.5 hover:bg-gray-100"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenTip((p) => (p === 'max' ? null : 'max')) }}
+                  onMouseEnter={() => setOpenTip('max')}
+                  onMouseLeave={() => setOpenTip((p) => (p === 'max' ? null : p))}
+                >
+                  <Info className="h-3 w-3" />
+                </button>
+                {openTip === 'max' && (
+                  <div className="absolute left-0 top-5 z-20 w-52 rounded-lg border bg-white p-2 text-[11px] text-gray-600 shadow-lg">
+                    The next bid cannot be more than this amount above the current highest bid.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
-
-        <div className={`flex flex-wrap gap-3 text-xs text-gray-500 ${compactMobile ? 'mt-2' : 'mt-3'}`}>
-          {minIncrement != null && (
-            <div className="relative flex items-center gap-1">
-              <span>Min +{minIncrement}</span>
-              <button
-                type="button"
-                aria-label="Explain minimum increment"
-                className="rounded p-0.5 text-gray-500 hover:bg-gray-100"
-                onClick={(event) => {
-                  event.preventDefault()
-                  event.stopPropagation()
-                  setOpenTip((prev) => (prev === 'min' ? null : 'min'))
-                }}
-                onMouseEnter={() => setOpenTip('min')}
-                onMouseLeave={() => setOpenTip((prev) => (prev === 'min' ? null : prev))}
-              >
-                <Info className="h-3.5 w-3.5" />
-              </button>
-              {openTip === 'min' && (
-                <div className="absolute left-0 top-6 z-20 w-52 rounded-md border bg-white p-2 text-[11px] text-gray-700 shadow">
-                  The next bid must be at least this amount above the current highest bid.
-                </div>
-              )}
-            </div>
-          )}
-          {maxIncrement != null && (
-            <div className="relative flex items-center gap-1">
-              <span>Max +{maxIncrement}</span>
-              <button
-                type="button"
-                aria-label="Explain maximum increment"
-                className="rounded p-0.5 text-gray-500 hover:bg-gray-100"
-                onClick={(event) => {
-                  event.preventDefault()
-                  event.stopPropagation()
-                  setOpenTip((prev) => (prev === 'max' ? null : 'max'))
-                }}
-                onMouseEnter={() => setOpenTip('max')}
-                onMouseLeave={() => setOpenTip((prev) => (prev === 'max' ? null : prev))}
-              >
-                <Info className="h-3.5 w-3.5" />
-              </button>
-              {openTip === 'max' && (
-                <div className="absolute left-0 top-6 z-20 w-52 rounded-md border bg-white p-2 text-[11px] text-gray-700 shadow">
-                  The next bid cannot be more than this amount above the current highest bid.
-                </div>
-              )}
-            </div>
-          )}
-        </div>
       </div>
     </Link>
   )

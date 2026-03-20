@@ -328,6 +328,87 @@ export async function queueWatchlistAuctionStartingNotification(input: {
   })
 }
 
+export async function queuePayoutHeldNotification(input: {
+  sellerUserId: string
+}) {
+  return queueArkeselNotification({
+    userId: input.sellerUserId,
+    message: `Your payout is currently under review by our team. We'll resolve this within 48 hours.`,
+    category: 'transactional',
+    dedupeKey: `payout-held:${input.sellerUserId}:${Date.now()}`,
+  })
+}
+
+export async function queuePayoutReleasedNotification(input: {
+  sellerUserId: string
+  deliveryConfirmed: boolean
+}) {
+  const message = input.deliveryConfirmed
+    ? `Great news! Your payout hold has been lifted and funds will be transferred shortly.`
+    : `Your payout hold has been lifted. Funds will be released in 5 days or when the buyer confirms delivery.`
+  return queueArkeselNotification({
+    userId: input.sellerUserId,
+    message,
+    category: 'transactional',
+    dedupeKey: `payout-released:${input.sellerUserId}:${Date.now()}`,
+  })
+}
+
+export async function queuePayoutSuccessNotification(input: {
+  sellerUserId: string
+  amount: number
+}) {
+  return queueArkeselNotification({
+    userId: input.sellerUserId,
+    message: `Your payout of GH₵ ${input.amount} has been sent successfully! 🎉`,
+    category: 'transactional',
+    dedupeKey: `payout-success:${input.sellerUserId}:${input.amount}:${Date.now()}`,
+  })
+}
+
+export async function queuePayoutFailedNotification(input: {
+  sellerUserId: string
+}) {
+  return queueArkeselNotification({
+    userId: input.sellerUserId,
+    message: `There was an issue processing your payout. Our team will resolve this within 24 hours. Contact support if needed.`,
+    category: 'transactional',
+    dedupeKey: `payout-failed:${input.sellerUserId}:${Date.now()}`,
+  })
+}
+
+export async function queuePayoutReversedNotification(input: {
+  sellerUserId: string
+}) {
+  return queueArkeselNotification({
+    userId: input.sellerUserId,
+    message: `Your payout transfer was reversed. Our admin team has been notified and will resolve this shortly.`,
+    category: 'transactional',
+    dedupeKey: `payout-reversed:${input.sellerUserId}:${Date.now()}`,
+  })
+}
+
+export async function queuePayoutAutoReleasedNotifications(input: {
+  buyerUserId: string
+  sellerUserId: string
+  amount: number
+}) {
+  await Promise.allSettled([
+    queueArkeselNotification({
+      userId: input.buyerUserId,
+      message: `Funds from your order have been automatically released to the seller. Contact support if you have any issues.`,
+      category: 'transactional',
+      dedupeKey: `payout-auto-released-buyer:${input.buyerUserId}:${Date.now()}`,
+    }),
+    queueArkeselNotification({
+      userId: input.sellerUserId,
+      message: `Your payout of GH₵ ${input.amount} has been automatically released after 5 days.`,
+      category: 'transactional',
+      dedupeKey: `payout-auto-released-seller:${input.sellerUserId}:${Date.now()}`,
+    }),
+  ])
+}
+
 export async function queueParticipatingAuctionEndingNotification(input: {
   userId: string
   auctionTitle: string

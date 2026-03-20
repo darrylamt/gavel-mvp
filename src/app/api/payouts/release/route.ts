@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { queuePayoutReleasedNotification } from '@/lib/arkesel/events'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -100,17 +101,20 @@ export async function POST(req: Request) {
       }
 
       // Trigger immediate payout
-      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/payouts/initiate`, {
+      const initiateRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/payouts/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payout_id }),
       })
+      if (!initiateRes.ok) {
+        const errData = await initiateRes.json().catch(() => ({}))
+        console.error('Failed to initiate payout after release:', payout_id, errData)
+      }
 
-      // TODO: Notify seller
-      // await queueSellerNotification({
-      //   userId: payout.seller_id,
-      //   message: 'Your payout hold has been lifted. Funds will be released shortly.'
-      // })
+      await queuePayoutReleasedNotification({
+        sellerUserId: payout.seller_id,
+        deliveryConfirmed: true,
+      })
 
       return NextResponse.json({
         success: true,
@@ -140,11 +144,10 @@ export async function POST(req: Request) {
         )
       }
 
-      // TODO: Notify seller
-      // await queueSellerNotification({
-      //   userId: payout.seller_id,
-      //   message: 'Your payout hold has been lifted. Funds will be released in 5 days or when the buyer confirms delivery.'
-      // })
+      await queuePayoutReleasedNotification({
+        sellerUserId: payout.seller_id,
+        deliveryConfirmed: false,
+      })
 
       return NextResponse.json({
         success: true,

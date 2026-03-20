@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthUser } from '@/hooks/useAuthUser'
-import { Search } from 'lucide-react'
+import { Search, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import styles from './SearchHero.module.css'
 
 type SearchResult = {
@@ -12,27 +13,38 @@ type SearchResult = {
   type: 'auction' | 'product'
   price?: number | string
   image_url?: string
+  category?: string | null
 }
 
 const PLACEHOLDER_SUGGESTIONS = [
   'Try: gaming console...',
   'Try: something for the kitchen...',
   'Try: clothes for a wedding...',
+  'Try: something for my skin...',
   'Try: cheap electronics...',
-  'Try: body scrub...',
+]
+
+const QUICK_CATEGORIES = [
+  { label: '📱 Electronics', href: '/shop?category=Electronics' },
+  { label: '👗 Fashion', href: '/shop?category=Fashion' },
+  { label: '✨ Cosmetics', href: '/shop?category=Cosmetics' },
+  { label: '🏠 Furniture', href: '/shop?category=Furniture' },
+  { label: '🚗 Vehicles', href: '/auctions?category=Vehicles' },
+  { label: '💍 Jewelry', href: '/shop?category=Jewelry' },
+  { label: '📚 Books', href: '/shop?category=Books' },
 ]
 
 export default function SearchHero() {
   const router = useRouter()
-  const { user }  = useAuthUser()
+  const { user } = useAuthUser()
   const [firstName, setFirstName] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  // Cycle through placeholders every 3 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentPlaceholder((prev) => (prev + 1) % PLACEHOLDER_SUGGESTIONS.length)
@@ -40,14 +52,22 @@ export default function SearchHero() {
     return () => clearInterval(interval)
   }, [])
 
-  // Get first name from Supabase when user is available
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   useEffect(() => {
     if (user?.user_metadata?.first_name) {
       setFirstName(user.user_metadata.first_name)
     }
   }, [user])
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (search.trim().length < 2) {
@@ -64,9 +84,7 @@ export default function SearchHero() {
           body: JSON.stringify({ query: search }),
         })
 
-        if (!res.ok) {
-          throw new Error('Search request failed')
-        }
+        if (!res.ok) throw new Error('Search request failed')
 
         const data = await res.json()
         setResults((data.results || []).slice(0, 6))
@@ -91,35 +109,27 @@ export default function SearchHero() {
   }
 
   const handleResultClick = (result: SearchResult) => {
-    if (result.type === 'auction') {
-      router.push(`/auctions/${result.id}`)
-    } else {
-      router.push(`/shop/${result.id}`)
-    }
+    router.push(result.type === 'auction' ? `/auctions/${result.id}` : `/shop/${result.id}`)
     setShowDropdown(false)
     setSearch('')
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setShowDropdown(false)
-    }
-  }
-
   return (
     <div className={styles.hero}>
-      <div className={styles.container}>
-        <div className={styles.searchSection}>
-          {firstName && user && (
-            <p className={styles.greeting}>
-              Hi {firstName} 👋
-            </p>
-          )}
-          <h1 className={styles.heading}>
-            {user ? 'Online Auctions in Ghana — Find Your Next Win on Gavel' : 'Online Auctions in Ghana — Find Your Next Win on Gavel'}
-          </h1>
+      <div className={styles.inner}>
+        {firstName && user && (
+          <p className={styles.greeting}>Hey {firstName} 👋</p>
+        )}
 
-          {/* Search Form */}
+        <h1 className={styles.heading}>
+          Ghana&apos;s Marketplace —&nbsp;
+          <span className={styles.highlight}>Bid, Buy &amp; Win.</span>
+        </h1>
+        <p className={styles.subheading}>
+          Live auctions and instant purchases. Just describe what you need — our AI will find it.
+        </p>
+
+        <div ref={containerRef} className={styles.searchWrap}>
           <form onSubmit={handleSearch} className={styles.searchForm}>
             <div className={styles.searchInput}>
               <Search className={styles.searchIcon} />
@@ -128,68 +138,87 @@ export default function SearchHero() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onFocus={() => search.trim().length > 0 && setShowDropdown(true)}
-                onKeyDown={handleKeyDown}
+                onKeyDown={(e) => e.key === 'Escape' && setShowDropdown(false)}
                 placeholder={PLACEHOLDER_SUGGESTIONS[currentPlaceholder]}
                 className={styles.input}
+                autoComplete="off"
               />
               {loading && <div className={styles.loader} />}
+              <button type="submit" className={styles.searchBtn} aria-label="Search">
+                <span className={styles.searchBtnText}>Search</span>
+                <ArrowRight className={styles.searchBtnIcon} />
+              </button>
             </div>
 
-            {/* Dropdown Results */}
             {showDropdown && search.trim().length > 0 && (
               <div className={styles.dropdown}>
                 {loading ? (
-                  <div className={styles.dropdownItem}>
-                    <p className={styles.loadingText}>Searching…</p>
+                  <div className={styles.dropdownLoading}>
+                    <div className={styles.loadingDots}>
+                      <span /><span /><span />
+                    </div>
+                    <p>Searching with AI…</p>
                   </div>
                 ) : results.length > 0 ? (
-                  results.map((result) => (
-                    <button
-                      key={`${result.type}-${result.id}`}
-                      type="button"
-                      onClick={() => handleResultClick(result)}
-                      className={styles.dropdownItem}
-                    >
-                      {result.image_url && (
-                        <img src={result.image_url} alt={result.title} className={styles.resultImage} />
-                      )}
-                      <div className={styles.resultContent}>
-                        <p className={styles.resultTitle}>{result.title}</p>
-                        <div className={styles.resultMeta}>
-                          <span className={styles.price}>
-                            {result.type === 'auction' ? 'Bid: ' : ''}GH₵ {result.price}
-                          </span>
-                          <span className={styles.badge}>
-                            {result.type === 'auction' ? 'Auction' : 'Buy Now'}
-                          </span>
+                  <>
+                    {results.map((result) => (
+                      <button
+                        key={`${result.type}-${result.id}`}
+                        type="button"
+                        onClick={() => handleResultClick(result)}
+                        className={styles.dropdownItem}
+                      >
+                        <div className={styles.resultImgWrap}>
+                          {result.image_url ? (
+                            <img src={result.image_url} alt={result.title} className={styles.resultImage} />
+                          ) : (
+                            <div className={styles.resultImgPlaceholder} />
+                          )}
                         </div>
-                      </div>
-                    </button>
-                  ))
-                ) : search.trim().length > 0 ? (
-                  <div className={styles.dropdownItem}>
+                        <div className={styles.resultContent}>
+                          <p className={styles.resultTitle}>{result.title}</p>
+                          <div className={styles.resultMeta}>
+                            {result.category && (
+                              <span className={styles.resultCategory}>{result.category}</span>
+                            )}
+                            <span className={styles.price}>GH₵ {result.price}</span>
+                            <span className={result.type === 'auction' ? styles.badgeAuction : styles.badgeProduct}>
+                              {result.type === 'auction' ? '🔨 Auction' : '🛒 Buy Now'}
+                            </span>
+                          </div>
+                        </div>
+                        <ArrowRight className={styles.resultArrow} />
+                      </button>
+                    ))}
+                    <Link
+                      href={`/search?q=${encodeURIComponent(search)}`}
+                      className={styles.viewAll}
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      View all results for &ldquo;{search}&rdquo; →
+                    </Link>
+                  </>
+                ) : (
+                  <div className={styles.noResultsWrap}>
                     <p className={styles.noResults}>No results found — try different words</p>
+                    <Link href="/auctions" className={styles.noResultsLink} onClick={() => setShowDropdown(false)}>
+                      Browse all auctions →
+                    </Link>
                   </div>
-                ) : null}
+                )}
               </div>
             )}
           </form>
 
-          {/* Trust Bar */}
-          <div className={styles.trustBar}>
-            <div className={styles.trustItem}>
-              <span className={styles.trustIcon}>●</span>
-              <span>24/7 Active market</span>
-            </div>
-            <div className={styles.trustItem}>
-              <span className={styles.trustIcon}>●</span>
-              <span>Secure</span>
-            </div>
-            <div className={styles.trustItem}>
-              <span className={styles.trustIcon}>●</span>
-              <span>Fast</span>
-            </div>
-          </div>
+          <p className={styles.aiHint}>✦ AI-powered — describe what you need in plain English</p>
+        </div>
+
+        <div className={styles.quickCategories}>
+          {QUICK_CATEGORIES.map((cat) => (
+            <Link key={cat.label} href={cat.href} className={styles.quickCat}>
+              {cat.label}
+            </Link>
+          ))}
         </div>
       </div>
     </div>

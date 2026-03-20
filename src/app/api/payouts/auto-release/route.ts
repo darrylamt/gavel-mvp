@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { queuePayoutAutoReleasedNotifications } from '@/lib/arkesel/events'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -77,16 +78,13 @@ export async function POST(req: Request) {
         if (response.ok) {
           results.released++
 
-          // TODO: Notify buyer and seller
-          // await queueBuyerNotification({
-          //   userId: payout.buyer_id,
-          //   message: `Funds have been automatically released to the seller. If you have an issue, contact support.`
-          // })
-          //
-          // await queueSellerNotification({
-          //   userId: payout.seller_id,
-          //   message: `Your payout of GHS ${payout.payout_amount} has been automatically released.`
-          // })
+          if (payout.buyer_id && payout.seller_id) {
+            await queuePayoutAutoReleasedNotifications({
+              buyerUserId: payout.buyer_id,
+              sellerUserId: payout.seller_id,
+              amount: payout.payout_amount,
+            })
+          }
         } else {
           results.failed++
           const errorData = await response.json()

@@ -3,6 +3,11 @@ import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
+import {
+  queuePayoutSuccessNotification,
+  queuePayoutFailedNotification,
+  queuePayoutReversedNotification,
+} from '@/lib/arkesel/events'
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -30,7 +35,13 @@ export async function POST(req: Request) {
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey)
-  const event = JSON.parse(body)
+
+  let event: ReturnType<typeof JSON.parse>
+  try {
+    event = JSON.parse(body)
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
 
   if (event.event === 'charge.success') {
     const metadata = event.data?.metadata
@@ -87,21 +98,18 @@ export async function POST(req: Request) {
         if (error) {
           console.error('Failed to update payout status to success:', error)
         } else {
-          console.log('Payout marked as success:', payout_id)
+          const { data: payout } = await supabase
+            .from('payouts')
+            .select('seller_id, payout_amount')
+            .eq('id', payout_id)
+            .maybeSingle<{ seller_id: string; payout_amount: number }>()
 
-          // TODO: Notify seller
-          // const { data: payout } = await supabase
-          //   .from('payouts')
-          //   .select('seller_id, payout_amount')
-          //   .eq('id', payout_id)
-          //   .single()
-          //
-          // if (payout) {
-          //   await queueSellerNotification({
-          //     userId: payout.seller_id,
-          //     message: `Your payout of GHS ${payout.payout_amount} has been sent! 🎉`
-          //   })
-          // }
+          if (payout?.seller_id) {
+            await queuePayoutSuccessNotification({
+              sellerUserId: payout.seller_id,
+              amount: payout.payout_amount,
+            })
+          }
         }
       }
     }
@@ -124,21 +132,15 @@ export async function POST(req: Request) {
         if (error) {
           console.error('Failed to update payout status to failed:', error)
         } else {
-          console.log('Payout marked as failed:', payout_id)
+          const { data: payout } = await supabase
+            .from('payouts')
+            .select('seller_id')
+            .eq('id', payout_id)
+            .maybeSingle<{ seller_id: string }>()
 
-          // TODO: Notify seller and flag for admin review
-          // const { data: payout } = await supabase
-          //   .from('payouts')
-          //   .select('seller_id')
-          //   .eq('id', payout_id)
-          //   .single()
-          //
-          // if (payout) {
-          //   await queueSellerNotification({
-          //     userId: payout.seller_id,
-          //     message: 'There was an issue with your payout. Our team will resolve this within 24 hours.'
-          //   })
-          // }
+          if (payout?.seller_id) {
+            await queuePayoutFailedNotification({ sellerUserId: payout.seller_id })
+          }
         }
       }
     }
@@ -161,9 +163,15 @@ export async function POST(req: Request) {
         if (error) {
           console.error('Failed to update payout status to reversed:', error)
         } else {
-          console.log('Payout marked as reversed:', payout_id)
+          const { data: payout } = await supabase
+            .from('payouts')
+            .select('seller_id')
+            .eq('id', payout_id)
+            .maybeSingle<{ seller_id: string }>()
 
-          // TODO: Flag for admin review and notify seller
+          if (payout?.seller_id) {
+            await queuePayoutReversedNotification({ sellerUserId: payout.seller_id })
+          }
         }
       }
     }

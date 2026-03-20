@@ -1,11 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import 'server-only'
 
 export type AdminAuthResult =
   | {
       ok: true
-      service: any
+      service: SupabaseClient
       adminUserId: string
     }
   | {

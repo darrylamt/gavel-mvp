@@ -9,9 +9,9 @@
 .imgWrapper {
   position: relative;
   overflow: hidden;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: #f5f5f5;
+  border-radius: 14px;
+  border: 1px solid #f0f0f0;
+  background: #f8f8f8;
 }
 
 .front {
@@ -23,46 +23,48 @@
   aspect-ratio: 4 / 5;
   object-fit: cover;
   display: block;
-  transition: transform 0.22s ease;
+  transition: transform 0.25s ease;
 }
 
 .imgWrapper:hover .image {
-  transform: scale(1.03);
+  transform: scale(1.04);
 }
 
 .imageFallback {
   aspect-ratio: 4 / 5;
   display: grid;
   place-items: center;
-  color: #6b7280;
+  color: #9ca3af;
   font-size: 13px;
   background: #f3f4f6;
 }
 
 .labelBlock {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 8px;
+  left: 8px;
   z-index: 3;
   display: flex;
-  gap: 6px;
-  max-width: calc(100% - 72px);
+  gap: 5px;
+  max-width: calc(100% - 60px);
   flex-wrap: wrap;
 }
 
 .labelCategory,
 .labelSale {
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1;
   text-transform: uppercase;
   color: #fff;
-  padding: 6px 8px;
-  border-radius: 5px;
-  letter-spacing: 0.03em;
+  padding: 4px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  font-weight: 600;
 }
 
 .labelCategory {
-  background: #111827;
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(4px);
 }
 
 .labelSale {
@@ -70,14 +72,14 @@
 }
 
 .actionIcon {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .thumbList {
   position: absolute;
-  left: 8px;
-  bottom: 8px;
+  left: 6px;
+  bottom: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -86,7 +88,7 @@
 
 .thumbItem {
   opacity: 0.5;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   transition: opacity 0.2s ease;
 }
 
@@ -102,24 +104,24 @@
 }
 
 .thumbImage {
-  width: 34px;
-  height: 42px;
+  width: 30px;
+  height: 38px;
   object-fit: cover;
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
 }
 
 .cartInfo {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 14px;
+  bottom: 10px;
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   opacity: 0;
-  transform: translateY(8px);
-  transition: all 0.25s ease;
+  transform: translateY(6px);
+  transition: all 0.22s ease;
   z-index: 3;
 }
 
@@ -133,31 +135,31 @@
   border: 0;
   background: #ffffff;
   color: #111827;
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   transition: transform 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
 .iconButton:hover {
-  transform: translateY(-1px);
-  color: #dc2626;
+  transform: translateY(-2px);
+  color: #f97316;
 }
 
 .iconButton:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .detail {
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .titleLink {
@@ -166,25 +168,25 @@
 }
 
 .title {
-  margin: 0 0 6px 0;
-  font-size: 15px;
+  margin: 0 0 4px 0;
+  font-size: 14px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.35;
   color: #111827;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.5em;
+  min-height: 2.4em;
 }
 
 .price {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #111827;
   white-space: nowrap;
-  line-height: 1.1;
+  line-height: 1.15;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -198,8 +200,8 @@
 
 .oldPrice {
   margin: 0;
-  font-size: 12px;
-  color: #6b7280;
+  font-size: 11px;
+  color: #9ca3af;
   text-decoration: line-through;
   white-space: nowrap;
   max-width: 100%;
@@ -212,38 +214,50 @@
   font-size: 11px;
   line-height: 1.25;
   font-weight: 600;
-  color: #047857;
+  color: #059669;
 }
 
 .lowStock {
-  margin-top: 6px;
+  margin-top: 4px;
   margin-bottom: 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #c2410c;
 }
 
-@media (max-width: 767px) {
+/* Mobile */
+@media (max-width: 639px) {
   .cartInfo {
     opacity: 1;
     transform: translateY(0);
-    bottom: 10px;
+    bottom: 8px;
+    gap: 6px;
   }
 
-  .thumbImage {
-    width: 38px;
-    height: 46px;
+  .iconButton {
+    width: 34px;
+    height: 34px;
   }
 
   .price {
-    font-size: 1.35rem;
+    font-size: 1rem;
+  }
+
+  .title {
+    font-size: 12px;
+    min-height: unset;
   }
 
   .oldPrice {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .discountText {
-    font-size: 10.5px;
+    font-size: 10px;
+  }
+
+  .thumbImage {
+    width: 26px;
+    height: 32px;
   }
 }
