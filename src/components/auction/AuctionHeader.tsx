@@ -17,26 +17,26 @@ export default function AuctionHeader({
 }: Props) {
   return (
     <div className="mb-4">
-      <h1 className="text-3xl font-extrabold mb-1">
+      <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-snug mb-1">
         {title}
       </h1>
 
-      <p className="text-lg text-gray-700">
+      <p className="text-sm text-gray-500">
         Current price{' '}
-        <span className="font-bold text-black">
-          GHS {currentPrice}
+        <span className="font-bold text-gray-900">
+          GHS {currentPrice.toLocaleString()}
         </span>
       </p>
 
       {showBidders && typeof bidderCount === 'number' && (
-        <p className="mt-1 text-sm font-medium text-blue-700">
-          {bidderCount} bidder{bidderCount === 1 ? '' : 's'} in this auction
+        <p className="mt-1 text-xs font-semibold text-orange-600">
+          {bidderCount} bidder{bidderCount === 1 ? '' : 's'}
         </p>
       )}
 
       {showWatchers && typeof watcherCount === 'number' && (
-        <p className="mt-1 text-sm font-medium text-purple-700">
-          {watcherCount} people watching this auction
+        <p className="mt-1 text-xs font-semibold text-gray-500">
+          {watcherCount} watching
         </p>
       )}
     </div>

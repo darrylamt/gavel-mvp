@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import type { Metadata } from 'next'
+import { ShoppingBag, Tag, Layers, Store } from 'lucide-react'
 import ProductDetailActions from '@/components/shop/ProductDetailActions'
 import ShopProductCard from '@/components/shop/ShopProductCard'
 import ProductReviewsSection from '@/components/shop/ProductReviewsSection'
@@ -313,10 +314,22 @@ export default async function ShopProductDetailPage({ params }: Props) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6">
+    <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:py-10 md:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <section className="grid gap-8 lg:grid-cols-[1fr_1fr]">
-        <div>
+
+      {/* Breadcrumb */}
+      <nav className="mb-5 flex items-center gap-1.5 text-xs text-gray-400">
+        <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
+        <span>/</span>
+        <Link href="/shop" className="hover:text-gray-600 transition-colors">Products</Link>
+        <span>/</span>
+        <span className="text-gray-600 font-medium line-clamp-1">{product.title}</span>
+      </nav>
+
+      {/* Main product section */}
+      <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+        {/* Image gallery */}
+        <div className="rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm">
           <ProductImageGallery
             productId={product.id}
             title={product.title}
@@ -325,100 +338,155 @@ export default async function ShopProductDetailPage({ params }: Props) {
           />
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:p-7">
-          <div className="mb-5 text-xs font-semibold text-gray-400">
-            <Link href="/" className="hover:text-gray-600">Home</Link>
-            <span className="px-2">/</span>
-            <Link href="/shop" className="hover:text-gray-600">Products</Link>
-            <span className="px-2">/</span>
-            <span className="text-gray-500">{product.title}</span>
-          </div>
-
-          <h1 className="text-3xl font-semibold uppercase tracking-[0.08em] text-gray-900">{product.title}</h1>
-          <div className="mt-4 border-t border-gray-200" />
-
-          <div className="mt-6 flex items-center justify-between gap-3">
-            <div>
-              {headlinePricing.hasDiscount && headlinePricing.previousPrice !== null ? (
-                <>
-                  <p className="text-sm text-gray-500 line-through">
-                    {hasVariants ? 'From ' : ''}GHS {formatGhsAmount(headlinePricing.previousPrice)}
-                  </p>
-                  <p className="text-4xl font-bold text-gray-900">
-                    {hasVariants ? 'From ' : ''}GHS {formatGhsAmount(headlinePricing.currentPrice)}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-emerald-700">
-                    Save GHS {formatGhsAmount(headlinePricing.discountAmount)} ({headlinePricing.discountPercent}% off)
-                  </p>
-                </>
+        {/* Product details */}
+        <div className="flex flex-col gap-4">
+          {/* Title + stock */}
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug">{product.title}</h1>
+              {totalVariantStock > 0 ? (
+                <span className="flex-shrink-0 inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                  In Stock
+                </span>
               ) : (
-                <p className="text-4xl font-bold text-gray-900">
-                  {hasVariants ? 'From ' : ''}GHS {formatGhsAmount(headlinePricing.currentPrice)}
-                </p>
+                <span className="flex-shrink-0 inline-flex items-center rounded-full bg-red-50 border border-red-200 px-2.5 py-1 text-xs font-semibold text-red-600">
+                  Out of Stock
+                </span>
               )}
             </div>
-            <p className="text-sm font-medium text-gray-500">{totalVariantStock > 0 ? `${totalVariantStock} in stock` : 'Out of stock'}</p>
-          </div>
 
-          <div className="mt-6">
-            <ProductDetailActions
-              productId={product.id}
-              title={product.title}
-              price={Number(product.price)}
-              sellerBasePrice={product.seller_base_price}
-              commissionRate={product.commission_rate}
-              imageUrl={product.image_url}
-              stock={Number(product.stock)}
-              variants={variants.map((variant) => ({
-                id: variant.id,
-                color: variant.color,
-                size: variant.size,
-                sku: variant.sku,
-                price: Number(variant.price ?? 0),
-                sellerBasePrice: variant.seller_base_price,
-                commissionRate: variant.commission_rate,
-                stock: Number(variant.stock ?? 0),
-                imageUrl: variant.image_url,
-                isDefault: !!variant.is_default,
-              }))}
-            />
-          </div>
-
-          <p className="mt-5 whitespace-pre-line text-base leading-relaxed text-gray-700">
-            {product.description || 'No additional description provided.'}
-          </p>
-
-          <div className="mt-5 border-t border-gray-200 pt-4 text-sm text-gray-700">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <p><span className="font-semibold text-gray-900">SKU:</span> {displaySku}</p>
-              <p><span className="font-semibold text-gray-900">Category:</span> {product.category || 'Other'}</p>
-              <p><span className="font-semibold text-gray-900">Stock:</span> {product.stock}</p>
-              <p>
-                <span className="font-semibold text-gray-900">Shop:</span>{' '}
-                {shop ? (
-                  <Link href={`/shop/seller/${shop.id}`} className="underline underline-offset-2">
-                    {shop.name || 'Shop'}
-                  </Link>
-                ) : (
-                  'N/A'
-                )}
+            {/* Price */}
+            <div className="flex items-end gap-3 flex-wrap">
+              <p className="text-3xl font-bold text-gray-900">
+                {hasVariants ? 'From ' : ''}GHS {formatGhsAmount(headlinePricing.currentPrice)}
               </p>
+              {headlinePricing.hasDiscount && headlinePricing.previousPrice !== null && (
+                <>
+                  <p className="text-base text-gray-400 line-through mb-0.5">
+                    GHS {formatGhsAmount(headlinePricing.previousPrice)}
+                  </p>
+                  <span className="mb-0.5 inline-flex items-center rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700">
+                    {headlinePricing.discountPercent}% off
+                  </span>
+                </>
+              )}
+            </div>
+            {headlinePricing.hasDiscount && headlinePricing.discountAmount > 0 && (
+              <p className="mt-1 text-sm font-semibold text-emerald-600">
+                You save GHS {formatGhsAmount(headlinePricing.discountAmount)}
+              </p>
+            )}
+
+            {/* Actions (add to cart, buy now, variants) */}
+            <div className="mt-5">
+              <ProductDetailActions
+                productId={product.id}
+                title={product.title}
+                price={Number(product.price)}
+                sellerBasePrice={product.seller_base_price}
+                commissionRate={product.commission_rate}
+                imageUrl={product.image_url}
+                stock={Number(product.stock)}
+                variants={variants.map((variant) => ({
+                  id: variant.id,
+                  color: variant.color,
+                  size: variant.size,
+                  sku: variant.sku,
+                  price: Number(variant.price ?? 0),
+                  sellerBasePrice: variant.seller_base_price,
+                  commissionRate: variant.commission_rate,
+                  stock: Number(variant.stock ?? 0),
+                  imageUrl: variant.image_url,
+                  isDefault: !!variant.is_default,
+                }))}
+              />
             </div>
           </div>
 
+          {/* Description */}
+          {product.description && (
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 sm:p-6">
+              <h2 className="text-sm font-bold text-gray-900 mb-2">Description</h2>
+              <p className="text-sm leading-relaxed text-gray-600 whitespace-pre-line">
+                {product.description}
+              </p>
+            </div>
+          )}
+
+          {/* Meta info */}
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 sm:p-6">
+            <h2 className="text-sm font-bold text-gray-900 mb-3">Product Details</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+                  <Tag className="h-3.5 w-3.5 text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">SKU</p>
+                  <p className="text-xs font-semibold text-gray-700">{displaySku}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+                  <Layers className="h-3.5 w-3.5 text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Category</p>
+                  <p className="text-xs font-semibold text-gray-700">{product.category || 'Other'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+                  <ShoppingBag className="h-3.5 w-3.5 text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Stock</p>
+                  <p className="text-xs font-semibold text-gray-700">{totalVariantStock} units</p>
+                </div>
+              </div>
+              {shop && (
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+                    <Store className="h-3.5 w-3.5 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Shop</p>
+                    <Link
+                      href={`/shop/seller/${shop.id}`}
+                      className="text-xs font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+                    >
+                      {shop.name || 'View Shop'}
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
-      <ProductReviewsSection productId={product.id} reviews={reviews} />
+      {/* Reviews */}
+      <div className="mt-6">
+        <ProductReviewsSection productId={product.id} reviews={reviews} />
+      </div>
 
+      {/* Latest Products */}
       {latest.length > 0 && (
         <section className="mt-10">
-          <div className="text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gray-500">New</p>
-            <h2 className="mt-2 text-2xl font-semibold uppercase tracking-[0.12em] text-gray-900">Latest Product</h2>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-xs font-semibold text-orange-500 uppercase tracking-widest mb-0.5">New Arrivals</p>
+              <h2 className="text-xl font-bold text-gray-900">Latest Products</h2>
+            </div>
+            <Link
+              href="/shop"
+              className="text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors border border-gray-200 rounded-xl px-3 py-2"
+            >
+              View all
+            </Link>
           </div>
 
-          <div className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
             {latest.map((latestProduct) => (
               <ShopProductCard
                 key={latestProduct.id}

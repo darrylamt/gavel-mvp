@@ -11,14 +11,8 @@ interface UseAuthGuardOptions {
   redirectIfAuthenticated?: string
 }
 
-/**
- * Hook to protect routes that require authentication
- * Redirects to login if user is not authenticated
- * @param options - Configuration options
- * @returns User object and loading state
- */
-export function useAuthGuard({ 
-  redirectTo = '/login', 
+export function useAuthGuard({
+  redirectTo = '/login',
   allowPublic = false,
   redirectIfAuthenticated
 }: UseAuthGuardOptions = {}) {
@@ -30,42 +24,29 @@ export function useAuthGuard({
   useEffect(() => {
     let isMounted = true
 
-    const resolveUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (session?.user) {
-        return session.user
-      }
-
-      const { data: refreshed } = await supabase.auth.refreshSession()
-      if (refreshed.session?.user) {
-        return refreshed.session.user
-      }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      return user ?? null
+    // Fast: reads from localStorage, no network call
+    const getLocalUser = async (): Promise<User | null> => {
+      const { data: { session } } = await supabase.auth.getSession()
+      return session?.user ?? null
     }
 
     const checkAuth = async () => {
       try {
-        const authUser = await resolveUser()
+        const authUser = await getLocalUser()
         if (!isMounted) return
 
-        // Redirect authenticated users if redirectIfAuthenticated is set
         if (authUser && redirectIfAuthenticated) {
           setUser(authUser)
-          router.replace(redirectIfAuthenticated)
+          setIsChecking(false)
+          setLoading(false)
+          window.location.href = redirectIfAuthenticated
           return
         }
 
-        // Redirect unauthenticated users if not allowing public access
         if (!authUser && !allowPublic) {
           setUser(null)
+          setIsChecking(false)
+          setLoading(false)
           router.replace(redirectTo)
           return
         }
@@ -86,28 +67,18 @@ export function useAuthGuard({
 
     checkAuth()
 
-    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!isMounted) return
 
-      let authUser = session?.user ?? null
-      if (!authUser) {
-        try {
-          authUser = await resolveUser()
-        } catch {
-          authUser = null
-        }
-        if (!isMounted) return
-      }
-      
-      // Redirect if authenticated and redirectIfAuthenticated is set
+      const authUser = session?.user ?? null
+
       if (authUser && redirectIfAuthenticated) {
         setUser(authUser)
         setIsChecking(false)
         setLoading(false)
-        router.replace(redirectIfAuthenticated)
+        window.location.href = redirectIfAuthenticated
         return
       }
 
@@ -118,7 +89,7 @@ export function useAuthGuard({
         router.replace(redirectTo)
         return
       }
-      
+
       setUser(authUser)
       setIsChecking(false)
       setLoading(false)

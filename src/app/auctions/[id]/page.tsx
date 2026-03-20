@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { MapPin, Clock, Store, ChevronDown, ChevronUp, Truck } from 'lucide-react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { supabasePublic } from '@/lib/supabasePublicClient'
 import { useTopToast } from '@/components/ui/TopToastProvider'
@@ -550,8 +551,25 @@ export default function AuctionDetailPage() {
     window.location.href = data.authorization_url
   }
 
-  if (loading) return <p className="p-6">Loading auction...</p>
-  if (!auction) return <p className="p-6 text-red-500">Auction not found</p>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-7 w-7 rounded-full border-2 border-gray-200 border-t-orange-500 animate-spin" />
+      </div>
+    )
+  }
+
+  if (!auction) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-20 text-center">
+        <p className="text-lg font-bold text-gray-900">Auction not found</p>
+        <p className="mt-1 text-sm text-gray-500">This auction may have been removed or doesn&apos;t exist.</p>
+        <Link href="/auctions" className="mt-4 inline-block rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white">
+          Browse auctions
+        </Link>
+      </div>
+    )
+  }
 
   const { description: publicDescription, meta } = parseAuctionMeta(auction.description)
   const saleSource = auction.sale_source ?? meta?.saleSource ?? 'gavel'
@@ -613,173 +631,229 @@ export default function AuctionDetailPage() {
       auctionTitle={auction.title}
       isPrivate={auction.is_private}
     >
-      <main className="mx-auto w-full max-w-5xl px-6 py-8 space-y-6">
+      <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8 md:px-6">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-        <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
-        <section className="space-y-6">
-          <ImageGallery
-            images={fallbackImages}
-          />
 
-          <div className="space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <AuctionHeader
-                title={auction.title}
-                currentPrice={liveCurrentPrice}
-                bidderCount={bidderCount}
-                watcherCount={watcherCount}
-                showBidders={!hasEnded && !isScheduled}
-                showWatchers={!hasEnded && isScheduled}
-              />
-              <ShareAuctionButton auctionId={auction.id} />
+        {/* Breadcrumb */}
+        <nav className="mb-5 flex items-center gap-1.5 text-xs text-gray-400">
+          <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
+          <span>/</span>
+          <Link href="/auctions" className="hover:text-gray-600 transition-colors">Auctions</Link>
+          <span>/</span>
+          <span className="text-gray-600 font-medium line-clamp-1">{auction.title}</span>
+        </nav>
+
+        <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+          {/* Left column */}
+          <section className="space-y-4">
+            {/* Image gallery */}
+            <div className="rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm">
+              <ImageGallery images={fallbackImages} />
             </div>
 
-            <div className="grid grid-cols-1 gap-3 rounded-xl border bg-gray-50/60 p-4 text-sm text-gray-700 sm:grid-cols-2">
-              <div>
-                <div className="font-medium text-gray-900">{saleSource === 'seller' ? 'Seller' : 'Sale Source'}</div>
-                <div>
-                  {saleSource === 'seller' && auction.seller_shop_id ? (
-                    <Link href={`/shop/seller/${auction.seller_shop_id}`} className="underline underline-offset-2 hover:text-gray-900">
-                      {sellerDisplayName}
-                    </Link>
-                  ) : saleSource === 'seller' ? (
-                    sellerDisplayName
-                  ) : (
-                    'Gavel Products'
-                  )}
-                </div>
+            {/* Title + share */}
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+              <div className="flex items-start justify-between gap-3">
+                <AuctionHeader
+                  title={auction.title}
+                  currentPrice={liveCurrentPrice}
+                  bidderCount={bidderCount}
+                  watcherCount={watcherCount}
+                  showBidders={!hasEnded && !isScheduled}
+                  showWatchers={!hasEnded && isScheduled}
+                />
+                <ShareAuctionButton auctionId={auction.id} />
               </div>
-              {auction.ends_at && (
-                <div>
-                  <div className="font-medium text-gray-900">Ends</div>
-                  <div>{new Date(auction.ends_at).toLocaleString()}</div>
+
+              {/* Private auction notice */}
+              {auction.is_private && (
+                <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50 p-3">
+                  <p className="text-xs font-semibold text-purple-800">Private Auction</p>
+                  <p className="mt-0.5 text-xs text-purple-700">
+                    {auction.anonymous_bidding_enabled === false
+                      ? 'Anonymous bidding is off. Bidder usernames are visible to participants.'
+                      : 'Anonymous bidding is on. Bidder identities are hidden.'}
+                  </p>
                 </div>
               )}
             </div>
 
-            {auction.is_private && (
-              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                <p className="font-semibold">Private auction notice</p>
-                <p className="mt-1">
-                  {auction.anonymous_bidding_enabled === false
-                    ? 'Anonymous bidding is off in this private auction. Bidder usernames are visible to participants.'
-                    : 'Anonymous bidding is on in this private auction. Bidder identities are hidden from participants.'}
-                </p>
+            {/* Seller + end date info */}
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100">
+                    <Store className="h-3.5 w-3.5 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                      {saleSource === 'seller' ? 'Seller' : 'Sale Source'}
+                    </p>
+                    <div className="font-semibold text-gray-800">
+                      {saleSource === 'seller' && auction.seller_shop_id ? (
+                        <Link href={`/shop/seller/${auction.seller_shop_id}`} className="text-orange-600 hover:text-orange-700 transition-colors">
+                          {sellerDisplayName}
+                        </Link>
+                      ) : saleSource === 'seller' ? (
+                        sellerDisplayName
+                      ) : (
+                        'Gavel Products'
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {auction.ends_at && (
+                  <div className="flex items-start gap-2.5">
+                    <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100">
+                      <Clock className="h-3.5 w-3.5 text-gray-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Ends</p>
+                      <p className="font-semibold text-gray-800">{new Date(auction.ends_at).toLocaleString()}</p>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
-            <div className="rounded-xl border bg-gray-50/60 p-4 text-sm text-gray-700">
-              <h2 className="mb-1 text-base font-semibold text-gray-900">Delivery Information</h2>
+            {/* Delivery zones */}
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Truck className="h-4 w-4 text-gray-500" />
+                <h2 className="text-sm font-bold text-gray-900">Delivery Information</h2>
+              </div>
               {deliveryZones.length > 0 ? (
                 <>
-                  <p className="text-gray-600">
-                    Available delivery locations and prices from this seller.
-                    {minDeliveryDays && maxDeliveryDays
-                      ? ` Estimated delivery: ${minDeliveryDays}${maxDeliveryDays !== minDeliveryDays ? `-${maxDeliveryDays}` : ''} day(s).`
-                      : ''}
-                  </p>
-                  <ul className="mt-2 space-y-1">
+                  {(minDeliveryDays || maxDeliveryDays) && (
+                    <p className="text-xs text-gray-500 mb-3">
+                      Estimated delivery:{' '}
+                      <span className="font-semibold text-gray-700">
+                        {minDeliveryDays}{maxDeliveryDays !== minDeliveryDays ? `–${maxDeliveryDays}` : ''} day(s)
+                      </span>
+                    </p>
+                  )}
+                  <div className="space-y-1.5">
                     {deliveryZones.slice(0, 8).map((zone) => {
                       const locationLabel =
                         ALL_LOCATIONS.find((location) => location.value === zone.location_value)?.label || zone.location_value
                       return (
-                        <li key={`${zone.location_value}-${zone.delivery_price}`} className="flex items-center justify-between gap-3">
-                          <span className="truncate">{locationLabel}</span>
-                          <span className="whitespace-nowrap">
-                            GH₵ {Number(zone.delivery_price).toLocaleString()} · {zone.delivery_time_days} day(s)
+                        <div key={`${zone.location_value}-${zone.delivery_price}`} className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 text-xs">
+                          <div className="flex items-center gap-1.5 text-gray-700 font-medium truncate">
+                            <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                            {locationLabel}
+                          </div>
+                          <span className="whitespace-nowrap font-semibold text-gray-800">
+                            GH₵ {Number(zone.delivery_price).toLocaleString()} · {zone.delivery_time_days}d
                           </span>
-                        </li>
+                        </div>
                       )
                     })}
-                  </ul>
+                  </div>
                 </>
               ) : (
-                <p className="text-gray-600">Seller delivery zones are not configured yet.</p>
+                <p className="text-sm text-gray-500">Seller delivery zones are not configured yet.</p>
               )}
             </div>
 
-            <div>
-              <h2 className="mb-2 text-base font-semibold text-gray-900">Description</h2>
-              <p
-                className="text-gray-700 leading-relaxed whitespace-pre-line"
-                style={
-                  !descriptionExpanded && shouldShowReadMore
-                    ? {
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }
-                    : undefined
-                }
-              >
-                {formattedDescription || 'No description provided.'}
-              </p>
-
-              {shouldShowReadMore && (
-                <button
-                  type="button"
-                  onClick={() => setDescriptionExpanded((previous) => !previous)}
-                  className="mt-2 text-sm font-medium text-black underline underline-offset-2"
+            {/* Description */}
+            {formattedDescription ? (
+              <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+                <h2 className="text-sm font-bold text-gray-900 mb-3">Description</h2>
+                <p
+                  className="text-sm text-gray-600 leading-relaxed whitespace-pre-line"
+                  style={
+                    !descriptionExpanded && shouldShowReadMore
+                      ? {
+                          display: '-webkit-box',
+                          WebkitLineClamp: 4,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }
+                      : undefined
+                  }
                 >
-                  {descriptionExpanded ? 'Read less' : 'Read more'}
-                </button>
-              )}
-            </div>
-          </div>
-        </section>
+                  {formattedDescription}
+                </p>
+                {shouldShowReadMore && (
+                  <button
+                    type="button"
+                    onClick={() => setDescriptionExpanded((prev) => !prev)}
+                    className="mt-2 flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+                  >
+                    {descriptionExpanded ? (
+                      <><ChevronUp className="h-3.5 w-3.5" /> Show less</>
+                    ) : (
+                      <><ChevronDown className="h-3.5 w-3.5" /> Read more</>
+                    )}
+                  </button>
+                )}
+              </div>
+            ) : null}
+          </section>
 
-        <aside className="space-y-4">
-          {(auction.starts_at || auction.ends_at) && (
-            <AuctionCountdown
-              targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
-              phase={countdownPhase}
-              timeLeft={timeLeft}
+          {/* Right column / sidebar */}
+          <aside className="space-y-4">
+            {/* Countdown */}
+            {(auction.starts_at || auction.ends_at) && (
+              <AuctionCountdown
+                targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
+                phase={countdownPhase}
+                timeLeft={timeLeft}
+              />
+            )}
+
+            {/* Status banners */}
+            {isScheduled && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-semibold text-amber-800">Auction not started yet</p>
+                <p className="mt-0.5 text-xs text-amber-700">Bidding will open when the auction starts.</p>
+              </div>
+            )}
+            {hasEnded && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-semibold text-red-700">This auction has ended</p>
+              </div>
+            )}
+            {hasEnded && !reserveMet && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-semibold text-amber-800">Reserve price not met</p>
+                <p className="mt-1 text-xs text-amber-700">
+                  The final bid didn&apos;t reach the reserve price. This item was not sold.
+                </p>
+                <Link href="/contact#reserve-price" className="mt-2 inline-block text-xs font-semibold text-amber-800 underline underline-offset-2">
+                  Learn about reserve prices
+                </Link>
+              </div>
+            )}
+
+            {/* Bid form */}
+            <BidForm
+              hasEnded={hasEnded || isScheduled}
+              bidAmount={bidAmount}
+              isPlacingBid={isPlacingBid}
+              error={bidError}
+              isLoggedIn={!!userId}
+              minIncrement={auction.min_increment}
+              maxIncrement={auction.max_increment}
+              onBidAmountChange={setBidAmount}
+              onSubmit={placeBid}
             />
-          )}
-          {isScheduled && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-              This auction has not started yet.
-            </div>
-          )}
-          {hasEnded && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              This auction has ended.
-            </div>
-          )}
-          {hasEnded && !reserveMet && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-              <p className="font-semibold">Sorry, the final bid did not hit the reserve price.</p>
-              <p className="mt-1">This item was not sold and the auction is closed.</p>
-              <Link href="/contact#reserve-price" className="mt-2 inline-block font-medium underline underline-offset-2">
-                What does reserve price mean?
-              </Link>
-            </div>
-          )}
 
-          <BidForm
-            hasEnded={hasEnded || isScheduled}
-            bidAmount={bidAmount}
-            isPlacingBid={isPlacingBid}
-            error={bidError}
-            isLoggedIn={!!userId}
-            minIncrement={auction.min_increment}
-            maxIncrement={auction.max_increment}
-            onBidAmountChange={setBidAmount}
-            onSubmit={placeBid}
-          />
+            {/* Winner panel */}
+            <WinnerPanel
+              hasEnded={hasEnded}
+              isWinner={isWinner}
+              paid={auction.paid}
+              paymentDueAt={auction.auction_payment_due_at}
+              onPay={payNow}
+            />
+          </aside>
+        </div>
 
-          <WinnerPanel
-            hasEnded={hasEnded}
-            isWinner={isWinner}
-            paid={auction.paid}
-            paymentDueAt={auction.auction_payment_due_at}
-            onPay={payNow}
-          />
-        </aside>
-      </div>
-
-      <BidList bids={bids} currentUserId={userId} />
+        {/* Bid list */}
+        <div className="mt-5">
+          <BidList bids={bids} currentUserId={userId} />
+        </div>
       </main>
     </PrivateAuctionGuard>
   )

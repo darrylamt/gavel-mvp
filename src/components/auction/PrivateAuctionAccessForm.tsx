@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Lock } from 'lucide-react'
+import { Lock, ArrowRight } from 'lucide-react'
 
 export default function PrivateAuctionAccessForm() {
   const router = useRouter()
@@ -14,70 +14,62 @@ export default function PrivateAuctionAccessForm() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-
     try {
       const response = await fetch('/api/auctions/access-code-lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       })
-
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Invalid access code')
-      }
-
-      // Store access in sessionStorage
-      const accessKey = `private_auction_${data.auction_id}`
-      sessionStorage.setItem(accessKey, 'granted')
-
-      // Redirect to auction
+      if (!response.ok) throw new Error(data.error || 'Invalid access code')
+      sessionStorage.setItem(`private_auction_${data.auction_id}`, 'granted')
       router.push(`/auctions/${data.auction_id}/${data.slug}`)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred'
-      setError(message)
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6 mb-8">
+    <div className="mb-8 rounded-2xl border border-gray-100 bg-white shadow-sm p-5 sm:p-6">
       <div className="flex items-start gap-3 mb-4">
-        <Lock className="text-purple-600 mt-1" size={20} />
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gray-100">
+          <Lock className="h-4 w-4 text-gray-600" />
+        </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Access Private Auction</h2>
-          <p className="text-sm text-gray-600">Have an access code? Enter it below to view a private auction.</p>
+          <h2 className="text-sm font-bold text-gray-900">Access a Private Auction</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Have an invite code? Enter it to view a private listing.</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit}>
         <div className="flex gap-2">
           <input
             type="text"
             placeholder="e.g., XXXX-XXXX-XXXX"
             value={code}
-            onChange={(e) => {
-              setCode(e.target.value.toUpperCase())
-              setError(null)
-            }}
-            className="flex-1 px-4 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono tracking-wider"
+            onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(null) }}
+            className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono tracking-wider focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading || !code.trim()}
-            className="px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
-            {loading ? 'Validating...' : 'Enter'}
+            {loading ? (
+              <span className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>Enter <ArrowRight className="h-3.5 w-3.5" /></>
+            )}
           </button>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
+          <p className="mt-2.5 rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs font-medium text-red-700">
+            {error}
+          </p>
         )}
       </form>
     </div>

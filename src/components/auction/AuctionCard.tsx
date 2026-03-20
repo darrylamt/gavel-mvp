@@ -121,10 +121,10 @@ export default function AuctionCard({
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none ${
               isEnded
-                ? 'bg-gray-800/80 text-white'
+                ? 'bg-red-600 text-white shadow-sm'
                 : isScheduled
-                ? 'bg-gray-100/90 text-gray-700 backdrop-blur-sm'
-                : 'bg-green-500 text-white'
+                ? 'bg-white/90 text-gray-700 backdrop-blur-sm shadow-sm'
+                : 'bg-green-500 text-white shadow-sm'
             }`}
           >
             {isLive && <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}

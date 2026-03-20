@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import TokenFAQ from '@/components/tokens/TokenFAQ'
 import TokenPricingCard from '@/components/tokens/TokenPricingCard'
+import { Coins, ShieldCheck, Zap, RefreshCw } from 'lucide-react'
 
 const PACKS = [
   {
@@ -13,38 +14,46 @@ const PACKS = [
     label: 'Starter',
     highlight: false,
     features: [
-      'Buy with Paystack',
       'Instant delivery',
       'Use for bidding',
       'Refunded if you lose',
+      'Secure Paystack checkout',
     ],
   },
   {
     id: 'medium',
     tokens: 30,
     price: 25,
+    oldPrice: 30,
     label: 'Most Popular',
     highlight: true,
     features: [
       '30 tokens included',
-      'Buy with Paystack',
       'Instant delivery',
       'Refunded if you lose',
+      'Secure Paystack checkout',
     ],
   },
   {
     id: 'large',
     tokens: 70,
     price: 50,
+    oldPrice: 70,
     label: 'Best Value',
     highlight: false,
     features: [
-      'Buy with Paystack',
+      'Best price per token',
       'Instant delivery',
-      'Use for bidding',
       'Refunded if you lose',
+      'Secure Paystack checkout',
     ],
   },
+]
+
+const TRUST_ITEMS = [
+  { icon: RefreshCw, label: 'Auto-refunded if you lose' },
+  { icon: Zap, label: 'Tokens delivered instantly' },
+  { icon: ShieldCheck, label: 'Secure checkout via Paystack' },
 ]
 
 export default function BuyTokensPage() {
@@ -81,29 +90,40 @@ export default function BuyTokensPage() {
   }
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-12">
-      {/* HEADER */}
-      <div className="text-center max-w-xl mx-auto mb-12">
-        <h1 className="text-3xl font-extrabold mb-3">
-          Buy Tokens
+    <main className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
+        <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-orange-100 mb-4">
+          <Coins className="h-7 w-7 text-orange-500" />
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-3">
+          Buy Bidding Tokens
         </h1>
-        <p className="text-gray-600">
-          Tokens are used to place bids on auctions.
-          More tokens means more chances to win.
+        <p className="text-sm sm:text-base text-gray-500 leading-relaxed">
+          Tokens are your bidding currency on Gavel. Place bids, compete in auctions,
+          and win items — your tokens are refunded if you don&apos;t win.
         </p>
-        <p className="mt-3 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-          Tokens refunded if you don't win
-        </p>
+
+        {/* Trust badges */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:gap-5">
+          {TRUST_ITEMS.map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+              <Icon className="h-3.5 w-3.5 text-orange-400 flex-shrink-0" />
+              {label}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* PACKS */}
-      <div className="grid md:grid-cols-3 gap-8 justify-items-center mb-12">
+      {/* Packs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-12 sm:mb-16 max-w-4xl mx-auto">
         {PACKS.map((pack) => (
           <TokenPricingCard
             key={pack.id}
             label={pack.label}
             tokens={pack.tokens}
             price={pack.price}
+            oldPrice={pack.oldPrice}
             highlight={pack.highlight}
             isLoading={loading === pack.id}
             features={pack.features}
@@ -114,12 +134,10 @@ export default function BuyTokensPage() {
 
       <TokenFAQ />
 
-      {/* FOOTER INFO */}
-      <div className="mt-12 text-center text-sm text-gray-500">
+      {/* Footer note */}
+      <div className="mt-10 text-center text-xs text-gray-400 space-y-1">
         <p>Payments are securely processed by Paystack.</p>
-        <p className="mt-1">
-          Tokens used for losing bids are automatically refunded.
-        </p>
+        <p>Tokens from losing bids are automatically refunded to your balance.</p>
       </div>
     </main>
   )

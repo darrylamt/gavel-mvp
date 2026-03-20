@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
+import { MapPin, AlertTriangle } from 'lucide-react'
 
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import ContactDetailsSection from '@/components/profile/ContactDetailsSection'
@@ -65,11 +66,9 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
   const [tokens, setTokens] = useState<number>(0)
-
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [deliveryLocation, setDeliveryLocation] = useState('')
-
   const [wonAuctions, setWonAuctions] = useState<WonAuction[]>([])
   const [bidAuctions, setBidAuctions] = useState<BidAuctionItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -79,11 +78,7 @@ export default function ProfilePage() {
   const [canAccessSellerDashboard, setCanAccessSellerDashboard] = useState(false)
 
   const loadWonAuctions = async (uid: string) => {
-    const { data } = await supabase.rpc(
-      'get_auctions_won_by_user',
-      { uid }
-    )
-
+    const { data } = await supabase.rpc('get_auctions_won_by_user', { uid })
     setWonAuctions(data || [])
   }
 
@@ -100,10 +95,8 @@ export default function ProfilePage() {
     for (const row of rows) {
       const auction = Array.isArray(row.auctions) ? row.auctions[0] : row.auctions
       if (!auction?.id) continue
-
       const existing = byAuction.get(auction.id)
       const amount = Number(row.amount)
-
       if (!existing) {
         byAuction.set(auction.id, {
           auctionId: auction.id,
@@ -121,13 +114,8 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
-    if (authLoading || isChecking) {
-      return
-    }
-
-    if (!authUser) {
-      return
-    }
+    if (authLoading || isChecking) return
+    if (!authUser) return
 
     const loadProfile = async () => {
       setUserId(authUser.id)
@@ -143,7 +131,7 @@ export default function ProfilePage() {
       const metadataFullName =
         (typeof authUser.user_metadata?.full_name === 'string' && authUser.user_metadata.full_name.trim()) ||
         [authUser.user_metadata?.first_name, authUser.user_metadata?.last_name]
-          .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+          .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
           .join(' ')
           .trim()
 
@@ -154,8 +142,7 @@ export default function ProfilePage() {
       setDeliveryLocation(profileData?.delivery_location ?? '')
       setAvatarUrl(profileData?.avatar_url ?? null)
 
-      const isSellerRole = profileData?.role === 'seller'
-      if (isSellerRole) {
+      if (profileData?.role === 'seller') {
         setCanAccessSellerDashboard(true)
       } else {
         const { data: activeShop } = await supabase
@@ -165,13 +152,11 @@ export default function ProfilePage() {
           .eq('status', 'active')
           .limit(1)
           .maybeSingle()
-
         setCanAccessSellerDashboard(!!activeShop)
       }
 
       await loadWonAuctions(authUser.id)
       await loadBidAuctions(authUser.id)
-
       setLoading(false)
     }
 
@@ -180,117 +165,91 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const onboarding = searchParams.get('onboarding')
-    if (loading || onboardingHandled || onboarding !== '1') {
-      return
-    }
-
+    if (loading || onboardingHandled || onboarding !== '1') return
     const timer = window.setTimeout(() => {
       setEditOpen(true)
       setOnboardingHandled(true)
       router.replace('/profile')
     }, 0)
-
     return () => window.clearTimeout(timer)
   }, [loading, onboardingHandled, router, searchParams])
 
   const payNow = async (auctionId: string) => {
     const { data: auth } = await supabase.auth.getUser()
     if (!auth.user || !auth.user.email) return
-
     const res = await fetch('/api/auction-payments/init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        auction_id: auctionId,
-        user_id: auth.user.id,
-        email: auth.user.email,
-      }),
+      body: JSON.stringify({ auction_id: auctionId, user_id: auth.user.id, email: auth.user.email }),
     })
-
     const data = await res.json()
-
-    if (!res.ok) {
-      alert(data.error || 'Payment failed')
-      return
-    }
-
+    if (!res.ok) { alert(data.error || 'Payment failed'); return }
     window.location.href = data.authorization_url
   }
 
-  if (loading) return <p className="p-6">Loading profile…</p>
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 flex items-center justify-center">
+        <div className="h-6 w-6 border-2 border-gray-200 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   if (!userId) {
     return (
-      <p className="p-6 text-sm text-gray-600">
-        Please sign in to view your profile.
-      </p>
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-16 text-center">
+        <p className="text-sm text-gray-500">Please sign in to view your profile.</p>
+        <Link href="/login" className="mt-4 inline-block rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-black transition-colors">
+          Sign In
+        </Link>
+      </div>
     )
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 sm:space-y-10">
+    <main className="mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8 space-y-5">
       <ProfileHeader
         username={username}
         tokens={tokens}
         avatarUrl={avatarUrl}
         onEdit={() => setEditOpen(true)}
+        canAccessSellerDashboard={canAccessSellerDashboard}
       />
 
+      {/* Delivery location warning */}
       {!deliveryLocation && (
-        <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm text-amber-900">
-            You have not set your default delivery location.{' '}
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <MapPin className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-800">
+            You haven&apos;t set a default delivery location.{' '}
             <button
               type="button"
               onClick={() => setEditOpen(true)}
               className="font-semibold underline underline-offset-2"
             >
-              Click here to set it.
+              Set it now →
             </button>
           </p>
-        </section>
+        </div>
       )}
 
+      {/* Seller quick access – delivery zones reminder only */}
       {canAccessSellerDashboard && (
-        <section className="rounded-xl border border-gray-200 bg-white p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-gray-900">Seller access available</p>
-              <p className="text-sm text-gray-600">Manage your auctions, products, earnings, and deliveries.</p>
-              <p className="mt-1 text-xs text-amber-700">
-                Also update your seller delivery zones so buyers can get accurate delivery fees.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/seller"
-                className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-              >
-                Seller Dashboard
-              </Link>
-              <Link
-                href="/seller/shop"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-              >
-                Update Delivery Zones
-              </Link>
-            </div>
-          </div>
-        </section>
+        <div className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
+          <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-700">
+            Make sure your{' '}
+            <Link href="/seller/shop" className="font-semibold underline underline-offset-2 hover:text-amber-900">
+              delivery zones
+            </Link>{' '}
+            are up to date so buyers see accurate fees.
+          </p>
+        </div>
       )}
 
-      <ContactDetailsSection
-        phone={phone}
-        address={address}
-      />
-
-      <WonAuctionsSection
-        auctions={wonAuctions}
-        onPay={payNow}
-      />
-
+      <ContactDetailsSection phone={phone} address={address} />
+      <WonAuctionsSection auctions={wonAuctions} onPay={payNow} />
       <BidAuctionsSection auctions={bidAuctions} />
-
       <SignOutButton />
 
       <EditProfileModal
@@ -303,11 +262,11 @@ export default function ProfilePage() {
         initialDeliveryLocation={deliveryLocation}
         initialAvatarUrl={avatarUrl}
         onSaved={(d: {
-          username?: string;
-          phone?: string;
-          address?: string;
-          deliveryLocation?: string;
-          avatarUrl?: string;
+          username?: string
+          phone?: string
+          address?: string
+          deliveryLocation?: string
+          avatarUrl?: string
         }) => {
           if (d.username) setUsername(d.username)
           if (typeof d.phone !== 'undefined') setPhone(d.phone)

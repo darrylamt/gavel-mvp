@@ -4,6 +4,7 @@ import PrivateAuctionAccessForm from '@/components/auction/PrivateAuctionAccessF
 import type { Metadata } from 'next'
 import { buildAuctionPath } from '@/lib/seo'
 import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
+import { Gavel } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,24 +74,28 @@ export default async function AuctionsPage({
     })),
   }
 
-return (
-  <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListStructuredData) }} />
-    <div className="mb-8 sm:mb-10 flex items-start justify-between gap-4">
-      <div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">
-          {starredOnly ? 'Starred Auctions' : 'Auctions'}
-        </h1>
-        <p className="text-sm sm:text-base text-gray-600">
-          {starredOnly ? 'Items you have starred to bid on.' : 'Browse live and completed auctions.'}
+  return (
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListStructuredData) }} />
+
+      {/* Header */}
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100">
+            <Gavel className="h-4.5 w-4.5 text-orange-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {starredOnly ? 'Starred Auctions' : 'Auctions'}
+          </h1>
+        </div>
+        <p className="text-sm text-gray-500 ml-12">
+          {starredOnly ? 'Items you have starred to bid on.' : 'Browse live, upcoming, and past auctions.'}
         </p>
       </div>
-      <div />
-    </div>
 
-    {!starredOnly && <PrivateAuctionAccessForm />}
+      {!starredOnly && <PrivateAuctionAccessForm />}
 
-    <AuctionsGridClient auctions={typedAuctions} starredOnly={starredOnly} engagementCounts={engagementCounts} />
-  </main>
-)
+      <AuctionsGridClient auctions={typedAuctions} starredOnly={starredOnly} engagementCounts={engagementCounts} />
+    </main>
+  )
 }

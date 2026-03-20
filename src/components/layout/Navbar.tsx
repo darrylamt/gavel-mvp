@@ -274,7 +274,19 @@ export default function Navbar() {
                 </div>
               ) : null}
 
-              {/* Mobile: notifications */}
+              {/* Mobile: cart + notifications */}
+              <Link
+                href="/cart"
+                className="relative md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                aria-label="Cart"
+              >
+                <ShoppingCart className="h-[1.1rem] w-[1.1rem]" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-orange-500 flex items-center justify-center text-[9px] font-bold text-white px-1 leading-none">
+                    {itemCount}
+                  </span>
+                )}
+              </Link>
               <div className="md:hidden">
                 <NotificationsDropdown />
               </div>

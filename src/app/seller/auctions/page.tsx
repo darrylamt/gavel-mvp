@@ -4,6 +4,18 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import PieChartCard from '@/components/base/PieChartCard'
+import {
+  Plus,
+  Search,
+  X,
+  Eye,
+  Pencil,
+  Trash2,
+  Gavel,
+  CalendarDays,
+  Clock,
+  DollarSign,
+} from 'lucide-react'
 
 type SellerAuction = {
   id: string
@@ -18,6 +30,18 @@ type SellerAuction = {
 
 type AuctionBucket = 'all' | 'active' | 'scheduled' | 'ended' | 'delivered'
 
+const STATUS_BADGE: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  scheduled: 'bg-blue-100 text-blue-700',
+  ended: 'bg-gray-100 text-gray-700',
+  delivered: 'bg-orange-100 text-orange-700',
+}
+
+function statusLabel(auction: SellerAuction) {
+  if (auction.paid) return 'delivered'
+  return auction.status ?? 'unknown'
+}
+
 export default function SellerAuctionsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +49,7 @@ export default function SellerAuctionsPage() {
   const [auctions, setAuctions] = useState<SellerAuction[]>([])
   const [bucket, setBucket] = useState<AuctionBucket>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [detailAuction, setDetailAuction] = useState<SellerAuction | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -145,37 +170,64 @@ export default function SellerAuctionsPage() {
     }
   }
 
+  const bucketTabs: Array<{ key: AuctionBucket; label: string }> = [
+    { key: 'all', label: 'All' },
+    { key: 'active', label: 'Active' },
+    { key: 'scheduled', label: 'Scheduled' },
+    { key: 'ended', label: 'Ended' },
+    { key: 'delivered', label: 'Delivered' },
+  ]
+
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-8 space-y-6">
-      <section className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-        <div className="flex items-center justify-between gap-3">
+    <div className="space-y-4">
+      {/* Header */}
+      <section className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">My Auctions</h1>
-            <p className="mt-1 text-sm text-gray-500">Create, track, edit, and review your auction history in one place.</p>
+            <h1 className="text-xl font-bold text-gray-900">My Auctions</h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              Create, track, edit, and review your auction history.
+            </p>
           </div>
           <Link
             href="/auctions/new"
-            className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+            className="inline-flex flex-shrink-0 items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600 transition-colors"
           >
-            New Auction
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">New Auction</span>
+            <span className="sm:hidden">New</span>
           </Link>
         </div>
       </section>
 
+      {/* Charts */}
       <section className="grid gap-4 lg:grid-cols-2">
         <PieChartCard title="Auction Lifecycle" points={lifecyclePie} emptyLabel="No auctions yet" />
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="text-base font-semibold text-gray-900">Recent History</h3>
+        <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-900">Recent History</h3>
           {recentHistory.length === 0 ? (
-            <p className="mt-3 text-sm text-gray-500">No completed auction history yet.</p>
+            <p className="mt-3 text-sm text-gray-400">No completed auction history yet.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {recentHistory.map((auction) => (
-                <div key={auction.id} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                  <p className="font-medium text-gray-900">{auction.title}</p>
-                  <p className="text-xs text-gray-500">
-                    {auction.status === 'delivered' || auction.paid ? 'Delivered' : 'Ended'} · {auction.ends_at ? new Date(auction.ends_at).toLocaleString() : '-'}
-                  </p>
+                <div
+                  key={auction.id}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-900">{auction.title}</p>
+                    <p className="mt-0.5 text-xs text-gray-400">
+                      {auction.status === 'delivered' || auction.paid ? 'Delivered' : 'Ended'} ·{' '}
+                      {auction.ends_at ? new Date(auction.ends_at).toLocaleDateString() : '-'}
+                    </p>
+                  </div>
+                  <span
+                    className={`ml-3 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+                      STATUS_BADGE[statusLabel(auction)] || 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {statusLabel(auction)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -183,98 +235,304 @@ export default function SellerAuctionsPage() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {([
-          ['all', 'All'],
-          ['active', 'Active'],
-          ['scheduled', 'Scheduled'],
-          ['ended', 'Ended'],
-          ['delivered', 'Delivered'],
-        ] as Array<[AuctionBucket, string]>).map(([key, label]) => (
+      {/* Bucket pill tabs */}
+      <section className="flex flex-wrap gap-2">
+        {bucketTabs.map(({ key, label }) => (
           <button
             key={key}
             type="button"
             onClick={() => setBucket(key)}
-            className={`rounded-xl border p-4 text-left shadow-sm ${bucket === key ? 'bg-black text-white' : 'bg-white'}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+              bucket === key
+                ? 'bg-orange-500 text-white shadow-sm'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+            }`}
           >
-            <p className="text-xs uppercase tracking-wide opacity-80">{label}</p>
-            <p className="mt-2 text-2xl font-bold">{groups[key].length}</p>
+            {label}
+            <span
+              className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${
+                bucket === key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {groups[key].length}
+            </span>
           </button>
         ))}
       </section>
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-        {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+      {/* Search + list */}
+      <section className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+        {error && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <span className="flex-1">{error}</span>
+            <button type="button" onClick={() => setError(null)}>
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search auctions by title"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-xs"
-          />
-          <p className="text-xs text-gray-500">
-            Showing {filteredAuctions.length} of {visibleAuctions.length} in this view
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-xs w-full">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search auctions…"
+              className="w-full rounded-xl border border-gray-200 py-2 pl-9 pr-3 text-sm placeholder-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            />
+          </div>
+          <p className="text-xs text-gray-400">
+            {filteredAuctions.length} of {visibleAuctions.length} shown
           </p>
         </div>
 
         {loading ? (
-          <p className="text-sm text-gray-500">Loading auctions…</p>
+          <div className="flex items-center justify-center py-12">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+          </div>
         ) : filteredAuctions.length === 0 ? (
-          <p className="text-sm text-gray-500">No auctions in this category yet.</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Gavel className="mb-3 h-10 w-10 text-gray-200" />
+            <p className="text-sm font-medium text-gray-500">No auctions in this category yet.</p>
+          </div>
         ) : (
-          <div className="max-h-[70vh] overflow-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-gray-500">
-                <tr>
-                  <th className="py-2">Title</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2">Current Price</th>
-                  <th className="py-2">Starts</th>
-                  <th className="py-2">Ends</th>
-                  <th className="py-2">Created</th>
-                  <th className="py-2 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAuctions.map((auction) => (
-                  <tr key={auction.id} className="border-t">
-                    <td className="py-2">{auction.title}</td>
-                    <td className="py-2">{auction.paid ? 'delivered' : auction.status ?? '-'}</td>
-                    <td className="py-2">GHS {Number(auction.current_price ?? 0).toLocaleString()}</td>
-                    <td className="py-2">{auction.starts_at ? new Date(auction.starts_at).toLocaleString() : '-'}</td>
-                    <td className="py-2">{auction.ends_at ? new Date(auction.ends_at).toLocaleString() : '-'}</td>
-                    <td className="py-2">{auction.created_at ? new Date(auction.created_at).toLocaleString() : '-'}</td>
-                    <td className="py-2 text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <Link href={`/auctions/${auction.id}`} className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium hover:bg-gray-50">
-                          View
-                        </Link>
-                        {canModify(auction) && (
-                          <>
-                            <Link href={`/seller/auctions/edit/${auction.id}`} className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium hover:bg-gray-50">
-                              Edit
-                            </Link>
+          <>
+            {/* Mobile: Cards */}
+            <div className="space-y-3 sm:hidden">
+              {filteredAuctions.map((auction) => {
+                const sl = statusLabel(auction)
+                return (
+                  <div
+                    key={auction.id}
+                    className="rounded-xl border border-gray-100 bg-gray-50 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-gray-900 text-sm">{auction.title}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            GHS {Number(auction.current_price ?? 0).toLocaleString()}
+                          </span>
+                          {auction.ends_at && (
+                            <span className="flex items-center gap-1">
+                              <CalendarDays className="h-3 w-3" />
+                              {new Date(auction.ends_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span
+                        className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+                          STATUS_BADGE[sl] || 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {sl}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDetailAuction(auction)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        Details
+                      </button>
+                      <Link
+                        href={`/auctions/${auction.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        View Listing
+                      </Link>
+                      {canModify(auction) && (
+                        <>
+                          <Link
+                            href={`/seller/auctions/edit/${auction.id}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => deleteAuction(auction)}
+                            disabled={deletingId === auction.id}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {deletingId === auction.id ? 'Deleting…' : 'Delete'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop: Table */}
+            <div className="hidden sm:block overflow-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="py-3 pr-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Title</th>
+                    <th className="py-3 pr-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                    <th className="py-3 pr-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Price</th>
+                    <th className="py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredAuctions.map((auction) => {
+                    const sl = statusLabel(auction)
+                    return (
+                      <tr key={auction.id} className="hover:bg-gray-50">
+                        <td className="py-3 pr-4">
+                          <span className="font-medium text-gray-900">{auction.title}</span>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${
+                              STATUS_BADGE[sl] || 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {sl}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-700">
+                          GHS {Number(auction.current_price ?? 0).toLocaleString()}
+                        </td>
+                        <td className="py-3 text-right">
+                          <div className="inline-flex items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => deleteAuction(auction)}
-                              disabled={deletingId === auction.id}
-                              className="rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              onClick={() => setDetailAuction(auction)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
                             >
-                              {deletingId === auction.id ? 'Deleting…' : 'Delete'}
+                              <Eye className="h-3.5 w-3.5" />
+                              View
                             </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                            <Link
+                              href={`/auctions/${auction.id}`}
+                              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            >
+                              Listing
+                            </Link>
+                            {canModify(auction) && (
+                              <>
+                                <Link
+                                  href={`/seller/auctions/edit/${auction.id}`}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  Edit
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteAuction(auction)}
+                                  disabled={deletingId === auction.id}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                  {deletingId === auction.id ? 'Deleting…' : 'Delete'}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
-    </main>
+
+      {/* Detail modal */}
+      {detailAuction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <h3 className="text-base font-bold text-gray-900">Auction Details</h3>
+              <button
+                type="button"
+                onClick={() => setDetailAuction(null)}
+                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Title</p>
+                <p className="mt-0.5 text-sm font-medium text-gray-900">{detailAuction.title}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Status</p>
+                  <span
+                    className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
+                      STATUS_BADGE[statusLabel(detailAuction)] || 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {statusLabel(detailAuction)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Current Price</p>
+                  <p className="mt-0.5 text-sm font-semibold text-gray-900">
+                    GHS {Number(detailAuction.current_price ?? 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-400">
+                    <Clock className="h-3 w-3" /> Starts
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-700">
+                    {detailAuction.starts_at ? new Date(detailAuction.starts_at).toLocaleString() : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-400">
+                    <CalendarDays className="h-3 w-3" /> Ends
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-700">
+                    {detailAuction.ends_at ? new Date(detailAuction.ends_at).toLocaleString() : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-400">
+                    <CalendarDays className="h-3 w-3" /> Created
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-700">
+                    {detailAuction.created_at ? new Date(detailAuction.created_at).toLocaleString() : '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDetailAuction(null)}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <Link
+                href={`/auctions/${detailAuction.id}`}
+                className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+              >
+                View Listing
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { Store } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,7 +50,6 @@ export default async function SellerShopsPage() {
     if (!coverImageByShop.has(row.shop_id)) {
       coverImageByShop.set(row.shop_id, row.image_url ?? null)
     }
-
     if (row.category && row.category.trim()) {
       const existing = categoriesByShop.get(row.shop_id) ?? new Set<string>()
       existing.add(row.category.trim())
@@ -68,65 +68,77 @@ export default async function SellerShopsPage() {
     .sort((a, b) => b.productCount - a.productCount)
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6">
-      <div className="mb-6 flex items-center justify-between">
+    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:py-10 sm:px-6">
+      {/* Header */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Shops</h1>
-          <p className="mt-2 text-sm text-gray-600">Browse stores from approved sellers.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Shops</h1>
+          <p className="mt-1 text-sm text-gray-500">Browse storefronts from approved Gavel sellers.</p>
         </div>
-        <Link href="/shop" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
-          Back to Shop
+        <Link
+          href="/shop"
+          className="self-start rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          ← Back to Shop
         </Link>
       </div>
 
       {sortedShops.length === 0 ? (
-        <div className="rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center shadow-sm">
-          <p className="text-base font-semibold text-gray-900">No shops available yet.</p>
-          <p className="mt-2 text-sm text-gray-600">Check back soon for seller storefronts.</p>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
+          <Store className="h-10 w-10 text-gray-300 mb-3" />
+          <p className="text-base font-semibold text-gray-700">No shops available yet</p>
+          <p className="mt-1 text-sm text-gray-400">Seller storefronts will appear here.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sortedShops.map((shop) => (
             <article
               key={shop.id}
-              className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
+              className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
             >
-              <div className="relative h-40 overflow-hidden rounded-xl bg-gray-100 sm:h-44">
-                <img
-                  src={shop.logo_url || '/shop-placeholder.svg'}
-                  alt={shop.name || 'Shop logo'}
-                  className="h-full w-full object-cover"
-                />
+              {/* Cover / logo image */}
+              <div className="relative h-32 sm:h-40 bg-gray-100 overflow-hidden">
+                {shop.logo_url || shop.coverImage ? (
+                  <img
+                    src={shop.logo_url || shop.coverImage || ''}
+                    alt={shop.name}
+                    className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <Store className="h-10 w-10 text-gray-300" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
-                <div className="absolute left-3 top-3 rounded-full bg-white/85 px-3 py-1 text-xs font-medium text-gray-700 backdrop-blur">
-                  Active Shop
-                </div>
-
+                {/* Product count badge */}
+                <span className="absolute top-2 right-2 rounded-full bg-white/90 backdrop-blur-sm px-2 py-0.5 text-xs font-bold text-gray-800">
+                  {shop.productCount} items
+                </span>
               </div>
 
-              <div className="px-1 pb-1 pt-3">
-                <h3 className="text-xl font-bold leading-tight text-gray-900 break-words">{shop.name || 'Shop'}</h3>
+              <div className="p-3 sm:p-4">
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-tight truncate">{shop.name || 'Shop'}</h3>
+
+                {/* Category pills */}
                 {shop.topCategories.length > 0 ? (
-                  <p className="mt-1 text-sm font-medium text-gray-600">{shop.topCategories.join(' • ')}</p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {shop.topCategories.map((cat) => (
+                      <span key={cat} className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="mt-1 text-sm font-medium text-gray-500">Trusted seller storefront</p>
+                  <p className="mt-1.5 text-xs text-gray-400">Trusted seller storefront</p>
                 )}
 
-                <p className="mt-2 text-xs font-medium text-gray-500">
-                  Browse products from this shop and order instantly from available listings.
-                </p>
-
-                <div className="mt-4 flex items-center justify-between gap-2">
-                  <div className="rounded-full bg-gray-100 px-3 py-1 text-sm font-bold text-gray-900">
-                    {shop.productCount}
-                  </div>
-                  <Link
-                    href={`/shop/seller/${shop.id}`}
-                    className="inline-flex items-center rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-                  >
-                    View Shop
-                  </Link>
-                </div>
+                <Link
+                  href={`/shop/seller/${shop.id}`}
+                  className="mt-3 flex items-center justify-center w-full rounded-xl bg-gray-900 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-black transition-colors"
+                >
+                  Visit Shop
+                </Link>
               </div>
             </article>
           ))}

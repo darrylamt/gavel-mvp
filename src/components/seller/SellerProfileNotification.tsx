@@ -49,7 +49,6 @@ export default function SellerProfileNotification() {
         .from('seller_payout_methods')
         .select('id', { count: 'exact', head: true })
         .eq('seller_id', session.user.id)
-        .eq('is_active', true)
 
       const items: ProfileCompletionItem[] = [
         {
@@ -80,7 +79,7 @@ export default function SellerProfileNotification() {
           key: 'payout_method',
           label: 'Add payout method',
           completed: (payoutMethodsCount ?? 0) > 0,
-          link: '/seller/payouts',
+          link: '/seller/settings/payouts',
         },
       ]
 

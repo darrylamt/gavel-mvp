@@ -19,7 +19,7 @@ export default function Toggle({ checked, onChange, label, disabled }: TogglePro
           disabled={disabled}
         />
         <div
-          className={`block w-10 h-6 rounded-full transition-colors duration-200 ${checked ? 'bg-blue-600' : 'bg-gray-300'}`}
+          className={`block w-10 h-6 rounded-full transition-colors duration-200 ${checked ? 'bg-orange-500' : 'bg-gray-200'}`}
         ></div>
         <div
           className={`dot absolute left-1 top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-4' : ''}`}
