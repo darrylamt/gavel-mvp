@@ -63,9 +63,16 @@ export default function SearchHero() {
   }, [])
 
   useEffect(() => {
-    if (user?.user_metadata?.first_name) {
-      setFirstName(user.user_metadata.first_name)
-    }
+    if (!user) return
+    const fullName =
+      (typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()) ||
+      [user.user_metadata?.first_name, user.user_metadata?.last_name]
+        .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+        .join(' ')
+        .trim() ||
+      (typeof user.user_metadata?.name === 'string' && user.user_metadata.name.trim()) ||
+      null
+    setFirstName(fullName ? fullName.split(' ')[0] : null)
   }, [user])
 
   useEffect(() => {

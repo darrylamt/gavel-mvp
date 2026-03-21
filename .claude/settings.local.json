@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
+      "Bash(ls /c/Users/amoat/Documents/gavel-mobile/app/\\\\\\(auth\\\\\\)/_layout.tsx)",
+      "Bash(cat /c/Users/amoat/Documents/gavel-mobile/app/\\\\\\(auth\\\\\\)/_layout.tsx)"
     ]
   }
 }
