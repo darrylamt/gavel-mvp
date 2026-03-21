@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Search, SlidersHorizontal, X, ChevronDown, ShoppingBag } from 'lucide-react'
 import ShopProductCard from '@/components/shop/ShopProductCard'
+import { getCategoryTheme } from '@/lib/categoryThemes'
 
 type ShopProduct = {
   id: string
@@ -93,23 +94,50 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
     setSearch('')
   }
 
+  const activeTheme = getCategoryTheme(
+    selectedCategory === 'All Products' ? null : selectedCategory
+  )
+  const isFiltered = selectedCategory !== 'All Products'
+
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-      {/* Page header */}
-      <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm p-5 sm:p-6 mb-5">
-        <p className="pointer-events-none absolute right-4 top-1 text-5xl font-extrabold leading-none text-gray-100 sm:text-7xl">
-          SHOP
-        </p>
-        <div className="relative flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 flex-shrink-0">
-            <ShoppingBag className="h-5 w-5 text-orange-500" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Give all you need</h1>
-            <p className="text-sm text-gray-500">Browse fixed-price products and buy instantly.</p>
+      {/* Page header — generic when browsing all, themed when a category is selected */}
+      {isFiltered ? (
+        <div
+          className="relative overflow-hidden rounded-2xl shadow-sm p-5 sm:p-6 mb-5 transition-all duration-300"
+          style={{ background: activeTheme.heroGradient }}
+        >
+          <div className={`flex items-end justify-between gap-2 ${activeTheme.heroTextColor}`}>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest opacity-60 mb-1">Category</p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold leading-tight">{selectedCategory}</h1>
+              <p className="mt-1 text-sm opacity-70">{activeTheme.tagline}</p>
+            </div>
+            <button
+              onClick={() => setSelectedCategory('All Products')}
+              className="flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
+              style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'inherit' }}
+            >
+              ← All
+            </button>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm p-5 sm:p-6 mb-5">
+          <p className="pointer-events-none absolute right-4 top-1 text-5xl font-extrabold leading-none text-gray-100 sm:text-7xl">
+            SHOP
+          </p>
+          <div className="relative flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 flex-shrink-0">
+              <ShoppingBag className="h-5 w-5 text-orange-500" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Give all you need</h1>
+              <p className="text-sm text-gray-500">Browse fixed-price products and buy instantly.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search + sort row */}
       <div className="flex gap-2 mb-4">
@@ -166,19 +194,24 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
 
       {/* Category pills - horizontal scroll */}
       <div className="flex gap-2 overflow-x-auto pb-1 mb-4 no-scrollbar">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`flex-shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
-              selectedCategory === cat
-                ? 'bg-gray-900 text-white'
-                : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const pillTheme = getCategoryTheme(cat === 'All Products' ? null : cat)
+          const isActive = selectedCategory === cat
+          return (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`flex-shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                isActive
+                  ? 'text-white'
+                  : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+              style={isActive ? { backgroundColor: pillTheme.accentHex } : undefined}
+            >
+              {cat}
+            </button>
+          )
+        })}
       </div>
 
       {/* Expanded filters panel */}

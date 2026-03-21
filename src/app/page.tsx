@@ -11,6 +11,7 @@ import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
 import HeroShowcaseCarousel from '@/components/home/HeroShowcaseCarousel'
 import ShopProductCard from '@/components/shop/ShopProductCard'
 import SearchHero from '@/components/home/SearchHero'
+import { getCategoryTheme } from '@/lib/categoryThemes'
 
 export const dynamic = 'force-dynamic'
 
@@ -299,23 +300,31 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-6">
-          {heroCategories.map((category) => (
-            <Link
-              key={category.name}
-              href={`/shop?category=${encodeURIComponent(category.name)}`}
-              className="snap-start w-[72%] max-w-[232px] flex-none rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:max-w-none"
-            >
-              <div className="aspect-[16/10] overflow-hidden rounded-lg bg-gray-100">
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="h-full w-full object-cover transition-transform duration-200 hover:scale-[1.03]"
-                />
-              </div>
-              <p className="mt-2 text-sm font-semibold text-gray-900">{category.name}</p>
-              <p className="text-xs text-gray-500">{category.tagline}</p>
-            </Link>
-          ))}
+          {heroCategories.map((category) => {
+            const theme = getCategoryTheme(category.name)
+            return (
+              <Link
+                key={category.name}
+                href={`/shop?category=${encodeURIComponent(category.name)}`}
+                className="group snap-start w-[72%] max-w-[232px] flex-none rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:max-w-none"
+              >
+                <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-gray-100">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                  />
+                  {/* Accent tint overlay on hover */}
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 rounded-lg"
+                    style={{ backgroundColor: theme.accentHex }}
+                  />
+                </div>
+                <p className="mt-2 text-sm font-semibold text-gray-900">{category.name}</p>
+                <p className="text-xs text-gray-500">{category.tagline}</p>
+              </Link>
+            )
+          })}
         </div>
       </section>
 
