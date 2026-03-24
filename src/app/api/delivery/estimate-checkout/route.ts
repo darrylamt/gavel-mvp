@@ -30,6 +30,13 @@ const supabase = createClient(
  * }
  */
 export async function POST(req: Request) {
+  const baseUrl = process.env.DAWUROBO_BASE_URL || '(not set)'
+  const appId = process.env.DAWUROBO_APP_ID || '(not set)'
+  const apiKey = process.env.DAWUROBO_API_KEY || ''
+  console.log('[delivery/estimate-checkout] DAWUROBO_BASE_URL:', baseUrl)
+  console.log('[delivery/estimate-checkout] DAWUROBO_APP_ID:', appId)
+  console.log('[delivery/estimate-checkout] DAWUROBO_API_KEY:', apiKey ? apiKey.slice(0, 10) + '…' : '(not set)')
+
   try {
     const {
       items,
@@ -111,6 +118,7 @@ export async function POST(req: Request) {
       })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'estimate failed'
+      console.error('[delivery/estimate-checkout] Dawurobo estimate error:', msg)
       return NextResponse.json(
         { options: null, error: `Delivery estimate failed: ${msg}` },
         { status: 502 }
@@ -147,6 +155,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ options })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to estimate delivery'
-    return NextResponse.json({ error: message }, { status: 502 })
+    console.error('[delivery/estimate-checkout] Unhandled error:', message)
+    return NextResponse.json({ options: null, error: message }, { status: 502 })
   }
 }

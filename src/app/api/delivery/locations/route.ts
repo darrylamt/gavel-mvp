@@ -10,6 +10,13 @@ import { dawuroboRequest, type DawuroboLocation } from '@/lib/dawurobo'
 export const revalidate = 3600
 
 export async function GET() {
+  const baseUrl = process.env.DAWUROBO_BASE_URL || '(not set)'
+  const appId = process.env.DAWUROBO_APP_ID || '(not set)'
+  const apiKey = process.env.DAWUROBO_API_KEY || ''
+  console.log('[delivery/locations] DAWUROBO_BASE_URL:', baseUrl)
+  console.log('[delivery/locations] DAWUROBO_APP_ID:', appId)
+  console.log('[delivery/locations] DAWUROBO_API_KEY:', apiKey ? apiKey.slice(0, 10) + '…' : '(not set)')
+
   try {
     const raw = await dawuroboRequest<DawuroboLocation[] | { data: DawuroboLocation[] }>('GET', '/locations')
 
@@ -30,6 +37,7 @@ export async function GET() {
     )
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to fetch delivery locations'
+    console.error('[delivery/locations] Error:', message)
     return NextResponse.json({ error: message, locations: [] }, { status: 502 })
   }
 }
