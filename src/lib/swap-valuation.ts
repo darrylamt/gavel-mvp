@@ -134,10 +134,10 @@ export function calculateTradeInValue(
       amount: rates.minor_scratches_deduction,
     })
   }
-  if (submission.body_condition === 'dented') {
+  if (submission.body_condition === 'cracked') {
     value -= rates.dents_deduction
     breakdown.push({
-      reason: 'Body dents',
+      reason: 'Body damage',
       amount: rates.dents_deduction,
     })
   }
