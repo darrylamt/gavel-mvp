@@ -89,7 +89,7 @@ export async function POST(req: Request) {
 
     const pickupAddress = sellerProfile?.address ?? ''
     const pickupPhone = sellerProfile?.phone ?? ''
-    const pickupName = sellerProfile?.username || shops[0]?.name || 'Seller'
+    const pickupName = sellerProfile?.username || (shops ?? [])[0]?.name || 'Seller'
 
     if (!pickupAddress) {
       return NextResponse.json(
