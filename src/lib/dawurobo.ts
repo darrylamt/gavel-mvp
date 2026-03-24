@@ -1,18 +1,24 @@
 import crypto from 'crypto'
 
 const BASE_URL = process.env.DAWUROBO_BASE_URL || 'https://api.dawurobo.com'
+const APP_ID = process.env.DAWUROBO_APP_ID || ''
 const API_KEY = process.env.DAWUROBO_API_KEY || ''
 const WEBHOOK_SECRET = process.env.DAWUROBO_WEBHOOK_SECRET || ''
 
 /**
  * Make an authenticated request to the Dawurobo API.
+ * Paths like `/estimates` are automatically resolved to
+ * `/api/third-party/apps/{APP_ID}/estimates` when DAWUROBO_APP_ID is set.
  */
 export async function dawuroboRequest<T = unknown>(
   method: string,
   path: string,
   body?: unknown
 ): Promise<T> {
-  const url = new URL(path, BASE_URL)
+  const resolvedPath = APP_ID
+    ? `/api/third-party/apps/${APP_ID}${path}`
+    : path
+  const url = new URL(resolvedPath, BASE_URL)
   const bodyStr = body ? JSON.stringify(body) : ''
 
   const res = await fetch(url.toString(), {

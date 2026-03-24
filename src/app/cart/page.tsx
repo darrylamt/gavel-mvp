@@ -41,7 +41,6 @@ export default function CartPage() {
   const [selectedPriority, setSelectedPriority] = useState<string>('standard')
   const [deliveryFee, setDeliveryFee] = useState(0)
   const [estimateLoading, setEstimateLoading] = useState(false)
-  const [estimateError, setEstimateError] = useState<string | null>(null)
 
   // Discount
   const [discountCode, setDiscountCode] = useState('')
@@ -117,12 +116,10 @@ export default function CartPage() {
     if (!trimmedAddress || !locationOrCity.name.trim() || items.length === 0) {
       setDeliveryOptions(null)
       setDeliveryFee(0)
-      setEstimateError(null)
       return
     }
 
     setEstimateLoading(true)
-    setEstimateError(null)
     try {
       const body: Record<string, unknown> = {
         items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
@@ -142,16 +139,13 @@ export default function CartPage() {
         const def = (data.options as DeliveryOption[]).find((o) => o.priority === 'standard') ?? data.options[0]
         setSelectedPriority(def.priority)
         setDeliveryFee(def.price)
-        setEstimateError(null)
       } else {
         setDeliveryOptions(null)
         setDeliveryFee(0)
-        setEstimateError(data.error ?? 'Could not estimate delivery fee.')
       }
     } catch {
       setDeliveryOptions(null)
       setDeliveryFee(0)
-      setEstimateError('Delivery estimate unavailable. Please try again.')
     } finally {
       setEstimateLoading(false)
     }
@@ -163,7 +157,6 @@ export default function CartPage() {
     setLocationSearch('')
     setDeliveryOptions(null)
     setDeliveryFee(0)
-    setEstimateError(null)
     if (address.trim() && items.length > 0) {
       triggerEstimate(location, address)
     }
@@ -186,7 +179,6 @@ export default function CartPage() {
     setSelectedLocation(null)
     setDeliveryOptions(null)
     setDeliveryFee(0)
-    setEstimateError(null)
     if (addressTimerRef.current) clearTimeout(addressTimerRef.current)
     if (!value.trim() || !address.trim()) return
     addressTimerRef.current = setTimeout(() => {
@@ -210,10 +202,6 @@ export default function CartPage() {
     const cityName = selectedLocation?.name || manualCity.trim()
     if (!cityName) {
       setCheckoutError('Please select a delivery location or enter your city.')
-      return
-    }
-    if (!deliveryOptions) {
-      setCheckoutError('A delivery estimate is required before proceeding. Please wait or retry.')
       return
     }
 
@@ -437,17 +425,12 @@ export default function CartPage() {
                     Loading locations…
                   </div>
                 ) : locationsError || locations.length === 0 ? (
-                  <div>
-                    <input
-                      value={manualCity}
-                      onChange={(e) => handleManualCityChange(e.target.value)}
-                      className={inputCls}
-                      placeholder="City / Area (e.g. East Legon, Accra)"
-                    />
-                    {locationsError && (
-                      <p className="mt-1 text-[11px] text-amber-600">Location service unavailable — enter your city manually.</p>
-                    )}
-                  </div>
+                  <input
+                    value={manualCity}
+                    onChange={(e) => handleManualCityChange(e.target.value)}
+                    className={inputCls}
+                    placeholder="City / Area (e.g. East Legon, Accra)"
+                  />
                 ) : (
                   <div className="relative" ref={locationDropdownRef}>
                     <button
@@ -531,22 +514,6 @@ export default function CartPage() {
                 <div className="flex items-center gap-2 py-2">
                   <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
                   <span className="text-xs text-gray-500">Calculating delivery fee…</span>
-                </div>
-              ) : estimateError && !deliveryOptions ? (
-                <div className="space-y-2">
-                  <div className="rounded-xl bg-red-50 border border-red-100 px-3 py-2.5 text-xs text-red-700">
-                    {estimateError}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const loc = selectedLocation ?? (manualCity.trim() ? { id: null, name: manualCity.trim() } : null)
-                      if (loc) triggerEstimate(loc, address)
-                    }}
-                    className="text-xs font-semibold text-orange-600 hover:text-orange-800 transition-colors"
-                  >
-                    Retry estimate
-                  </button>
                 </div>
               ) : deliveryOptions ? (
                 <div className="space-y-2">
@@ -635,9 +602,7 @@ export default function CartPage() {
                       ? '…'
                       : deliveryFee > 0
                         ? `GH₵ ${deliveryFee.toLocaleString()}`
-                        : !(selectedLocation || manualCity.trim())
-                          ? '—'
-                          : 'Calculating…'}
+                        : '—'}
                   </span>
                 </div>
               </div>
