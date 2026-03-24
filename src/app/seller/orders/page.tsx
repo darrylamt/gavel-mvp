@@ -63,29 +63,11 @@ export default function SellerOrdersPage() {
     const userId = authData.user?.id
     if (!userId) { setLoading(false); return }
 
-    // Get seller's shop IDs
-    const { data: shops } = await supabase
-      .from('shops')
-      .select('id')
-      .eq('owner_id', userId)
-
-    const shopIds = (shops ?? []).map(s => s.id as string)
-    if (!shopIds.length) { setLoading(false); return }
-
-    // Get product IDs belonging to seller's shops
-    const { data: products } = await supabase
-      .from('shop_products')
-      .select('id')
-      .in('shop_id', shopIds)
-
-    const productIds = (products ?? []).map(p => p.id as string)
-    if (!productIds.length) { setLoading(false); return }
-
-    // Get order IDs that contain seller's products
+    // Query items directly by seller_id — no multi-hop join needed
     const { data: myItems } = await supabase
       .from('shop_order_items')
       .select('order_id, id, title_snapshot, quantity, unit_price')
-      .in('product_id', productIds)
+      .eq('seller_id', userId)
 
     const orderIds = [...new Set((myItems ?? []).map(i => i.order_id as string))]
     if (!orderIds.length) { setOrders([]); setLoading(false); return }

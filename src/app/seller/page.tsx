@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import PieChartCard from '@/components/base/PieChartCard'
 import SellerProfileNotification from '@/components/seller/SellerProfileNotification'
-import { Gavel, Package, Clock, CheckCircle2, AlertTriangle, ArrowRight, TrendingUp } from 'lucide-react'
+import { Gavel, Package, Clock, CheckCircle2, AlertTriangle, TrendingUp } from 'lucide-react'
 
 type SellerAuction = {
   id: string
@@ -21,7 +21,6 @@ type SellerAuction = {
 export default function SellerDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [auctions, setAuctions] = useState<SellerAuction[]>([])
-  const [needsDeliveryZones, setNeedsDeliveryZones] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -41,14 +40,7 @@ export default function SellerDashboardPage() {
         .eq('seller_id', user.id)
         .order('created_at', { ascending: false })
 
-      const { count } = await supabase
-        .from('seller_delivery_zones')
-        .select('id', { count: 'exact', head: true })
-        .eq('seller_id', user.id)
-        .eq('is_enabled', true)
-
       setAuctions((data as SellerAuction[] | null) ?? [])
-      setNeedsDeliveryZones((count ?? 0) === 0)
       setLoading(false)
     }
 
@@ -132,23 +124,6 @@ export default function SellerDashboardPage() {
   return (
     <>
       <SellerProfileNotification />
-
-      {/* Delivery zones warning */}
-      {needsDeliveryZones && (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
-          <div className="flex-1 text-sm text-amber-900">
-            <span className="font-medium">Delivery zones not set.</span>{' '}
-            You haven&apos;t configured your delivery locations yet.{' '}
-            <Link
-              href="/seller/shop"
-              className="inline-flex items-center gap-1 font-semibold underline underline-offset-2 hover:text-amber-700"
-            >
-              Set up now <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* Header card */}
       <section className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">

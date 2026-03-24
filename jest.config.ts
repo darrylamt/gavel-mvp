@@ -30,7 +30,7 @@ const config: Config = {
     'src/app/api/ai/describe-product/route.ts',
     'src/app/api/tokens/init/route.ts',
     'src/app/api/tokens/verify/route.ts',
-    'src/app/api/orders/confirm-delivery/route.ts',
+    'src/app/api/delivery/create/route.ts',
     'src/components/auction/AuctionCard.tsx',
     'src/components/auction/BidForm.tsx',
     'src/components/tokens/TokenPricingCard.tsx',

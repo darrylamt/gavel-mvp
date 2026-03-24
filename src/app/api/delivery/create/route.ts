@@ -52,29 +52,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Delivery already dispatched for this order' }, { status: 409 })
     }
 
-    // Verify caller is a seller who has items in this order, and fetch their shop
-    const { data: shops } = await supabase
-      .from('shops')
-      .select('id, name')
-      .eq('owner_id', userId)
-
-    const shopIds = (shops ?? []).map(s => s.id as string)
-    if (!shopIds.length) {
-      return NextResponse.json({ error: 'No shop found for this account' }, { status: 403 })
-    }
-
-    const { data: products } = await supabase
-      .from('shop_products')
-      .select('id')
-      .in('shop_id', shopIds)
-
-    const productIds = (products ?? []).map(p => p.id as string)
-
+    // Verify caller has items in this order via seller_id directly
     const { data: sellerItems } = await supabase
       .from('shop_order_items')
       .select('id, title_snapshot, quantity')
       .eq('order_id', order_id)
-      .in('product_id', productIds)
+      .eq('seller_id', userId)
 
     if (!sellerItems || sellerItems.length === 0) {
       return NextResponse.json({ error: 'You do not have items in this order' }, { status: 403 })
@@ -87,9 +70,16 @@ export async function POST(req: Request) {
       .eq('id', userId)
       .maybeSingle()
 
+    const { data: sellerShop } = await supabase
+      .from('shops')
+      .select('name')
+      .eq('owner_id', userId)
+      .limit(1)
+      .maybeSingle()
+
     const pickupAddress = sellerProfile?.address ?? ''
     const pickupPhone = sellerProfile?.phone ?? ''
-    const pickupName = sellerProfile?.username || (shops ?? [])[0]?.name || 'Seller'
+    const pickupName = sellerProfile?.username || sellerShop?.name || 'Seller'
 
     if (!pickupAddress) {
       return NextResponse.json(
