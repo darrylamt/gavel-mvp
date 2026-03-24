@@ -2,8 +2,9 @@ import crypto from 'crypto'
 
 const BASE_URL = process.env.DAWUROBO_BASE_URL || 'https://api.dawurobo.com'
 const APP_ID = process.env.DAWUROBO_APP_ID || ''
-const API_KEY = process.env.DAWUROBO_API_KEY || ''
-const WEBHOOK_SECRET = process.env.DAWUROBO_WEBHOOK_SECRET || ''
+// Read the key exactly as stored — no trimming, no fallback transformation
+const API_KEY = process.env.DAWUROBO_API_KEY ?? ''
+const WEBHOOK_SECRET = process.env.DAWUROBO_WEBHOOK_SECRET ?? ''
 
 /**
  * Make an authenticated request to the Dawurobo API.
@@ -15,6 +16,8 @@ export async function dawuroboRequest<T = unknown>(
   path: string,
   body?: unknown
 ): Promise<T> {
+  console.log('[dawurobo] API_KEY (first 20 chars):', API_KEY.slice(0, 20))
+
   const resolvedPath = APP_ID
     ? `/api/third-party/apps/${APP_ID}${path}`
     : path
