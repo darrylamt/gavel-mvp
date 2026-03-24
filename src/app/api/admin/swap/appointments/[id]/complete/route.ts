@@ -63,7 +63,7 @@ export async function POST(
     return NextResponse.json({ error: 'Appointment not found' }, { status: 404 })
   }
 
-  const submission = appointment.swap_submissions as {
+  const submission = appointment.swap_submissions as unknown as {
     id: string
     user_id: string
     status: string
