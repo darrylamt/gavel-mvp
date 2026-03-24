@@ -51,6 +51,14 @@ export function verifyDawuroboWebhook(rawBody: string, signature: string): boole
   }
 }
 
+export type DawuroboLocation = {
+  id: string | number
+  name: string
+  city?: string
+  region?: string
+  [key: string]: unknown
+}
+
 export type DawuroboEstimate = {
   estimated_price: number
   currency: string

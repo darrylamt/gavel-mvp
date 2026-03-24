@@ -18,25 +18,48 @@ const supabase = createClient(
 
 /**
  * POST /api/delivery/estimate-checkout
- * Accepts cart items + buyer dropoff address.
- * Looks up the seller's pickup address, calls Dawurobo for a base estimate,
+ * Accepts cart items + the Dawurobo location the buyer selected.
+ * Looks up the seller's pickup address server-side, calls Dawurobo /estimates,
  * and returns three delivery tier options (Economy / Standard / Cargo).
+ *
+ * Body: {
+ *   items: { product_id, quantity }[]
+ *   dropoff_address: string      – buyer's street address
+ *   dropoff_location_id: string  – Dawurobo location ID selected from the dropdown
+ *   dropoff_location_name: string – human-readable name, used as city fallback
+ * }
  */
 export async function POST(req: Request) {
   try {
-    const { items, dropoff_address, dropoff_city } = (await req.json()) as {
+    const {
+      items,
+      dropoff_address,
+      dropoff_location_id,
+      dropoff_location_name,
+    } = (await req.json()) as {
       items?: { product_id: string; quantity: number }[]
       dropoff_address?: string
-      dropoff_city?: string
+      dropoff_location_id?: string | number
+      dropoff_location_name?: string
     }
 
     if (!Array.isArray(items) || items.length === 0 || !dropoff_address?.trim()) {
-      return NextResponse.json({ error: 'items and dropoff_address are required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'items and dropoff_address are required' },
+        { status: 400 }
+      )
+    }
+
+    if (!dropoff_location_id && !dropoff_location_name) {
+      return NextResponse.json(
+        { error: 'A delivery location must be selected' },
+        { status: 400 }
+      )
     }
 
     const productIds = items.map((i) => i.product_id).filter(Boolean)
 
-    // Resolve seller from the first product (primary seller for this cart)
+    // Resolve the primary seller for this cart
     const { data: products } = await supabase
       .from('shop_products')
       .select('id, shop_id')
@@ -65,34 +88,38 @@ export async function POST(req: Request) {
       .maybeSingle()
 
     if (!sellerProfile?.address) {
-      // Seller hasn't configured their pickup address yet
       return NextResponse.json({
         options: null,
-        error: "Seller pickup address not configured. Delivery fee will be confirmed separately.",
+        error: 'Seller pickup address not configured. Contact the seller directly.',
       })
     }
 
-    // Fetch Dawurobo estimate
+    // Build the Dawurobo estimate payload
+    const dropoffPayload: Record<string, unknown> = {
+      address: dropoff_address.trim(),
+      city: dropoff_location_name?.trim() || '',
+    }
+    if (dropoff_location_id !== undefined && dropoff_location_id !== null) {
+      dropoffPayload.location_id = String(dropoff_location_id)
+    }
+
     let estimate: DawuroboEstimate
     try {
       estimate = await dawuroboRequest<DawuroboEstimate>('POST', '/estimates', {
         pickup: { address: String(sellerProfile.address) },
-        dropoff: {
-          address: dropoff_address.trim(),
-          city: dropoff_city?.trim() || '',
-        },
+        dropoff: dropoffPayload,
       })
-    } catch {
-      return NextResponse.json({
-        options: null,
-        error: 'Delivery estimate unavailable right now. You can still proceed — the delivery fee will be confirmed at dispatch.',
-      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'estimate failed'
+      return NextResponse.json(
+        { options: null, error: `Delivery estimate failed: ${msg}` },
+        { status: 502 }
+      )
     }
 
     const base = Math.max(0, Number(estimate.estimated_price) || 0)
     const mins = Math.max(10, Number(estimate.estimated_duration_minutes) || 30)
 
-    // Three tiers derived from the base Dawurobo price
     const options: DeliveryOption[] = [
       {
         priority: 'economy',

@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { Trash2, ShoppingCart, Tag, ChevronRight, Truck, Zap, Package, Loader2 } from 'lucide-react'
+import { Trash2, ShoppingCart, Tag, ChevronRight, Truck, Zap, Package, Loader2, MapPin, ChevronDown, Search } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { supabase } from '@/lib/supabaseClient'
 import { useTopToast } from '@/components/ui/TopToastProvider'
 import type { DeliveryOption } from '@/app/api/delivery/estimate-checkout/route'
+import type { DawuroboLocation } from '@/lib/dawurobo'
 
 const PRIORITY_ICONS = {
   economy: Package,
@@ -22,8 +23,15 @@ export default function CartPage() {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [city, setCity] = useState('')
   const [notes, setNotes] = useState('')
+
+  // Location dropdown
+  const [locations, setLocations] = useState<DawuroboLocation[]>([])
+  const [locationsLoading, setLocationsLoading] = useState(true)
+  const [selectedLocation, setSelectedLocation] = useState<DawuroboLocation | null>(null)
+  const [locationSearch, setLocationSearch] = useState('')
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
+  const locationDropdownRef = useRef<HTMLDivElement>(null)
 
   // Delivery estimate
   const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[] | null>(null)
@@ -31,7 +39,6 @@ export default function CartPage() {
   const [deliveryFee, setDeliveryFee] = useState(0)
   const [estimateLoading, setEstimateLoading] = useState(false)
   const [estimateError, setEstimateError] = useState<string | null>(null)
-  const estimateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Discount
   const [discountCode, setDiscountCode] = useState('')
@@ -46,6 +53,34 @@ export default function CartPage() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
   const total = Math.max(0, subtotal - discountAmount + deliveryFee)
+
+  // Fetch locations on mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const res = await fetch('/api/delivery/locations')
+        const data = await res.json()
+        if (data.locations) setLocations(data.locations as DawuroboLocation[])
+      } catch {
+        // locations unavailable — will show empty dropdown
+      } finally {
+        setLocationsLoading(false)
+      }
+    }
+    fetchLocations()
+  }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(e.target as Node)) {
+        setLocationDropdownOpen(false)
+        setLocationSearch('')
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Pre-fill from profile
   useEffect(() => {
@@ -65,59 +100,73 @@ export default function CartPage() {
     loadDefaults()
   }, [])
 
-  // Debounced delivery estimate whenever address / city / items change
-  useEffect(() => {
-    if (estimateTimerRef.current) clearTimeout(estimateTimerRef.current)
-
-    const trimmedAddress = address.trim()
-    const trimmedCity = city.trim()
-
-    if (!trimmedAddress || !trimmedCity || items.length === 0) {
+  const triggerEstimate = async (location: DawuroboLocation, currentAddress: string) => {
+    const trimmedAddress = currentAddress.trim()
+    if (!trimmedAddress || items.length === 0) {
       setDeliveryOptions(null)
       setDeliveryFee(0)
       setEstimateError(null)
       return
     }
 
-    estimateTimerRef.current = setTimeout(async () => {
-      setEstimateLoading(true)
-      setEstimateError(null)
-      try {
-        const res = await fetch('/api/delivery/estimate-checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
-            dropoff_address: trimmedAddress,
-            dropoff_city: trimmedCity,
-          }),
-        })
-        const data = await res.json()
-        if (data.options) {
-          setDeliveryOptions(data.options as DeliveryOption[])
-          // Auto-select standard, fallback to first option
-          const def = (data.options as DeliveryOption[]).find((o) => o.priority === 'standard') ?? data.options[0]
-          setSelectedPriority(def.priority)
-          setDeliveryFee(def.price)
-          setEstimateError(null)
-        } else {
-          setDeliveryOptions(null)
-          setDeliveryFee(0)
-          setEstimateError(data.error ?? 'Could not estimate delivery fee.')
-        }
-      } catch {
+    setEstimateLoading(true)
+    setEstimateError(null)
+    try {
+      const res = await fetch('/api/delivery/estimate-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+          dropoff_address: trimmedAddress,
+          dropoff_location_id: location.id,
+          dropoff_location_name: location.name,
+        }),
+      })
+      const data = await res.json()
+      if (data.options) {
+        setDeliveryOptions(data.options as DeliveryOption[])
+        const def = (data.options as DeliveryOption[]).find((o) => o.priority === 'standard') ?? data.options[0]
+        setSelectedPriority(def.priority)
+        setDeliveryFee(def.price)
+        setEstimateError(null)
+      } else {
         setDeliveryOptions(null)
         setDeliveryFee(0)
-        setEstimateError('Delivery estimate unavailable. You can still proceed.')
-      } finally {
-        setEstimateLoading(false)
+        setEstimateError(data.error ?? 'Could not estimate delivery fee.')
       }
-    }, 800)
-
-    return () => {
-      if (estimateTimerRef.current) clearTimeout(estimateTimerRef.current)
+    } catch {
+      setDeliveryOptions(null)
+      setDeliveryFee(0)
+      setEstimateError('Delivery estimate unavailable. Please try again.')
+    } finally {
+      setEstimateLoading(false)
     }
-  }, [address, city, items])
+  }
+
+  const handleSelectLocation = (location: DawuroboLocation) => {
+    setSelectedLocation(location)
+    setLocationDropdownOpen(false)
+    setLocationSearch('')
+    // Reset estimate
+    setDeliveryOptions(null)
+    setDeliveryFee(0)
+    setEstimateError(null)
+    // Trigger immediately if we already have an address
+    if (address.trim() && items.length > 0) {
+      triggerEstimate(location, address)
+    }
+  }
+
+  // Re-trigger estimate when address changes (if location already selected)
+  const addressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const handleAddressChange = (value: string) => {
+    setAddress(value)
+    if (addressTimerRef.current) clearTimeout(addressTimerRef.current)
+    if (!selectedLocation) return
+    addressTimerRef.current = setTimeout(() => {
+      if (value.trim()) triggerEstimate(selectedLocation, value)
+    }, 600)
+  }
 
   const selectOption = (option: DeliveryOption) => {
     setSelectedPriority(option.priority)
@@ -128,12 +177,16 @@ export default function CartPage() {
     if (items.length === 0 || isCheckingOut) return
     setCheckoutError(null)
 
-    if (!fullName.trim() || !phone.trim() || !address.trim() || !city.trim()) {
+    if (!fullName.trim() || !phone.trim() || !address.trim()) {
       setCheckoutError('Please complete your delivery details before checkout.')
       return
     }
-    if (!deliveryOptions && !estimateError) {
-      setCheckoutError('Please wait for the delivery estimate to load.')
+    if (!selectedLocation) {
+      setCheckoutError('Please select a delivery location.')
+      return
+    }
+    if (!deliveryOptions) {
+      setCheckoutError('A delivery estimate is required before proceeding. Please wait or retry.')
       return
     }
 
@@ -157,7 +210,7 @@ export default function CartPage() {
             full_name: fullName.trim(),
             phone: phone.trim(),
             address: address.trim(),
-            city: city.trim(),
+            city: selectedLocation.name,
             notes: notes.trim(),
           },
           delivery_meta: {
@@ -239,6 +292,14 @@ export default function CartPage() {
     setDiscountAmount(0)
     setDiscountError(null)
   }, [items])
+
+  const filteredLocations = locationSearch.trim()
+    ? locations.filter((l) =>
+        l.name.toLowerCase().includes(locationSearch.toLowerCase()) ||
+        (l.city && l.city.toLowerCase().includes(locationSearch.toLowerCase())) ||
+        (l.region && l.region.toLowerCase().includes(locationSearch.toLowerCase()))
+      )
+    : locations
 
   const inputCls =
     'w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all'
@@ -340,8 +401,82 @@ export default function CartPage() {
               <div className="space-y-2.5">
                 <input value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} placeholder="Full name" />
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} placeholder="Phone number" type="tel" />
-                <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} className={inputCls} placeholder="Delivery address" />
-                <input value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} placeholder="City / Area" />
+                <textarea value={address} onChange={(e) => handleAddressChange(e.target.value)} rows={2} className={inputCls} placeholder="Street address / landmark" />
+
+                {/* Location dropdown */}
+                <div className="relative" ref={locationDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocationDropdownOpen((o) => !o)
+                      setLocationSearch('')
+                    }}
+                    className={`w-full flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm text-left transition-all ${
+                      locationDropdownOpen
+                        ? 'border-orange-400 ring-2 ring-orange-100'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                    <span className={`flex-1 truncate ${selectedLocation ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {selectedLocation
+                        ? [selectedLocation.name, selectedLocation.region].filter(Boolean).join(', ')
+                        : locationsLoading
+                          ? 'Loading locations…'
+                          : 'Select delivery location'}
+                    </span>
+                    {locationsLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 flex-shrink-0 text-gray-400 animate-spin" />
+                    ) : (
+                      <ChevronDown className={`h-3.5 w-3.5 flex-shrink-0 text-gray-400 transition-transform ${locationDropdownOpen ? 'rotate-180' : ''}`} />
+                    )}
+                  </button>
+
+                  {locationDropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+                      {/* Search */}
+                      <div className="border-b border-gray-100 px-3 py-2 flex items-center gap-2">
+                        <Search className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                        <input
+                          autoFocus
+                          type="text"
+                          value={locationSearch}
+                          onChange={(e) => setLocationSearch(e.target.value)}
+                          placeholder="Search locations…"
+                          className="flex-1 text-sm outline-none bg-transparent placeholder-gray-400"
+                        />
+                      </div>
+
+                      {/* Options */}
+                      <div className="max-h-52 overflow-y-auto">
+                        {filteredLocations.length === 0 ? (
+                          <p className="px-4 py-3 text-xs text-gray-400">
+                            {locations.length === 0 ? 'No locations available' : 'No matching locations'}
+                          </p>
+                        ) : (
+                          filteredLocations.map((loc) => (
+                            <button
+                              key={String(loc.id)}
+                              type="button"
+                              onClick={() => handleSelectLocation(loc)}
+                              className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-orange-50 hover:text-orange-900 ${
+                                selectedLocation?.id === loc.id ? 'bg-orange-50 text-orange-900 font-semibold' : 'text-gray-800'
+                              }`}
+                            >
+                              <span className="font-medium">{loc.name}</span>
+                              {(loc.city || loc.region) && (
+                                <span className="ml-1.5 text-xs text-gray-400">
+                                  {[loc.city, loc.region].filter(Boolean).join(', ')}
+                                </span>
+                              )}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="Order notes (optional)" />
               </div>
             </div>
@@ -353,17 +488,27 @@ export default function CartPage() {
                 <h2 className="text-sm font-bold text-gray-900">Delivery Option</h2>
               </div>
 
-              {/* Waiting for address */}
-              {!address.trim() || !city.trim() ? (
-                <p className="text-xs text-gray-400">Enter your delivery address and city above to see delivery options.</p>
+              {!selectedLocation ? (
+                <p className="text-xs text-gray-400">Select a delivery location above to see delivery options.</p>
+              ) : !address.trim() ? (
+                <p className="text-xs text-gray-400">Enter your street address to see delivery options.</p>
               ) : estimateLoading ? (
                 <div className="flex items-center gap-2 py-2">
                   <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
                   <span className="text-xs text-gray-500">Calculating delivery fee…</span>
                 </div>
               ) : estimateError && !deliveryOptions ? (
-                <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2.5 text-xs text-amber-700">
-                  {estimateError}
+                <div className="space-y-2">
+                  <div className="rounded-xl bg-red-50 border border-red-100 px-3 py-2.5 text-xs text-red-700">
+                    {estimateError}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => selectedLocation && triggerEstimate(selectedLocation, address)}
+                    className="text-xs font-semibold text-orange-600 hover:text-orange-800 transition-colors"
+                  >
+                    Retry estimate
+                  </button>
                 </div>
               ) : deliveryOptions ? (
                 <div className="space-y-2">
@@ -452,8 +597,8 @@ export default function CartPage() {
                       ? '…'
                       : deliveryFee > 0
                         ? `GH₵ ${deliveryFee.toLocaleString()}`
-                        : estimateError
-                          ? 'TBD'
+                        : !selectedLocation
+                          ? '—'
                           : 'Calculating…'}
                   </span>
                 </div>
