@@ -49,6 +49,10 @@ export async function dawuroboRequest<T = unknown>(
       .update(canonical)
       .digest('hex')
 
+    const idempotencyKey = (METHOD === 'POST' || METHOD === 'PATCH' || METHOD === 'DELETE')
+      ? crypto.randomUUID()
+      : null
+
     console.log('CANONICAL STRING:', JSON.stringify(canonical))
     console.log(`CURL:
 curl -X ${METHOD} '${url.toString()}' \\
@@ -56,20 +60,23 @@ curl -X ${METHOD} '${url.toString()}' \\
   -H 'X-API-Key: ${API_KEY}' \\
   -H 'X-Signature: ${signature}' \\
   -H 'X-Timestamp: ${TIMESTAMP}' \\
-  -H 'X-Nonce: ${NONCE}' \\
+  -H 'X-Nonce: ${NONCE}' \\${idempotencyKey ? `\n  -H 'Idempotency-Key: ${idempotencyKey}' \\` : ''}
   -d '${bodyStr || ''}'`)
 
     console.log('[dawurobo] Requesting:', METHOD, url.toString())
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Api-Key':    API_KEY,
+      'X-Timestamp':  TIMESTAMP,
+      'X-Nonce':      NONCE,
+      'X-Signature':  signature,
+    }
+    if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
+
     const res = await fetch(url.toString(), {
       method: METHOD,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Api-Key':    API_KEY,
-        'X-Timestamp':  TIMESTAMP,
-        'X-Nonce':      NONCE,
-        'X-Signature':  signature,
-      },
+      headers,
       body: bodyStr || undefined,
     })
 
