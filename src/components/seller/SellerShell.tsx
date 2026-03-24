@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   Package,
   Store,
-  Truck,
   Wallet,
   CreditCard,
   ShoppingBag,
@@ -29,7 +28,6 @@ const tabs = [
   { href: '/seller/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/seller/earnings', label: 'Earnings', icon: Wallet },
   { href: '/seller/shop', label: 'Edit Shop', icon: Store },
-  { href: '/seller/deliveries', label: 'Deliveries', icon: Truck },
   { href: '/seller/settings/payouts', label: 'Payout Settings', icon: CreditCard },
 ]
 

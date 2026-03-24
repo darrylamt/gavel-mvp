@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { MapPin, Clock, Store, ChevronDown, ChevronUp, Truck } from 'lucide-react'
+import { Clock, Store, ChevronDown, ChevronUp } from 'lucide-react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { supabasePublic } from '@/lib/supabasePublicClient'
 import { useTopToast } from '@/components/ui/TopToastProvider'
@@ -19,7 +19,6 @@ import PrivateAuctionGuard from '@/components/auction/PrivateAuctionGuard'
 import { parseAuctionMeta } from '@/lib/auctionMeta'
 import { buildAuctionPath } from '@/lib/seo'
 import { getOrCreateViewerKey } from '@/lib/engagement'
-import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
 import { normalizeAuctionImageUrls } from '@/lib/auctionImages'
 
 type AuctionRecord = {
@@ -45,11 +44,6 @@ type AuctionRecord = {
   images: unknown[] | null
   is_private?: boolean
   anonymous_bidding_enabled?: boolean | null
-  delivery_zones?: Array<{
-    location_value: string
-    delivery_price: number
-    delivery_time_days: number
-  }>
 }
 
 type BidRecord = {
@@ -581,12 +575,6 @@ export default function AuctionDetailPage() {
 
   const shouldShowReadMore =
     formattedDescription.length > 220 || formattedDescription.split('\n').length > 3
-  const deliveryZones = Array.isArray(auction.delivery_zones) ? auction.delivery_zones : []
-  const deliveryDays = deliveryZones
-    .map((zone) => Number(zone.delivery_time_days ?? 0))
-    .filter((value) => Number.isFinite(value) && value > 0)
-  const minDeliveryDays = deliveryDays.length ? Math.min(...deliveryDays) : null
-  const maxDeliveryDays = deliveryDays.length ? Math.max(...deliveryDays) : null
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
   const productUrl = `${siteUrl}${buildAuctionPath(auction.id, auction.title)}`
@@ -714,45 +702,6 @@ export default function AuctionDetailPage() {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Delivery zones */}
-            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Truck className="h-4 w-4 text-gray-500" />
-                <h2 className="text-sm font-bold text-gray-900">Delivery Information</h2>
-              </div>
-              {deliveryZones.length > 0 ? (
-                <>
-                  {(minDeliveryDays || maxDeliveryDays) && (
-                    <p className="text-xs text-gray-500 mb-3">
-                      Estimated delivery:{' '}
-                      <span className="font-semibold text-gray-700">
-                        {minDeliveryDays}{maxDeliveryDays !== minDeliveryDays ? `–${maxDeliveryDays}` : ''} day(s)
-                      </span>
-                    </p>
-                  )}
-                  <div className="space-y-1.5">
-                    {deliveryZones.slice(0, 8).map((zone) => {
-                      const locationLabel =
-                        ALL_LOCATIONS.find((location) => location.value === zone.location_value)?.label || zone.location_value
-                      return (
-                        <div key={`${zone.location_value}-${zone.delivery_price}`} className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 text-xs">
-                          <div className="flex items-center gap-1.5 text-gray-700 font-medium truncate">
-                            <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                            {locationLabel}
-                          </div>
-                          <span className="whitespace-nowrap font-semibold text-gray-800">
-                            GH₵ {Number(zone.delivery_price).toLocaleString()} · {zone.delivery_time_days}d
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-gray-500">Seller delivery zones are not configured yet.</p>
-              )}
             </div>
 
             {/* Description */}

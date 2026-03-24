@@ -2,11 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Trash2, ShoppingCart, Tag, MapPin, ChevronRight } from 'lucide-react'
+import { Trash2, ShoppingCart, Tag, ChevronRight } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { supabase } from '@/lib/supabaseClient'
-import LocationDropdown from '@/components/ui/LocationDropdown'
-import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
 import { useTopToast } from '@/components/ui/TopToastProvider'
 
 export default function CartPage() {
@@ -19,11 +17,6 @@ export default function CartPage() {
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [notes, setNotes] = useState('')
-  const [deliveryLocation, setDeliveryLocation] = useState('')
-  const [deliveryFee, setDeliveryFee] = useState(0)
-  const [estimatedDeliveryDays, setEstimatedDeliveryDays] = useState<number | null>(null)
-  const [deliveryWarning, setDeliveryWarning] = useState<string | null>(null)
-  const [quoteLoading, setQuoteLoading] = useState(false)
   const [discountCode, setDiscountCode] = useState('')
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | null>(null)
   const [discountPercent, setDiscountPercent] = useState<number | null>(null)
@@ -31,7 +24,7 @@ export default function CartPage() {
   const [discountLoading, setDiscountLoading] = useState(false)
   const [discountError, setDiscountError] = useState<string | null>(null)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
-  const total = Math.max(0, subtotal + deliveryFee - discountAmount)
+  const total = Math.max(0, subtotal - discountAmount)
 
   useEffect(() => {
     const loadDefaults = async () => {
@@ -40,83 +33,26 @@ export default function CartPage() {
       setUserId(auth.user.id)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, phone, address, delivery_location')
+        .select('username, phone, address')
         .eq('id', auth.user.id)
         .maybeSingle()
       const profileRow = (profile as {
         username?: string | null
         phone?: string | null
         address?: string | null
-        delivery_location?: string | null
       } | null) ?? null
       if (profileRow?.username) setFullName((prev) => prev || profileRow.username || '')
       if (profileRow?.phone) setPhone((prev) => prev || profileRow.phone || '')
       if (profileRow?.address) setAddress((prev) => prev || profileRow.address || '')
-      if (profileRow?.delivery_location) setDeliveryLocation(profileRow.delivery_location)
     }
     loadDefaults()
   }, [])
-
-  useEffect(() => {
-    const fetchDeliveryQuote = async () => {
-      if (!userId || items.length === 0 || !deliveryLocation) {
-        setDeliveryFee(0)
-        setEstimatedDeliveryDays(null)
-        setDeliveryWarning(null)
-        return
-      }
-      setQuoteLoading(true)
-      try {
-        const res = await fetch('/api/shop-payments/delivery-quote', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            delivery_location: deliveryLocation,
-            items: items.map((item) => ({ product_id: item.productId, quantity: item.quantity })),
-          }),
-        })
-        const data = await res.json()
-        if (!res.ok) {
-          setDeliveryFee(0)
-          setEstimatedDeliveryDays(null)
-          setDeliveryWarning(data.error || 'Unable to calculate delivery fees')
-          return
-        }
-        const unsupportedSellers = Array.isArray(data.unsupported_sellers) ? data.unsupported_sellers : []
-        setDeliveryFee(Number(data.total_delivery_fee || 0))
-        setEstimatedDeliveryDays(
-          Number.isFinite(Number(data.estimated_delivery_time_days))
-            ? Number(data.estimated_delivery_time_days)
-            : null
-        )
-        setDeliveryWarning(
-          unsupportedSellers.length ? 'Some items in your cart cannot be delivered to this location.' : null
-        )
-      } catch {
-        setDeliveryFee(0)
-        setEstimatedDeliveryDays(null)
-        setDeliveryWarning('Unable to calculate delivery fees right now.')
-      } finally {
-        setQuoteLoading(false)
-      }
-    }
-    fetchDeliveryQuote()
-  }, [deliveryLocation, items, userId])
 
   const handleCheckout = async () => {
     if (items.length === 0 || isCheckingOut) return
     setCheckoutError(null)
     if (!fullName.trim() || !phone.trim() || !address.trim() || !city.trim()) {
       setCheckoutError('Please complete your delivery details before checkout.')
-      return
-    }
-    if (!deliveryLocation.trim()) {
-      setCheckoutError('Please select your delivery location before checkout.')
-      return
-    }
-    if (deliveryWarning) {
-      setCheckoutError(deliveryWarning)
       return
     }
     setIsCheckingOut(true)
@@ -140,7 +76,6 @@ export default function CartPage() {
             address: address.trim(),
             city: city.trim(),
             notes: notes.trim(),
-            delivery_location: deliveryLocation.trim(),
           },
           items: items.map((item) => ({
             product_id: item.productId,
@@ -335,27 +270,11 @@ export default function CartPage() {
           <aside className="h-fit space-y-4">
             {/* Delivery details */}
             <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <MapPin className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                <h2 className="text-sm font-bold text-gray-900">Delivery Details</h2>
-              </div>
+              <h2 className="text-sm font-bold text-gray-900 mb-4">Delivery Details</h2>
               <div className="space-y-2.5">
                 <input value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} placeholder="Full name" />
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} placeholder="Phone number" type="tel" />
                 <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} className={inputCls} placeholder="Delivery address" />
-                <LocationDropdown
-                  locations={ALL_LOCATIONS}
-                  value={deliveryLocation || null}
-                  onChange={setDeliveryLocation}
-                  placeholder="Select delivery location"
-                  isBuyer={true}
-                />
-                {!deliveryLocation && (
-                  <p className="text-xs text-amber-700">
-                    No default delivery location.{' '}
-                    <Link href="/profile" className="font-semibold underline underline-offset-2">Set one in your profile →</Link>
-                  </p>
-                )}
                 <input value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} placeholder="City / Area" />
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="Order notes (optional)" />
               </div>
@@ -405,26 +324,10 @@ export default function CartPage() {
                     <span className="font-semibold text-green-700">− GH₵ {discountAmount.toLocaleString()}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Delivery</span>
-                  <span className="font-semibold text-gray-900">
-                    {quoteLoading ? (
-                      <span className="inline-flex items-center gap-1 text-gray-400">
-                        <span className="h-3 w-3 border border-gray-300 border-t-orange-400 rounded-full animate-spin" />
-                        Calculating…
-                      </span>
-                    ) : `GH₵ ${deliveryFee.toLocaleString()}`}
-                  </span>
+                <div className="flex items-center justify-between text-xs text-gray-400">
+                  <span>Delivery</span>
+                  <span>Calculated after order</span>
                 </div>
-                {estimatedDeliveryDays && (
-                  <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>Est. delivery</span>
-                    <span>{estimatedDeliveryDays} day{estimatedDeliveryDays !== 1 ? 's' : ''}</span>
-                  </div>
-                )}
-                {deliveryWarning && (
-                  <p className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs text-amber-700">{deliveryWarning}</p>
-                )}
               </div>
 
               <div className="mt-4 border-t border-gray-100 pt-3 flex items-center justify-between">

@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize, UploadedFile } from '@/components/base/file-upload/file-upload'
-import LocationDropdown from '@/components/ui/LocationDropdown'
-import { ALL_LOCATIONS } from '@/lib/ghanaLocations'
 import { useTopToast } from '@/components/ui/TopToastProvider'
 
 type Props = {
@@ -13,13 +11,11 @@ type Props = {
   initialUsername?: string;
   initialPhone?: string;
   initialAddress?: string;
-  initialDeliveryLocation?: string | null;
   initialAvatarUrl?: string | null;
   onSaved?: (d: {
     username?: string;
     phone?: string;
     address?: string;
-    deliveryLocation?: string;
     avatarUrl?: string;
   }) => void;
 };
@@ -31,7 +27,6 @@ export default function EditProfileModal({
   initialUsername,
   initialPhone,
   initialAddress,
-  initialDeliveryLocation,
   initialAvatarUrl,
   onSaved,
 }: Props) {
@@ -39,11 +34,9 @@ export default function EditProfileModal({
   const [username, setUsername] = useState(initialUsername ?? '')
   const [phone, setPhone] = useState(initialPhone ?? '')
   const [address, setAddress] = useState(initialAddress ?? '')
-  const [deliveryLocation, setDeliveryLocation] = useState(initialDeliveryLocation ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [saving, setSaving] = useState(false)
-  const [isSeller, setIsSeller] = useState(false)
 
   // Re-sync fields when the modal opens so newly loaded profile data is reflected
   useEffect(() => {
@@ -51,23 +44,8 @@ export default function EditProfileModal({
       setUsername(initialUsername ?? '')
       setPhone(initialPhone ?? '')
       setAddress(initialAddress ?? '')
-      setDeliveryLocation(initialDeliveryLocation ?? '')
       setAvatarFile(null)
       setUploadedFiles([])
-      
-      // Check if user is a seller
-      const checkSeller = async () => {
-        const { data: sellerData } = await supabase
-          .from('seller_applications')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('status', 'approved')
-          .maybeSingle()
-        
-        setIsSeller(!!sellerData)
-      }
-      
-      checkSeller()
     }
   }, [open, userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -127,7 +105,6 @@ export default function EditProfileModal({
         username: username || null,
         phone: phone || null,
         address: address || null,
-        delivery_location: deliveryLocation || null,
       }
 
       if (avatarUrl) updates.avatar_url = avatarUrl
@@ -150,7 +127,6 @@ export default function EditProfileModal({
         username,
         phone,
         address,
-        deliveryLocation,
         avatarUrl: avatarUrl ?? undefined,
       })
       onClose()
@@ -201,17 +177,6 @@ export default function EditProfileModal({
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Enter your Home address"
           />
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Default Delivery Location</label>
-            <LocationDropdown
-              locations={ALL_LOCATIONS}
-              value={deliveryLocation || null}
-              onChange={setDeliveryLocation}
-              placeholder="Select your default location"
-              isBuyer={!isSeller}
-            />
-          </div>
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Profile Picture</label>

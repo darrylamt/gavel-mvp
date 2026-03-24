@@ -7,6 +7,7 @@ import {
   queuePayoutSuccessNotification,
   queuePayoutFailedNotification,
   queuePayoutReversedNotification,
+  queueSwapSubmissionReceivedNotification,
 } from '@/lib/arkesel/events'
 
 
@@ -77,6 +78,36 @@ export async function POST(req: Request) {
           auction_payment_due_at: null,
         })
         .eq('id', String(auction_id))
+    }
+
+    // Handle swap deposit payment
+    if (metadata?.type === 'swap_deposit' && metadata?.submission_id && metadata?.user_id) {
+      const submission_id = String(metadata.submission_id)
+      const user_id = String(metadata.user_id)
+      const reference = event.data?.reference
+
+      const { data: submission } = await supabase
+        .from('swap_submissions')
+        .select('id, user_id, deposit_paid')
+        .eq('id', submission_id)
+        .eq('user_id', user_id)
+        .maybeSingle()
+
+      if (submission && !submission.deposit_paid) {
+        await supabase
+          .from('swap_submissions')
+          .update({
+            deposit_paid: true,
+            deposit_payment_reference: reference ?? null,
+            status: 'pending_review',
+          })
+          .eq('id', submission_id)
+
+        await queueSwapSubmissionReceivedNotification({
+          userId: user_id,
+          submissionId: submission_id,
+        })
+      }
     }
   }
 

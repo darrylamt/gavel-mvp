@@ -25,53 +25,47 @@ export default function BidForm({
 
   if (!isLoggedIn) {
     return (
-      <div className="mt-6 p-4 border rounded-lg text-sm text-gray-600 bg-gray-50">
+      <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
         Please sign in to place a bid.
       </div>
     )
   }
 
   return (
-    <div className="mt-6 p-4 border rounded-xl bg-white shadow-sm">
-      <label className="block text-sm font-medium mb-1">
+    <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <label className="mb-1.5 block text-sm font-semibold text-gray-800">
         Your bid amount
       </label>
 
       <input
         type="number"
         placeholder="Enter amount in GHS"
-        className="border rounded-lg p-3 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-black"
+        className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 disabled:opacity-60"
         value={bidAmount}
         disabled={isPlacingBid}
         onChange={(e) => onBidAmountChange(e.target.value)}
       />
 
       {error && (
-        <p className="text-sm text-red-600 mb-2">
-          {error}
-        </p>
+        <p className="mt-2 text-sm font-medium text-red-500">{error}</p>
       )}
 
       <button
         onClick={onSubmit}
         disabled={isPlacingBid}
-        className={`mt-2 w-full rounded-lg py-3 font-semibold text-white transition ${
-          isPlacingBid
-            ? 'bg-gray-400'
-            : 'bg-black hover:bg-gray-900'
-        }`}
+        className="mt-3 w-full rounded-xl bg-orange-500 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPlacingBid ? 'Placing bid…' : 'Place Bid'}
       </button>
 
-      <p className="mt-2 text-xs text-gray-500 text-center">
+      <p className="mt-2.5 text-center text-xs text-gray-400">
         Each bid deducts tokens from your balance
       </p>
 
       {typeof minIncrement === 'number' && minIncrement > 0 && (
-        <p className="mt-1 text-xs text-gray-500 text-center">
+        <p className="mt-1 text-center text-xs text-gray-400">
           {typeof maxIncrement === 'number' && maxIncrement > 0
-            ? `Allowed increment: +GH₵ ${minIncrement.toLocaleString()} to +GH₵ ${maxIncrement.toLocaleString()}`
+            ? `Allowed increment: +GH₵ ${minIncrement.toLocaleString()} – +GH₵ ${maxIncrement.toLocaleString()}`
             : `Minimum increment: +GH₵ ${minIncrement.toLocaleString()}`}
         </p>
       )}

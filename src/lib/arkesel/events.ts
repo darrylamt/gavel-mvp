@@ -1,6 +1,130 @@
 import { createServiceRoleClient } from '@/lib/serverSupabase'
 import { queueArkeselNotification } from './queue'
 
+// ─── Phone Swap Notifications ────────────────────────────────────────────────
+
+export async function queueSwapSubmissionReceivedNotification(input: {
+  userId: string
+  submissionId: string
+}) {
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `Your Gavel phone swap request has been received! We'll review it and get back to you within 24 hours.`,
+    category: 'transactional',
+    dedupeKey: `swap-received:${input.submissionId}`,
+  })
+}
+
+export async function queueSwapApprovedNotification(input: {
+  userId: string
+  submissionId: string
+  tradeInValue: number
+  offerExpiresAt: string
+}) {
+  const expiryDate = new Date(input.offerExpiresAt).toLocaleDateString('en-GH', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `Great news! Your phone swap offer of GH₵ ${input.tradeInValue} has been approved. Book your appointment before ${expiryDate} to lock in your offer.`,
+    category: 'transactional',
+    dedupeKey: `swap-approved:${input.submissionId}`,
+  })
+}
+
+export async function queueSwapRejectedNotification(input: {
+  userId: string
+  submissionId: string
+  reason: string
+}) {
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `Unfortunately, your Gavel phone swap request was not approved. Reason: ${input.reason}. Contact support for more details.`,
+    category: 'transactional',
+    dedupeKey: `swap-rejected:${input.submissionId}`,
+  })
+}
+
+export async function queueSwapAppointmentConfirmedNotification(input: {
+  userId: string
+  submissionId: string
+  appointmentDate: string
+  remainingBalance: number
+}) {
+  const dateStr = new Date(input.appointmentDate).toLocaleString('en-GH', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `Appointment confirmed! Visit Gavel on ${dateStr}. Bring your phone, ID, and GH₵ ${input.remainingBalance} remaining balance.`,
+    category: 'transactional',
+    dedupeKey: `swap-appointment:${input.submissionId}`,
+  })
+}
+
+export async function queueSwapOfferExpiringNotification(input: {
+  userId: string
+  submissionId: string
+}) {
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `Reminder: Your Gavel phone swap offer expires in 24 hours! Book your appointment now to avoid losing your offer.`,
+    category: 'transactional',
+    dedupeKey: `swap-expiring:${input.submissionId}`,
+  })
+}
+
+export async function queueSwapAppointmentReminderNotification(input: {
+  userId: string
+  submissionId: string
+  appointmentDate: string
+}) {
+  const dateStr = new Date(input.appointmentDate).toLocaleString('en-GH', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `Reminder: Your Gavel phone swap appointment is tomorrow at ${dateStr}. Remember to bring your phone, ID, and remaining balance.`,
+    category: 'transactional',
+    dedupeKey: `swap-reminder:${input.submissionId}`,
+  })
+}
+
+export async function queueSwapCompletedNotification(input: {
+  userId: string
+  submissionId: string
+  upgradedModel: string
+}) {
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `Swap complete! You've successfully upgraded to the ${input.upgradedModel} through Gavel. Enjoy your new phone!`,
+    category: 'transactional',
+    dedupeKey: `swap-completed:${input.submissionId}`,
+  })
+}
+
+export async function queueSwapExpiredNotification(input: {
+  userId: string
+  submissionId: string
+}) {
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `Your Gavel phone swap offer has expired. You can resubmit a new swap request anytime at gavelgh.com/swap.`,
+    category: 'transactional',
+    dedupeKey: `swap-expired:${input.submissionId}`,
+  })
+}
+
 export async function queueSellerApplicationReceivedNotification(userId: string, businessName: string, phoneOverride?: string | null) {
   return queueArkeselNotification({
     userId,

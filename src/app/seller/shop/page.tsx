@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
-import SellerDeliveryZones from '@/components/seller/SellerDeliveryZonesNew'
 import { Store, Upload, ExternalLink, CheckCircle2, AlertCircle, ArrowLeft, Image } from 'lucide-react'
 
 type SellerShop = {
@@ -248,11 +247,6 @@ export default function SellerShopPage() {
         ) : 'Save Shop'}
       </button>
 
-      {/* Delivery Zones */}
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 sm:p-6">
-        <h2 className="text-sm font-bold text-gray-900 mb-4">Delivery Zones & Pricing</h2>
-        <SellerDeliveryZones />
-      </div>
     </div>
   )
 }

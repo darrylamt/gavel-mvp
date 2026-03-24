@@ -79,13 +79,13 @@ export default function ContactFormCard() {
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <h2 className="text-2xl font-semibold text-gray-900">Get in Touch with Us</h2>
 
-      <form className="mt-5" onSubmit={onSubmit}>
+      <form className="mt-5 space-y-3" onSubmit={onSubmit}>
         <div className="grid gap-3 sm:grid-cols-2">
           <input
             value={form.name}
             onChange={(event) => updateField('name', event.target.value)}
             placeholder="Your full name"
-            className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+            className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
             maxLength={120}
             required
           />
@@ -93,8 +93,8 @@ export default function ContactFormCard() {
             type="email"
             value={form.email}
             onChange={(event) => updateField('email', event.target.value)}
-            placeholder="Type your email"
-            className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+            placeholder="Your email address"
+            className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
             maxLength={180}
             required
           />
@@ -104,7 +104,7 @@ export default function ContactFormCard() {
           value={form.subject}
           onChange={(event) => updateField('subject', event.target.value)}
           placeholder="Subject"
-          className="mt-3 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+          className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
           maxLength={180}
           required
         />
@@ -113,21 +113,25 @@ export default function ContactFormCard() {
           rows={5}
           value={form.message}
           onChange={(event) => updateField('message', event.target.value)}
-          placeholder="Send your message request"
-          className="mt-3 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+          placeholder="How can we help you?"
+          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 resize-none"
           maxLength={5000}
           required
         />
 
-        {errorMessage && <p className="mt-3 text-sm text-red-600">{errorMessage}</p>}
-        {successMessage && <p className="mt-3 text-sm text-green-700">{successMessage}</p>}
+        {errorMessage && (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">{errorMessage}</p>
+        )}
+        {successMessage && (
+          <p className="rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-700">{successMessage}</p>
+        )}
 
         <button
           type="submit"
           disabled={isDisabled}
-          className="mt-4 rounded-md bg-black px-5 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? 'Sending...' : 'Send message'}
+          {submitting ? 'Sending…' : 'Send message'}
         </button>
       </form>
     </div>

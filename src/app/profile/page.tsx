@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
-import { MapPin, AlertTriangle } from 'lucide-react'
 
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import ContactDetailsSection from '@/components/profile/ContactDetailsSection'
@@ -26,7 +25,6 @@ type ProfileData = {
   token_balance: number | null
   phone: string | null
   address: string | null
-  delivery_location: string | null
   avatar_url: string | null
   role: string | null
 }
@@ -68,7 +66,6 @@ export default function ProfilePage() {
   const [tokens, setTokens] = useState<number>(0)
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [deliveryLocation, setDeliveryLocation] = useState('')
   const [wonAuctions, setWonAuctions] = useState<WonAuction[]>([])
   const [bidAuctions, setBidAuctions] = useState<BidAuctionItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,7 +119,7 @@ export default function ProfilePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, token_balance, phone, sms_opt_in, sms_marketing_opt_in, address, delivery_location, avatar_url, role')
+        .select('username, token_balance, phone, sms_opt_in, sms_marketing_opt_in, address, avatar_url, role')
         .eq('id', authUser.id)
         .single()
 
@@ -139,7 +136,6 @@ export default function ProfilePage() {
       setTokens(profileData?.token_balance ?? 0)
       setPhone(profileData?.phone ?? '')
       setAddress(profileData?.address ?? '')
-      setDeliveryLocation(profileData?.delivery_location ?? '')
       setAvatarUrl(profileData?.avatar_url ?? null)
 
       if (profileData?.role === 'seller') {
@@ -216,37 +212,6 @@ export default function ProfilePage() {
         canAccessSellerDashboard={canAccessSellerDashboard}
       />
 
-      {/* Delivery location warning */}
-      {!deliveryLocation && (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <MapPin className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-800">
-            You haven&apos;t set a default delivery location.{' '}
-            <button
-              type="button"
-              onClick={() => setEditOpen(true)}
-              className="font-semibold underline underline-offset-2"
-            >
-              Set it now →
-            </button>
-          </p>
-        </div>
-      )}
-
-      {/* Seller quick access – delivery zones reminder only */}
-      {canAccessSellerDashboard && (
-        <div className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
-          <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-700">
-            Make sure your{' '}
-            <Link href="/seller/shop" className="font-semibold underline underline-offset-2 hover:text-amber-900">
-              delivery zones
-            </Link>{' '}
-            are up to date so buyers see accurate fees.
-          </p>
-        </div>
-      )}
-
       <ContactDetailsSection phone={phone} address={address} />
       <WonAuctionsSection auctions={wonAuctions} onPay={payNow} />
       <BidAuctionsSection auctions={bidAuctions} />
@@ -259,19 +224,11 @@ export default function ProfilePage() {
         initialUsername={username ?? undefined}
         initialPhone={phone}
         initialAddress={address}
-        initialDeliveryLocation={deliveryLocation}
         initialAvatarUrl={avatarUrl}
-        onSaved={(d: {
-          username?: string
-          phone?: string
-          address?: string
-          deliveryLocation?: string
-          avatarUrl?: string
-        }) => {
+        onSaved={(d) => {
           if (d.username) setUsername(d.username)
           if (typeof d.phone !== 'undefined') setPhone(d.phone)
           if (typeof d.address !== 'undefined') setAddress(d.address)
-          if (typeof d.deliveryLocation !== 'undefined') setDeliveryLocation(d.deliveryLocation)
           if (d.avatarUrl) setAvatarUrl(d.avatarUrl)
         }}
       />

@@ -12,16 +12,16 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, hint, tooltip, icon: Icon, isRequired, error, className, ...props }, ref) => {
     return (
-      <div className="w-full space-y-2">
+      <div className="w-full space-y-1.5">
         {label && (
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
             <span>
               {label}
-              {isRequired && <span className="text-red-500 ml-1">*</span>}
+              {isRequired && <span className="ml-0.5 text-orange-500">*</span>}
             </span>
             {tooltip && (
               <span
-                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-black text-[11px] font-semibold text-white cursor-help"
+                className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold text-gray-500 transition-colors hover:bg-gray-200"
                 title={tooltip}
               >
                 ?
@@ -31,18 +31,30 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
 
         <div className="relative">
-          {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />}
+          {Icon && (
+            <Icon className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          )}
           <input
             ref={ref}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-              Icon ? 'pl-10' : ''
-            } ${error ? 'border-red-500' : 'border-gray-300'} ${className}`}
+            className={[
+              'h-11 w-full rounded-xl border px-4 text-sm text-gray-900 transition-colors',
+              'placeholder:text-gray-400',
+              'focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400',
+              'disabled:cursor-not-allowed disabled:opacity-60',
+              Icon ? 'pl-10' : '',
+              error
+                ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
+                : 'border-gray-200 bg-white',
+              className ?? '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             {...props}
           />
         </div>
 
-        {hint && <p className="text-xs text-gray-500">{hint}</p>}
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+        {error && <p className="text-xs font-medium text-red-500">{error}</p>}
       </div>
     )
   }
