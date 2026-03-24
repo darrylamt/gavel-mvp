@@ -1,4 +1,4 @@
-import crypto from 'crypto'
+import crypto from 'node:crypto'
 
 const BASE_URL = process.env.DAWUROBO_BASE_URL || 'https://api.dawurobo.com'
 const APP_ID = process.env.DAWUROBO_APP_ID || ''
@@ -16,29 +16,42 @@ export async function dawuroboRequest<T = unknown>(
   path: string,
   body?: unknown
 ): Promise<T> {
+  console.log('[dawurobo] BASE_URL:', process.env.DAWUROBO_BASE_URL)
+  console.log('[dawurobo] APP_ID:', process.env.DAWUROBO_APP_ID)
+  console.log('[dawurobo] API_KEY length:', process.env.DAWUROBO_API_KEY?.length)
   console.log('[dawurobo] API_KEY (first 20 chars):', API_KEY.slice(0, 20))
 
-  const resolvedPath = APP_ID
-    ? `/api/third-party/apps/${APP_ID}${path}`
-    : path
-  const url = new URL(resolvedPath, BASE_URL)
-  const bodyStr = body ? JSON.stringify(body) : ''
+  try {
+    const resolvedPath = APP_ID
+      ? `/api/third-party/apps/${APP_ID}${path}`
+      : path
+    const url = new URL(resolvedPath, BASE_URL)
+    const bodyStr = body ? JSON.stringify(body) : ''
 
-  const res = await fetch(url.toString(), {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Api-Key': API_KEY,
-    },
-    body: bodyStr || undefined,
-  })
+    console.log('[dawurobo] Requesting:', method, url.toString())
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText)
-    throw new Error(`Dawurobo ${method} ${path} → ${res.status}: ${text}`)
+    const res = await fetch(url.toString(), {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': API_KEY,
+      },
+      body: bodyStr || undefined,
+    })
+
+    console.log('[dawurobo] Response status:', res.status)
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => res.statusText)
+      console.error('[dawurobo] Error response body:', text)
+      throw new Error(`Dawurobo ${method} ${path} → ${res.status}: ${text}`)
+    }
+
+    return res.json() as Promise<T>
+  } catch (err: unknown) {
+    console.error('[dawurobo] dawuroboRequest threw:', err instanceof Error ? err.message : err)
+    throw err
   }
-
-  return res.json() as Promise<T>
 }
 
 /**
