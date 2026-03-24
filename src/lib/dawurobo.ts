@@ -49,11 +49,11 @@ export async function dawuroboRequest<T = unknown>(
       .update(canonical)
       .digest('hex')
 
-    console.log('CANONICAL STRING SIGNED:', canonical)
-    console.log(`CURL EQUIVALENT:
+    console.log('CANONICAL STRING:', JSON.stringify(canonical))
+    console.log(`CURL:
 curl -X ${METHOD} '${url.toString()}' \\
   -H 'Content-Type: application/json' \\
-  -H 'X-Api-Key: ${API_KEY}' \\
+  -H 'X-API-Key: ${API_KEY}' \\
   -H 'X-Signature: ${signature}' \\
   -H 'X-Timestamp: ${TIMESTAMP}' \\
   -H 'X-Nonce: ${NONCE}' \\
