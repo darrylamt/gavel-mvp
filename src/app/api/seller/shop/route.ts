@@ -21,6 +21,7 @@ type ShopRow = {
   payout_account_number: string | null
   payout_provider: string | null
   status: string
+  pickup_address?: string | null
 }
 
 function toSlug(input: string): string {
@@ -123,7 +124,12 @@ export async function GET(request: Request) {
 
   try {
     const shop = await ensureShop(auth.userId)
-    return NextResponse.json({ shop })
+    const { data: profile } = await service
+      .from('profiles')
+      .select('address')
+      .eq('id', auth.userId)
+      .maybeSingle()
+    return NextResponse.json({ shop: { ...shop, pickup_address: (profile as { address?: string | null } | null)?.address ?? null } })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load shop'
     return NextResponse.json({ error: message }, { status: 500 })
@@ -144,6 +150,7 @@ export async function PATCH(request: Request) {
     const payoutAccountName = typeof body.payout_account_name === 'string' ? body.payout_account_name.trim() : ''
     const payoutAccountNumber = typeof body.payout_account_number === 'string' ? body.payout_account_number.trim() : ''
     const payoutProvider = typeof body.payout_provider === 'string' ? body.payout_provider.trim() : ''
+    const pickupAddress = typeof body.pickup_address === 'string' ? body.pickup_address.trim() : null
 
     if (!name) {
       return NextResponse.json({ error: 'Shop name is required' }, { status: 400 })
@@ -172,7 +179,15 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ shop: updated })
+    // Save pickup address to seller's profile
+    if (pickupAddress !== null) {
+      await service
+        .from('profiles')
+        .update({ address: pickupAddress || null })
+        .eq('id', auth.userId)
+    }
+
+    return NextResponse.json({ shop: { ...updated, pickup_address: pickupAddress } })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to update shop'
     return NextResponse.json({ error: message }, { status: 500 })

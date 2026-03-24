@@ -28,10 +28,13 @@ export default function CartPage() {
   // Location dropdown
   const [locations, setLocations] = useState<DawuroboLocation[]>([])
   const [locationsLoading, setLocationsLoading] = useState(true)
+  const [locationsError, setLocationsError] = useState<string | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<DawuroboLocation | null>(null)
   const [locationSearch, setLocationSearch] = useState('')
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
   const locationDropdownRef = useRef<HTMLDivElement>(null)
+  // Fallback manual city input when locations unavailable
+  const [manualCity, setManualCity] = useState('')
 
   // Delivery estimate
   const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[] | null>(null)
@@ -60,9 +63,15 @@ export default function CartPage() {
       try {
         const res = await fetch('/api/delivery/locations')
         const data = await res.json()
-        if (data.locations) setLocations(data.locations as DawuroboLocation[])
+        if (data.locations && (data.locations as DawuroboLocation[]).length > 0) {
+          setLocations(data.locations as DawuroboLocation[])
+        } else if (data.error) {
+          setLocationsError(data.error as string)
+        } else {
+          setLocationsError('No delivery locations returned. Enter your city manually.')
+        }
       } catch {
-        // locations unavailable — will show empty dropdown
+        setLocationsError('Could not load delivery locations. Enter your city manually.')
       } finally {
         setLocationsLoading(false)
       }
@@ -100,9 +109,12 @@ export default function CartPage() {
     loadDefaults()
   }, [])
 
-  const triggerEstimate = async (location: DawuroboLocation, currentAddress: string) => {
+  const triggerEstimate = async (
+    locationOrCity: DawuroboLocation | { id: null; name: string },
+    currentAddress: string
+  ) => {
     const trimmedAddress = currentAddress.trim()
-    if (!trimmedAddress || items.length === 0) {
+    if (!trimmedAddress || !locationOrCity.name.trim() || items.length === 0) {
       setDeliveryOptions(null)
       setDeliveryFee(0)
       setEstimateError(null)
@@ -112,15 +124,17 @@ export default function CartPage() {
     setEstimateLoading(true)
     setEstimateError(null)
     try {
+      const body: Record<string, unknown> = {
+        items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+        dropoff_address: trimmedAddress,
+        dropoff_location_name: locationOrCity.name,
+      }
+      if (locationOrCity.id !== null) body.dropoff_location_id = locationOrCity.id
+
       const res = await fetch('/api/delivery/estimate-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
-          dropoff_address: trimmedAddress,
-          dropoff_location_id: location.id,
-          dropoff_location_name: location.name,
-        }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (data.options) {
@@ -147,24 +161,36 @@ export default function CartPage() {
     setSelectedLocation(location)
     setLocationDropdownOpen(false)
     setLocationSearch('')
-    // Reset estimate
     setDeliveryOptions(null)
     setDeliveryFee(0)
     setEstimateError(null)
-    // Trigger immediately if we already have an address
     if (address.trim() && items.length > 0) {
       triggerEstimate(location, address)
     }
   }
 
-  // Re-trigger estimate when address changes (if location already selected)
+  // Re-trigger estimate when address changes
   const addressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleAddressChange = (value: string) => {
     setAddress(value)
     if (addressTimerRef.current) clearTimeout(addressTimerRef.current)
-    if (!selectedLocation) return
+    const locationOrCity = selectedLocation ?? (manualCity.trim() ? { id: null, name: manualCity.trim() } : null)
+    if (!locationOrCity) return
     addressTimerRef.current = setTimeout(() => {
-      if (value.trim()) triggerEstimate(selectedLocation, value)
+      if (value.trim()) triggerEstimate(locationOrCity, value)
+    }, 600)
+  }
+
+  const handleManualCityChange = (value: string) => {
+    setManualCity(value)
+    setSelectedLocation(null)
+    setDeliveryOptions(null)
+    setDeliveryFee(0)
+    setEstimateError(null)
+    if (addressTimerRef.current) clearTimeout(addressTimerRef.current)
+    if (!value.trim() || !address.trim()) return
+    addressTimerRef.current = setTimeout(() => {
+      triggerEstimate({ id: null, name: value.trim() }, address)
     }, 600)
   }
 
@@ -181,8 +207,9 @@ export default function CartPage() {
       setCheckoutError('Please complete your delivery details before checkout.')
       return
     }
-    if (!selectedLocation) {
-      setCheckoutError('Please select a delivery location.')
+    const cityName = selectedLocation?.name || manualCity.trim()
+    if (!cityName) {
+      setCheckoutError('Please select a delivery location or enter your city.')
       return
     }
     if (!deliveryOptions) {
@@ -210,7 +237,7 @@ export default function CartPage() {
             full_name: fullName.trim(),
             phone: phone.trim(),
             address: address.trim(),
-            city: selectedLocation.name,
+            city: selectedLocation?.name || manualCity.trim(),
             notes: notes.trim(),
           },
           delivery_meta: {
@@ -403,79 +430,87 @@ export default function CartPage() {
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} placeholder="Phone number" type="tel" />
                 <textarea value={address} onChange={(e) => handleAddressChange(e.target.value)} rows={2} className={inputCls} placeholder="Street address / landmark" />
 
-                {/* Location dropdown */}
-                <div className="relative" ref={locationDropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLocationDropdownOpen((o) => !o)
-                      setLocationSearch('')
-                    }}
-                    className={`w-full flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm text-left transition-all ${
-                      locationDropdownOpen
-                        ? 'border-orange-400 ring-2 ring-orange-100'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <span className={`flex-1 truncate ${selectedLocation ? 'text-gray-900' : 'text-gray-400'}`}>
-                      {selectedLocation
-                        ? [selectedLocation.name, selectedLocation.region].filter(Boolean).join(', ')
-                        : locationsLoading
-                          ? 'Loading locations…'
-                          : 'Select delivery location'}
-                    </span>
-                    {locationsLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 flex-shrink-0 text-gray-400 animate-spin" />
-                    ) : (
-                      <ChevronDown className={`h-3.5 w-3.5 flex-shrink-0 text-gray-400 transition-transform ${locationDropdownOpen ? 'rotate-180' : ''}`} />
+                {/* Location dropdown or manual city fallback */}
+                {locationsLoading ? (
+                  <div className={`${inputCls} flex items-center gap-2 text-gray-400`}>
+                    <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
+                    Loading locations…
+                  </div>
+                ) : locationsError || locations.length === 0 ? (
+                  <div>
+                    <input
+                      value={manualCity}
+                      onChange={(e) => handleManualCityChange(e.target.value)}
+                      className={inputCls}
+                      placeholder="City / Area (e.g. East Legon, Accra)"
+                    />
+                    {locationsError && (
+                      <p className="mt-1 text-[11px] text-amber-600">Location service unavailable — enter your city manually.</p>
                     )}
-                  </button>
+                  </div>
+                ) : (
+                  <div className="relative" ref={locationDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLocationDropdownOpen((o) => !o)
+                        setLocationSearch('')
+                      }}
+                      className={`w-full flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm text-left transition-all ${
+                        locationDropdownOpen
+                          ? 'border-orange-400 ring-2 ring-orange-100'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <span className={`flex-1 truncate ${selectedLocation ? 'text-gray-900' : 'text-gray-400'}`}>
+                        {selectedLocation
+                          ? [selectedLocation.name, selectedLocation.region].filter(Boolean).join(', ')
+                          : 'Select delivery location'}
+                      </span>
+                      <ChevronDown className={`h-3.5 w-3.5 flex-shrink-0 text-gray-400 transition-transform ${locationDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
 
-                  {locationDropdownOpen && (
-                    <div className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-                      {/* Search */}
-                      <div className="border-b border-gray-100 px-3 py-2 flex items-center gap-2">
-                        <Search className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-                        <input
-                          autoFocus
-                          type="text"
-                          value={locationSearch}
-                          onChange={(e) => setLocationSearch(e.target.value)}
-                          placeholder="Search locations…"
-                          className="flex-1 text-sm outline-none bg-transparent placeholder-gray-400"
-                        />
+                    {locationDropdownOpen && (
+                      <div className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+                        <div className="border-b border-gray-100 px-3 py-2 flex items-center gap-2">
+                          <Search className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                          <input
+                            autoFocus
+                            type="text"
+                            value={locationSearch}
+                            onChange={(e) => setLocationSearch(e.target.value)}
+                            placeholder="Search locations…"
+                            className="flex-1 text-sm outline-none bg-transparent placeholder-gray-400"
+                          />
+                        </div>
+                        <div className="max-h-52 overflow-y-auto">
+                          {filteredLocations.length === 0 ? (
+                            <p className="px-4 py-3 text-xs text-gray-400">No matching locations</p>
+                          ) : (
+                            filteredLocations.map((loc) => (
+                              <button
+                                key={String(loc.id)}
+                                type="button"
+                                onClick={() => handleSelectLocation(loc)}
+                                className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-orange-50 hover:text-orange-900 ${
+                                  selectedLocation?.id === loc.id ? 'bg-orange-50 text-orange-900 font-semibold' : 'text-gray-800'
+                                }`}
+                              >
+                                <span className="font-medium">{loc.name}</span>
+                                {(loc.city || loc.region) && (
+                                  <span className="ml-1.5 text-xs text-gray-400">
+                                    {[loc.city, loc.region].filter(Boolean).join(', ')}
+                                  </span>
+                                )}
+                              </button>
+                            ))
+                          )}
+                        </div>
                       </div>
-
-                      {/* Options */}
-                      <div className="max-h-52 overflow-y-auto">
-                        {filteredLocations.length === 0 ? (
-                          <p className="px-4 py-3 text-xs text-gray-400">
-                            {locations.length === 0 ? 'No locations available' : 'No matching locations'}
-                          </p>
-                        ) : (
-                          filteredLocations.map((loc) => (
-                            <button
-                              key={String(loc.id)}
-                              type="button"
-                              onClick={() => handleSelectLocation(loc)}
-                              className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-orange-50 hover:text-orange-900 ${
-                                selectedLocation?.id === loc.id ? 'bg-orange-50 text-orange-900 font-semibold' : 'text-gray-800'
-                              }`}
-                            >
-                              <span className="font-medium">{loc.name}</span>
-                              {(loc.city || loc.region) && (
-                                <span className="ml-1.5 text-xs text-gray-400">
-                                  {[loc.city, loc.region].filter(Boolean).join(', ')}
-                                </span>
-                              )}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="Order notes (optional)" />
               </div>
@@ -488,7 +523,7 @@ export default function CartPage() {
                 <h2 className="text-sm font-bold text-gray-900">Delivery Option</h2>
               </div>
 
-              {!selectedLocation ? (
+              {!(selectedLocation || manualCity.trim()) ? (
                 <p className="text-xs text-gray-400">Select a delivery location above to see delivery options.</p>
               ) : !address.trim() ? (
                 <p className="text-xs text-gray-400">Enter your street address to see delivery options.</p>
@@ -504,7 +539,10 @@ export default function CartPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => selectedLocation && triggerEstimate(selectedLocation, address)}
+                    onClick={() => {
+                      const loc = selectedLocation ?? (manualCity.trim() ? { id: null, name: manualCity.trim() } : null)
+                      if (loc) triggerEstimate(loc, address)
+                    }}
                     className="text-xs font-semibold text-orange-600 hover:text-orange-800 transition-colors"
                   >
                     Retry estimate
@@ -597,7 +635,7 @@ export default function CartPage() {
                       ? '…'
                       : deliveryFee > 0
                         ? `GH₵ ${deliveryFee.toLocaleString()}`
-                        : !selectedLocation
+                        : !(selectedLocation || manualCity.trim())
                           ? '—'
                           : 'Calculating…'}
                   </span>

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
-import { Store, Upload, ExternalLink, CheckCircle2, AlertCircle, ArrowLeft, Image } from 'lucide-react'
+import { Store, Upload, ExternalLink, CheckCircle2, AlertCircle, ArrowLeft, Image, MapPin } from 'lucide-react'
 
 type SellerShop = {
   id: string
@@ -16,6 +16,7 @@ type SellerShop = {
   payout_account_number: string | null
   payout_provider: string | null
   status: string
+  pickup_address: string | null
 }
 
 const inputCls = 'w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all'
@@ -30,6 +31,7 @@ export default function SellerShopPage() {
   const [payoutProvider, setPayoutProvider] = useState('')
   const [payoutAccountName, setPayoutAccountName] = useState('')
   const [payoutAccountNumber, setPayoutAccountNumber] = useState('')
+  const [pickupAddress, setPickupAddress] = useState('')
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -55,6 +57,7 @@ export default function SellerShopPage() {
     setPayoutProvider(nextShop?.payout_provider || '')
     setPayoutAccountName(nextShop?.payout_account_name || '')
     setPayoutAccountNumber(nextShop?.payout_account_number || '')
+    setPickupAddress(nextShop?.pickup_address || '')
     setLoading(false)
   }
 
@@ -96,7 +99,7 @@ export default function SellerShopPage() {
       const res = await fetch('/api/seller/shop', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name, description, logo_url: logoUrl, cover_image_url: coverImageUrl, payout_provider: payoutProvider, payout_account_name: payoutAccountName, payout_account_number: payoutAccountNumber }),
+        body: JSON.stringify({ name, description, logo_url: logoUrl, cover_image_url: coverImageUrl, payout_provider: payoutProvider, payout_account_name: payoutAccountName, payout_account_number: payoutAccountNumber, pickup_address: pickupAddress }),
       })
       const payload = await res.json().catch(() => null)
       if (!res.ok) throw new Error(payload?.error || 'Failed to update shop profile')
@@ -214,6 +217,27 @@ export default function SellerShopPage() {
         <div>
           <label className={labelCls}>Description</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={inputCls} placeholder="Tell buyers about your shop…" />
+        </div>
+      </div>
+
+      {/* Pickup address for deliveries */}
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 sm:p-6 space-y-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-orange-500 flex-shrink-0" />
+            <h2 className="text-sm font-bold text-gray-900">Pickup Address</h2>
+          </div>
+          <p className="text-xs text-gray-400 mt-0.5">Where Dawurobo couriers will collect your orders for delivery. Required for the delivery estimate to work at checkout.</p>
+        </div>
+        <div>
+          <label className={labelCls}>Street Address / Landmark</label>
+          <textarea
+            value={pickupAddress}
+            onChange={(e) => setPickupAddress(e.target.value)}
+            rows={2}
+            className={inputCls}
+            placeholder="e.g. 14 Accra Ring Road, near Total filling station, East Legon"
+          />
         </div>
       </div>
 
