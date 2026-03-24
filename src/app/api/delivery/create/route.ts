@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     // Fetch the order
     const { data: order, error: orderError } = await supabase
       .from('shop_orders')
-      .select('id, user_id, status, buyer_full_name, buyer_phone, delivery_address, delivery_city, delivery_notes, dawurobo_order_id')
+      .select('id, user_id, status, buyer_full_name, buyer_phone, delivery_address, delivery_city, delivery_notes, dawurobo_order_id, delivery_priority')
       .eq('id', order_id)
       .maybeSingle()
 
@@ -98,6 +98,8 @@ export async function POST(req: Request) {
       .join(', ')
 
     // Create Dawurobo order
+    const priority = String((order as Record<string, unknown>).delivery_priority || 'standard')
+
     const dawuroboPayload = {
       pickup: {
         address: pickupAddress,
@@ -109,9 +111,12 @@ export async function POST(req: Request) {
         city: order.delivery_city || '',
         contact_name: order.buyer_full_name || 'Customer',
         contact_phone: order.buyer_phone,
-        notes: order.delivery_notes || '',
+        notes: [order.delivery_notes, priority !== 'standard' ? `Priority: ${priority}` : '']
+          .filter(Boolean)
+          .join(' | ') || '',
       },
       package_description: itemDescriptions,
+      service_type: priority,
       reference: `gavel-order-${order_id}`,
     }
 

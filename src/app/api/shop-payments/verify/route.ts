@@ -47,6 +47,8 @@ export async function POST(req: Request) {
         city?: string
         notes?: string
       }
+      delivery_fee?: number
+      delivery_priority?: string
       discount?: {
         code?: string | null
         percent_off?: number | null
@@ -132,6 +134,8 @@ export async function POST(req: Request) {
     }
 
     const paymentReference = String(json.data.reference)
+    const deliveryFee = Math.max(0, Number(metadata.delivery_fee ?? 0))
+    const deliveryPriority = String(metadata.delivery_priority || 'standard')
     const discountCode = String(metadata.discount?.code || '').trim().toUpperCase()
     const discountPercent = Number(metadata.discount?.percent_off ?? 0)
     const discountAmount = Math.max(0, Number(metadata.discount?.amount ?? 0))
@@ -195,6 +199,14 @@ export async function POST(req: Request) {
     )
 
     if (orderId && metadata.user_id) {
+      // Save delivery fee and priority chosen at checkout
+      if (deliveryFee > 0 || deliveryPriority !== 'standard') {
+        await supabase
+          .from('shop_orders')
+          .update({ delivery_fee: deliveryFee, delivery_priority: deliveryPriority })
+          .eq('id', String(orderId))
+      }
+
       if (discountCode && discountAmount > 0) {
         const { data: discountRow } = await supabase
           .from('discount_codes')

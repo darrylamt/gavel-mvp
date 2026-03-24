@@ -1,68 +1,151 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { Trash2, ShoppingCart, Tag, ChevronRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Trash2, ShoppingCart, Tag, ChevronRight, Truck, Zap, Package, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { supabase } from '@/lib/supabaseClient'
 import { useTopToast } from '@/components/ui/TopToastProvider'
+import type { DeliveryOption } from '@/app/api/delivery/estimate-checkout/route'
+
+const PRIORITY_ICONS = {
+  economy: Package,
+  standard: Truck,
+  cargo: Zap,
+} as const
 
 export default function CartPage() {
   const { items, subtotal, removeFromCart, clearCart, incrementItem, decrementItem } = useCart()
   const { notify } = useTopToast()
-  const [isCheckingOut, setIsCheckingOut] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
+
+  // Delivery form
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [notes, setNotes] = useState('')
+
+  // Delivery estimate
+  const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[] | null>(null)
+  const [selectedPriority, setSelectedPriority] = useState<string>('standard')
+  const [deliveryFee, setDeliveryFee] = useState(0)
+  const [estimateLoading, setEstimateLoading] = useState(false)
+  const [estimateError, setEstimateError] = useState<string | null>(null)
+  const estimateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Discount
   const [discountCode, setDiscountCode] = useState('')
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | null>(null)
   const [discountPercent, setDiscountPercent] = useState<number | null>(null)
   const [discountAmount, setDiscountAmount] = useState(0)
   const [discountLoading, setDiscountLoading] = useState(false)
   const [discountError, setDiscountError] = useState<string | null>(null)
-  const [checkoutError, setCheckoutError] = useState<string | null>(null)
-  const total = Math.max(0, subtotal - discountAmount)
 
+  // Checkout
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+
+  const total = Math.max(0, subtotal - discountAmount + deliveryFee)
+
+  // Pre-fill from profile
   useEffect(() => {
     const loadDefaults = async () => {
       const { data: auth } = await supabase.auth.getUser()
       if (!auth.user) return
-      setUserId(auth.user.id)
       const { data: profile } = await supabase
         .from('profiles')
         .select('username, phone, address')
         .eq('id', auth.user.id)
         .maybeSingle()
-      const profileRow = (profile as {
-        username?: string | null
-        phone?: string | null
-        address?: string | null
-      } | null) ?? null
-      if (profileRow?.username) setFullName((prev) => prev || profileRow.username || '')
-      if (profileRow?.phone) setPhone((prev) => prev || profileRow.phone || '')
-      if (profileRow?.address) setAddress((prev) => prev || profileRow.address || '')
+      const p = profile as { username?: string | null; phone?: string | null; address?: string | null } | null
+      if (p?.username) setFullName((prev) => prev || p.username || '')
+      if (p?.phone) setPhone((prev) => prev || p.phone || '')
+      if (p?.address) setAddress((prev) => prev || p.address || '')
     }
     loadDefaults()
   }, [])
 
+  // Debounced delivery estimate whenever address / city / items change
+  useEffect(() => {
+    if (estimateTimerRef.current) clearTimeout(estimateTimerRef.current)
+
+    const trimmedAddress = address.trim()
+    const trimmedCity = city.trim()
+
+    if (!trimmedAddress || !trimmedCity || items.length === 0) {
+      setDeliveryOptions(null)
+      setDeliveryFee(0)
+      setEstimateError(null)
+      return
+    }
+
+    estimateTimerRef.current = setTimeout(async () => {
+      setEstimateLoading(true)
+      setEstimateError(null)
+      try {
+        const res = await fetch('/api/delivery/estimate-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+            dropoff_address: trimmedAddress,
+            dropoff_city: trimmedCity,
+          }),
+        })
+        const data = await res.json()
+        if (data.options) {
+          setDeliveryOptions(data.options as DeliveryOption[])
+          // Auto-select standard, fallback to first option
+          const def = (data.options as DeliveryOption[]).find((o) => o.priority === 'standard') ?? data.options[0]
+          setSelectedPriority(def.priority)
+          setDeliveryFee(def.price)
+          setEstimateError(null)
+        } else {
+          setDeliveryOptions(null)
+          setDeliveryFee(0)
+          setEstimateError(data.error ?? 'Could not estimate delivery fee.')
+        }
+      } catch {
+        setDeliveryOptions(null)
+        setDeliveryFee(0)
+        setEstimateError('Delivery estimate unavailable. You can still proceed.')
+      } finally {
+        setEstimateLoading(false)
+      }
+    }, 800)
+
+    return () => {
+      if (estimateTimerRef.current) clearTimeout(estimateTimerRef.current)
+    }
+  }, [address, city, items])
+
+  const selectOption = (option: DeliveryOption) => {
+    setSelectedPriority(option.priority)
+    setDeliveryFee(option.price)
+  }
+
   const handleCheckout = async () => {
     if (items.length === 0 || isCheckingOut) return
     setCheckoutError(null)
+
     if (!fullName.trim() || !phone.trim() || !address.trim() || !city.trim()) {
       setCheckoutError('Please complete your delivery details before checkout.')
       return
     }
+    if (!deliveryOptions && !estimateError) {
+      setCheckoutError('Please wait for the delivery estimate to load.')
+      return
+    }
+
     setIsCheckingOut(true)
     try {
       const { data: auth } = await supabase.auth.getUser()
-      if (!auth.user || !auth.user.email) {
+      if (!auth.user?.email) {
         setCheckoutError('Please sign in to continue checkout.')
         setIsCheckingOut(false)
         return
       }
+
       const res = await fetch('/api/shop-payments/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,6 +160,10 @@ export default function CartPage() {
             city: city.trim(),
             notes: notes.trim(),
           },
+          delivery_meta: {
+            fee: deliveryFee,
+            priority: selectedPriority,
+          },
           items: items.map((item) => ({
             product_id: item.productId,
             variant_id: item.variantId ?? null,
@@ -85,6 +172,7 @@ export default function CartPage() {
           })),
         }),
       })
+
       const data = await res.json()
       if (!res.ok) {
         notify({ title: 'Checkout Failed', description: data.error || 'Failed to start checkout', variant: 'error' })
@@ -144,6 +232,7 @@ export default function CartPage() {
     }
   }
 
+  // Reset discount when cart items change
   useEffect(() => {
     setAppliedDiscountCode(null)
     setDiscountPercent(null)
@@ -151,7 +240,8 @@ export default function CartPage() {
     setDiscountError(null)
   }, [items])
 
-  const inputCls = 'w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all'
+  const inputCls =
+    'w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all'
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-8 sm:py-10 pb-28 lg:pb-10">
@@ -164,7 +254,9 @@ export default function CartPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Cart</h1>
             {items.length > 0 && (
-              <p className="text-xs text-gray-400">{items.length} item{items.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-gray-400">
+                {items.length} item{items.length !== 1 ? 's' : ''}
+              </p>
             )}
           </div>
         </div>
@@ -193,7 +285,7 @@ export default function CartPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
+        <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
           {/* Cart items */}
           <section className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
             <div className="hidden grid-cols-[1.5fr_1fr_0.8fr_auto] gap-4 border-b border-gray-50 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 md:grid">
@@ -209,7 +301,6 @@ export default function CartPage() {
                   key={item.lineId}
                   className="flex flex-col gap-3 p-4 sm:p-5 md:grid md:grid-cols-[1.5fr_1fr_0.8fr_auto] md:items-center"
                 >
-                  {/* Product info */}
                   <div className="flex items-center gap-3">
                     <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
                       {item.imageUrl ? (
@@ -225,39 +316,14 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  {/* Qty + total + remove (mobile: row) */}
                   <div className="flex items-center justify-between gap-3 md:contents">
-                    {/* Qty stepper */}
                     <div className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-1.5">
-                      <button
-                        onClick={() => decrementItem(item.lineId)}
-                        className="h-5 w-5 flex items-center justify-center text-gray-600 hover:text-black font-bold text-base leading-none"
-                        aria-label={`Decrease quantity for ${item.title}`}
-                      >
-                        −
-                      </button>
+                      <button onClick={() => decrementItem(item.lineId)} className="h-5 w-5 flex items-center justify-center text-gray-600 hover:text-black font-bold text-base leading-none" aria-label="Decrease">−</button>
                       <span className="min-w-[1.5rem] text-center text-sm font-semibold">{item.quantity}</span>
-                      <button
-                        onClick={() => incrementItem(item.lineId)}
-                        disabled={item.quantity >= item.availableStock}
-                        className="h-5 w-5 flex items-center justify-center text-gray-600 hover:text-black disabled:cursor-not-allowed disabled:text-gray-300 font-bold text-base leading-none"
-                        aria-label={`Increase quantity for ${item.title}`}
-                      >
-                        +
-                      </button>
+                      <button onClick={() => incrementItem(item.lineId)} disabled={item.quantity >= item.availableStock} className="h-5 w-5 flex items-center justify-center text-gray-600 hover:text-black disabled:cursor-not-allowed disabled:text-gray-300 font-bold text-base leading-none" aria-label="Increase">+</button>
                     </div>
-
-                    {/* Line total */}
-                    <p className="text-sm font-bold text-gray-900">
-                      GH₵ {(item.price * item.quantity).toLocaleString()}
-                    </p>
-
-                    {/* Remove */}
-                    <button
-                      onClick={() => removeFromCart(item.lineId)}
-                      className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
-                      aria-label={`Remove ${item.title} from cart`}
-                    >
+                    <p className="text-sm font-bold text-gray-900">GH₵ {(item.price * item.quantity).toLocaleString()}</p>
+                    <button onClick={() => removeFromCart(item.lineId)} className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors" aria-label={`Remove ${item.title}`}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -266,7 +332,7 @@ export default function CartPage() {
             </div>
           </section>
 
-          {/* Order summary sidebar */}
+          {/* Sidebar */}
           <aside className="h-fit space-y-4">
             {/* Delivery details */}
             <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
@@ -278,6 +344,60 @@ export default function CartPage() {
                 <input value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} placeholder="City / Area" />
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="Order notes (optional)" />
               </div>
+            </div>
+
+            {/* Delivery options */}
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Truck className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <h2 className="text-sm font-bold text-gray-900">Delivery Option</h2>
+              </div>
+
+              {/* Waiting for address */}
+              {!address.trim() || !city.trim() ? (
+                <p className="text-xs text-gray-400">Enter your delivery address and city above to see delivery options.</p>
+              ) : estimateLoading ? (
+                <div className="flex items-center gap-2 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                  <span className="text-xs text-gray-500">Calculating delivery fee…</span>
+                </div>
+              ) : estimateError && !deliveryOptions ? (
+                <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2.5 text-xs text-amber-700">
+                  {estimateError}
+                </div>
+              ) : deliveryOptions ? (
+                <div className="space-y-2">
+                  {deliveryOptions.map((option) => {
+                    const Icon = PRIORITY_ICONS[option.priority]
+                    const selected = selectedPriority === option.priority
+                    return (
+                      <button
+                        key={option.priority}
+                        type="button"
+                        onClick={() => selectOption(option)}
+                        className={`w-full flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all ${
+                          selected
+                            ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                          <Icon className={`h-4 w-4 ${selected ? 'text-orange-600' : 'text-gray-500'}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold ${selected ? 'text-orange-900' : 'text-gray-900'}`}>
+                            {option.label}
+                          </p>
+                          <p className="text-xs text-gray-500">{option.description} · {option.duration_label}</p>
+                        </div>
+                        <p className={`text-sm font-bold flex-shrink-0 ${selected ? 'text-orange-700' : 'text-gray-700'}`}>
+                          GH₵ {option.price.toLocaleString()}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : null}
             </div>
 
             {/* Discount code */}
@@ -303,9 +423,7 @@ export default function CartPage() {
                 </button>
               </div>
               {appliedDiscountCode && discountPercent ? (
-                <p className="mt-2 text-xs font-semibold text-green-700">
-                  ✓ {appliedDiscountCode} applied ({discountPercent}% off)
-                </p>
+                <p className="mt-2 text-xs font-semibold text-green-700">✓ {appliedDiscountCode} applied ({discountPercent}% off)</p>
               ) : null}
               {discountError && <p className="mt-2 text-xs text-red-600">{discountError}</p>}
             </div>
@@ -324,9 +442,20 @@ export default function CartPage() {
                     <span className="font-semibold text-green-700">− GH₵ {discountAmount.toLocaleString()}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>Delivery</span>
-                  <span>Calculated after order</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">
+                    Delivery
+                    {deliveryOptions && <span className="ml-1 text-gray-400 text-xs capitalize">({selectedPriority})</span>}
+                  </span>
+                  <span className={`font-semibold ${estimateLoading ? 'text-gray-400' : deliveryFee > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {estimateLoading
+                      ? '…'
+                      : deliveryFee > 0
+                        ? `GH₵ ${deliveryFee.toLocaleString()}`
+                        : estimateError
+                          ? 'TBD'
+                          : 'Calculating…'}
+                  </span>
                 </div>
               </div>
 
@@ -334,6 +463,12 @@ export default function CartPage() {
                 <span className="text-sm font-bold text-gray-900">Total</span>
                 <span className="text-xl font-extrabold text-gray-900">GH₵ {total.toLocaleString()}</span>
               </div>
+
+              {deliveryFee > 0 && (
+                <p className="mt-1.5 text-[11px] text-gray-400 text-right">
+                  Includes GH₵ {deliveryFee.toLocaleString()} delivery fee
+                </p>
+              )}
 
               {checkoutError && (
                 <div className="mt-3 rounded-xl bg-red-50 border border-red-100 px-3 py-2.5 text-xs font-medium text-red-700">
@@ -354,7 +489,7 @@ export default function CartPage() {
                   </>
                 ) : (
                   <>
-                    Proceed to Checkout
+                    Pay GH₵ {total.toLocaleString()}
                     <ChevronRight className="h-4 w-4" />
                   </>
                 )}
@@ -371,6 +506,9 @@ export default function CartPage() {
             <div>
               <p className="text-[10px] text-gray-400 uppercase tracking-wide">Total</p>
               <p className="text-lg font-extrabold text-gray-900">GH₵ {total.toLocaleString()}</p>
+              {deliveryFee > 0 && (
+                <p className="text-[10px] text-gray-400">incl. delivery</p>
+              )}
             </div>
             <button
               onClick={handleCheckout}

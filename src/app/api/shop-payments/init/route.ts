@@ -18,6 +18,11 @@ type DeliveryInput = {
   notes?: string
 }
 
+type DeliveryMeta = {
+  fee?: number
+  priority?: string
+}
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -25,12 +30,13 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { user_id, email, items, delivery, discount_code } = (await req.json()) as {
+    const { user_id, email, items, delivery, discount_code, delivery_meta } = (await req.json()) as {
       user_id?: string
       email?: string
       items?: CheckoutItemInput[]
       delivery?: DeliveryInput
       discount_code?: string
+      delivery_meta?: DeliveryMeta
     }
 
     if (!user_id || !email || !Array.isArray(items) || items.length === 0) {
@@ -214,7 +220,9 @@ export async function POST(req: Request) {
       discountAmount = calculateDiscountAmount(totalAmount, discountPercent)
     }
 
-    const grandTotal = Math.max(0, totalAmount - discountAmount)
+    const deliveryFee = Math.max(0, Number(delivery_meta?.fee ?? 0))
+    const deliveryPriority = String(delivery_meta?.priority || 'standard')
+    const grandTotal = Math.max(0, totalAmount - discountAmount + deliveryFee)
 
     const initRes = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
@@ -230,6 +238,8 @@ export async function POST(req: Request) {
           user_id,
           buyer_email: email,
           delivery: deliveryPayload,
+          delivery_fee: deliveryFee,
+          delivery_priority: deliveryPriority,
           discount: {
             code: discountCode,
             percent_off: discountPercent,
