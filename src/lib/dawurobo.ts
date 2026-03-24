@@ -44,14 +44,21 @@ export async function dawuroboRequest<T = unknown>(
 
     const canonical = [METHOD, PATHNAME, QUERY, SHA256_BODY, TIMESTAMP, NONCE].join('\n')
 
-    console.log('[dawurobo] canonical string:\n', canonical)
-
     const signature = crypto
       .createHmac('sha256', API_KEY)
       .update(canonical)
       .digest('hex')
 
-    console.log('[dawurobo] signature (first 20 chars):', signature.slice(0, 20))
+    console.log('CANONICAL STRING SIGNED:', canonical)
+    console.log(`CURL EQUIVALENT:
+curl -X ${METHOD} '${url.toString()}' \\
+  -H 'Content-Type: application/json' \\
+  -H 'X-Api-Key: ${API_KEY}' \\
+  -H 'X-Signature: ${signature}' \\
+  -H 'X-Timestamp: ${TIMESTAMP}' \\
+  -H 'X-Nonce: ${NONCE}' \\
+  -d '${bodyStr || ''}'`)
+
     console.log('[dawurobo] Requesting:', METHOD, url.toString())
 
     const res = await fetch(url.toString(), {
