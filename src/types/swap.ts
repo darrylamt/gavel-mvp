@@ -84,7 +84,7 @@ export type SwapSubmission = {
   face_id_working: boolean | null
   fingerprint_working: boolean | null
 
-  body_condition: 'perfect' | 'minor_scratches' | 'dented'
+  body_condition: 'perfect' | 'minor_scratches' | 'cracked'
 
   other_issues: string | null
   water_damage: boolean
@@ -175,7 +175,7 @@ export type SwapSubmissionInput = {
   face_id_working: boolean | null
   fingerprint_working: boolean | null
 
-  body_condition: 'perfect' | 'minor_scratches' | 'dented'
+  body_condition: 'perfect' | 'minor_scratches' | 'cracked'
   other_issues: string | null
   water_damage: boolean
 

@@ -57,7 +57,7 @@ type FormData = {
   face_id_working: boolean
   fingerprint_working: boolean
 
-  body_condition: 'perfect' | 'minor_scratches' | 'dented' | ''
+  body_condition: 'perfect' | 'minor_scratches' | 'cracked' | ''
   other_issues: string
   water_damage: boolean
 
