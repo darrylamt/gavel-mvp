@@ -10,6 +10,9 @@ const WEBHOOK_SECRET = process.env.DAWUROBO_WEBHOOK_SECRET ?? ''
  * Make an authenticated request to the Dawurobo API.
  * Paths like `/estimates` are automatically resolved to
  * `/api/third-party/apps/{APP_ID}/estimates` when DAWUROBO_APP_ID is set.
+ *
+ * Signing: canonical string = METHOD\nPATHNAME\nQUERY\nSHA256_BODY\nTIMESTAMP\nNONCE
+ * HMAC-SHA256 of that string using API_KEY as the secret.
  */
 export async function dawuroboRequest<T = unknown>(
   method: string,
@@ -28,13 +31,37 @@ export async function dawuroboRequest<T = unknown>(
     const url = new URL(resolvedPath, BASE_URL)
     const bodyStr = body ? JSON.stringify(body) : ''
 
-    console.log('[dawurobo] Requesting:', method, url.toString())
+    // --- Canonical string components ---
+    const METHOD    = method.toUpperCase()
+    const PATHNAME  = url.pathname                  // e.g. /api/third-party/apps/gavelgh/estimates
+    const QUERY     = url.search                    // e.g. ?foo=bar  or  '' if none
+    const SHA256_BODY = crypto
+      .createHash('sha256')
+      .update(bodyStr)
+      .digest('hex')                                // lowercase hex SHA-256 of raw body (or of '' if no body)
+    const TIMESTAMP = String(Math.floor(Date.now() / 1000))
+    const NONCE     = crypto.randomUUID()
+
+    const canonical = [METHOD, PATHNAME, QUERY, SHA256_BODY, TIMESTAMP, NONCE].join('\n')
+
+    console.log('[dawurobo] canonical string:\n', canonical)
+
+    const signature = crypto
+      .createHmac('sha256', API_KEY)
+      .update(canonical)
+      .digest('hex')
+
+    console.log('[dawurobo] signature (first 20 chars):', signature.slice(0, 20))
+    console.log('[dawurobo] Requesting:', METHOD, url.toString())
 
     const res = await fetch(url.toString(), {
-      method,
+      method: METHOD,
       headers: {
         'Content-Type': 'application/json',
-        'X-Api-Key': API_KEY,
+        'X-Api-Key':    API_KEY,
+        'X-Timestamp':  TIMESTAMP,
+        'X-Nonce':      NONCE,
+        'X-Signature':  signature,
       },
       body: bodyStr || undefined,
     })
@@ -44,7 +71,7 @@ export async function dawuroboRequest<T = unknown>(
     if (!res.ok) {
       const text = await res.text().catch(() => res.statusText)
       console.error('[dawurobo] Error response body:', text)
-      throw new Error(`Dawurobo ${method} ${path} → ${res.status}: ${text}`)
+      throw new Error(`Dawurobo ${METHOD} ${path} → ${res.status}: ${text}`)
     }
 
     return res.json() as Promise<T>

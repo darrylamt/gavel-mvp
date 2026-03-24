@@ -36,8 +36,7 @@ export async function GET() {
       }
     )
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to fetch delivery locations'
-    console.error('[delivery/locations] Error:', message)
-    return NextResponse.json({ error: message, locations: [] }, { status: 502 })
+    console.error('[delivery/locations] Error:', err instanceof Error ? err.message : err)
+    return NextResponse.json({ locations: [] })
   }
 }

@@ -117,12 +117,8 @@ export async function POST(req: Request) {
         dropoff: dropoffPayload,
       })
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'estimate failed'
-      console.error('[delivery/estimate-checkout] Dawurobo estimate error:', msg)
-      return NextResponse.json(
-        { options: null, error: `Delivery estimate failed: ${msg}` },
-        { status: 502 }
-      )
+      console.error('[delivery/estimate-checkout] Dawurobo estimate error:', err instanceof Error ? err.message : err)
+      return NextResponse.json({ options: [] })
     }
 
     const base = Math.max(0, Number(estimate.estimated_price) || 0)
@@ -154,8 +150,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ options })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to estimate delivery'
-    console.error('[delivery/estimate-checkout] Unhandled error:', message)
-    return NextResponse.json({ options: null, error: message }, { status: 502 })
+    console.error('[delivery/estimate-checkout] Unhandled error:', err instanceof Error ? err.message : err)
+    return NextResponse.json({ options: [] })
   }
 }
