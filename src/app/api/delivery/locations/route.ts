@@ -5,9 +5,8 @@ import { dawuroboRequest, type DawuroboLocation } from '@/lib/dawurobo'
 /**
  * GET /api/delivery/locations
  * Proxies Dawurobo GET /locations — keeps the API key server-side.
- * Cached for 1 hour since locations rarely change.
  */
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const baseUrl = process.env.DAWUROBO_BASE_URL || '(not set)'
@@ -27,14 +26,7 @@ export async function GET() {
         ? (raw as { data: DawuroboLocation[] }).data
         : []
 
-    return NextResponse.json(
-      { locations },
-      {
-        headers: {
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
-        },
-      }
-    )
+    return NextResponse.json({ locations })
   } catch (err: unknown) {
     console.error('[delivery/locations] Error:', err instanceof Error ? err.message : err)
     return NextResponse.json({ locations: [] })

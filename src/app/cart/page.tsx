@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { Trash2, ShoppingCart, Tag, ChevronRight, Truck, Zap, Package, Loader2, MapPin, ChevronDown, Search } from 'lucide-react'
+import { Trash2, ShoppingCart, Tag, ChevronRight, Truck, PackageOpen, Package, Loader2, MapPin, ChevronDown, Search } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { supabase } from '@/lib/supabaseClient'
 import { useTopToast } from '@/components/ui/TopToastProvider'
@@ -12,7 +12,7 @@ import type { DawuroboLocation } from '@/lib/dawurobo'
 const PRIORITY_ICONS = {
   economy: Package,
   standard: Truck,
-  cargo: Zap,
+  cargo: PackageOpen,
 } as const
 
 export default function CartPage() {
