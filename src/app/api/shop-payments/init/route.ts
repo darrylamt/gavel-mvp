@@ -15,6 +15,7 @@ type DeliveryInput = {
   phone?: string
   address?: string
   city?: string
+  region?: string
   notes?: string
 }
 
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
       phone: String(delivery?.phone || '').trim(),
       address: String(delivery?.address || '').trim(),
       city: String(delivery?.city || '').trim(),
+      region: String(delivery?.region || 'Greater Accra').trim(),
       notes: String(delivery?.notes || '').trim(),
     }
 
@@ -240,6 +242,7 @@ export async function POST(req: Request) {
           delivery: deliveryPayload,
           delivery_fee: deliveryFee,
           delivery_priority: deliveryPriority,
+          delivery_region: deliveryPayload.region,
           discount: {
             code: discountCode,
             percent_off: discountPercent,

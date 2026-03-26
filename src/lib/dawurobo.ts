@@ -2,16 +2,15 @@ import crypto from 'node:crypto'
 
 const BASE_URL = process.env.DAWUROBO_BASE_URL || 'https://api.dawurobo.com'
 const APP_ID = process.env.DAWUROBO_APP_ID || ''
-// Read the key exactly as stored — no trimming, no fallback transformation
 const API_KEY = process.env.DAWUROBO_API_KEY ?? ''
 const WEBHOOK_SECRET = process.env.DAWUROBO_WEBHOOK_SECRET ?? ''
 
 /**
  * Make an authenticated request to the Dawurobo API.
- * Paths like `/estimates` are automatically resolved to
- * `/api/third-party/apps/{APP_ID}/estimates` when DAWUROBO_APP_ID is set.
+ * Paths like `/estimates` are resolved to `/api/third-party/apps/{APP_ID}/estimates`
+ * when DAWUROBO_APP_ID is set.
  *
- * Signing: canonical string = METHOD\nPATHNAME\nQUERY\nSHA256_BODY\nTIMESTAMP\nNONCE
+ * Signing: canonical = METHOD\nPATHNAME\nQUERY\nSHA256_BODY\nTIMESTAMP\nNONCE
  * HMAC-SHA256 of that string using API_KEY as the secret.
  */
 export async function dawuroboRequest<T = unknown>(
@@ -19,80 +18,52 @@ export async function dawuroboRequest<T = unknown>(
   path: string,
   body?: unknown
 ): Promise<T> {
-  console.log('[dawurobo] BASE_URL:', process.env.DAWUROBO_BASE_URL)
-  console.log('[dawurobo] APP_ID:', process.env.DAWUROBO_APP_ID)
-  console.log('[dawurobo] API_KEY length:', process.env.DAWUROBO_API_KEY?.length)
-  console.log('[dawurobo] API_KEY (first 20 chars):', API_KEY.slice(0, 20))
+  const resolvedPath = APP_ID
+    ? `/api/third-party/apps/${APP_ID}${path}`
+    : path
+  const url = new URL(resolvedPath, BASE_URL)
+  const bodyStr = body ? JSON.stringify(body) : ''
 
-  try {
-    const resolvedPath = APP_ID
-      ? `/api/third-party/apps/${APP_ID}${path}`
-      : path
-    const url = new URL(resolvedPath, BASE_URL)
-    const bodyStr = body ? JSON.stringify(body) : ''
+  const METHOD    = method.toUpperCase()
+  const PATHNAME  = url.pathname
+  const QUERY     = url.search
+  const SHA256_BODY = crypto.createHash('sha256').update(bodyStr).digest('hex')
+  const TIMESTAMP = String(Math.floor(Date.now() / 1000))
+  const NONCE     = crypto.randomUUID()
 
-    // --- Canonical string components ---
-    const METHOD    = method.toUpperCase()
-    const PATHNAME  = url.pathname                  // e.g. /api/third-party/apps/gavelgh/estimates
-    const QUERY     = url.search                    // e.g. ?foo=bar  or  '' if none
-    const SHA256_BODY = crypto
-      .createHash('sha256')
-      .update(bodyStr)
-      .digest('hex')                                // lowercase hex SHA-256 of raw body (or of '' if no body)
-    const TIMESTAMP = String(Math.floor(Date.now() / 1000))
-    const NONCE     = crypto.randomUUID()
+  const canonical = [METHOD, PATHNAME, QUERY, SHA256_BODY, TIMESTAMP, NONCE].join('\n')
 
-    const canonical = [METHOD, PATHNAME, QUERY, SHA256_BODY, TIMESTAMP, NONCE].join('\n')
+  const signature = crypto
+    .createHmac('sha256', API_KEY)
+    .update(canonical)
+    .digest('hex')
 
-    const signature = crypto
-      .createHmac('sha256', API_KEY)
-      .update(canonical)
-      .digest('hex')
+  const idempotencyKey = (METHOD === 'POST' || METHOD === 'PATCH' || METHOD === 'DELETE')
+    ? crypto.randomUUID()
+    : null
 
-    const idempotencyKey = (METHOD === 'POST' || METHOD === 'PATCH' || METHOD === 'DELETE')
-      ? crypto.randomUUID()
-      : null
-
-    console.log('CANONICAL STRING:', JSON.stringify(canonical))
-    console.log(`CURL:
-curl -X ${METHOD} '${url.toString()}' \\
-  -H 'Content-Type: application/json' \\
-  -H 'X-API-Key: ${API_KEY}' \\
-  -H 'X-Signature: ${signature}' \\
-  -H 'X-Timestamp: ${TIMESTAMP}' \\
-  -H 'X-Nonce: ${NONCE}' \\${idempotencyKey ? `\n  -H 'Idempotency-Key: ${idempotencyKey}' \\` : ''}
-  -d '${bodyStr || ''}'`)
-
-    console.log('[dawurobo] Requesting:', METHOD, url.toString())
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'X-Api-Key':    API_KEY,
-      'X-Timestamp':  TIMESTAMP,
-      'X-Nonce':      NONCE,
-      'X-Signature':  signature,
-    }
-    if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
-
-    const res = await fetch(url.toString(), {
-      method: METHOD,
-      headers,
-      body: bodyStr || undefined,
-    })
-
-    console.log('[dawurobo] Response status:', res.status)
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => res.statusText)
-      console.error('[dawurobo] Error response body:', text)
-      throw new Error(`Dawurobo ${METHOD} ${path} → ${res.status}: ${text}`)
-    }
-
-    return res.json() as Promise<T>
-  } catch (err: unknown) {
-    console.error('[dawurobo] dawuroboRequest threw:', err instanceof Error ? err.message : err)
-    throw err
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Api-Key':    API_KEY,
+    'X-Timestamp':  TIMESTAMP,
+    'X-Nonce':      NONCE,
+    'X-Signature':  signature,
   }
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
+
+  const res = await fetch(url.toString(), {
+    method: METHOD,
+    headers,
+    body: bodyStr || undefined,
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText)
+    console.error(`[dawurobo] ${METHOD} ${path} → ${res.status}: ${text}`)
+    throw new Error(`Dawurobo ${METHOD} ${path} → ${res.status}: ${text}`)
+  }
+
+  return res.json() as Promise<T>
 }
 
 /**

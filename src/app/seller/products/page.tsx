@@ -14,6 +14,7 @@ type ShopProduct = {
   stock: number
   status: 'draft' | 'active' | 'sold_out' | 'archived'
   category: string
+  requires_cargo: boolean
   image_url: string | null
   image_urls?: string[]
   created_at: string
@@ -105,6 +106,7 @@ export default function SellerProductsPage() {
   const [stock, setStock] = useState('')
   const [status, setStatus] = useState<ShopProduct['status']>('active')
   const [category, setCategory] = useState('Other')
+  const [requiresCargo, setRequiresCargo] = useState(false)
   const [shopId, setShopId] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -254,6 +256,7 @@ export default function SellerProductsPage() {
     setStock(String(product.stock))
     setStatus(product.status)
     setCategory(product.category || categories[0]?.name || 'Other')
+    setRequiresCargo(product.requires_cargo ?? false)
     setShopId(product.shop_id ?? shops[0]?.id ?? '')
     setImageUrls(product.image_urls ?? [])
     const activeVariants = (product.variants ?? []).filter((variant) => variant.is_active)
@@ -465,6 +468,7 @@ export default function SellerProductsPage() {
         stock: Number(stock),
         status,
         category,
+        requires_cargo: requiresCargo,
         shop_id: shopId,
         image_urls: imageUrls,
         variants: useVariants
@@ -1053,6 +1057,26 @@ export default function SellerProductsPage() {
                 <option value="sold_out">Sold out</option>
                 <option value="archived">Archived</option>
               </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className={labelClass}>Delivery Type</label>
+              <p className="text-xs text-gray-400 mb-2">This determines the delivery options available to buyers at checkout.</p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <label className={`flex-1 flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-all ${!requiresCargo ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <input type="radio" name="delivery_type" checked={!requiresCargo} onChange={() => setRequiresCargo(false)} className="mt-0.5 accent-orange-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Standard</p>
+                    <p className="text-xs text-gray-500">Fits in a backpack or small box (under 10kg)</p>
+                  </div>
+                </label>
+                <label className={`flex-1 flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-all ${requiresCargo ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <input type="radio" name="delivery_type" checked={requiresCargo} onChange={() => setRequiresCargo(true)} className="mt-0.5 accent-orange-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Cargo</p>
+                    <p className="text-xs text-gray-500">Large, heavy or bulky item (furniture, appliances, over 10kg)</p>
+                  </div>
+                </label>
+              </div>
             </div>
             <div className="md:col-span-2 space-y-2">
               <div className="flex items-center justify-between">

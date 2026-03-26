@@ -16,7 +16,6 @@ const supabase = createClient(
  */
 export async function POST(req: Request) {
   try {
-    // Auth: seller must own at least one item in the order
     const token = req.headers.get('authorization')?.replace('Bearer ', '') ?? ''
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -33,10 +32,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'order_id is required' }, { status: 400 })
     }
 
-    // Fetch the order
     const { data: order, error: orderError } = await supabase
       .from('shop_orders')
-      .select('id, user_id, status, buyer_full_name, buyer_phone, delivery_address, delivery_city, delivery_notes, dawurobo_order_id, delivery_priority')
+      .select('id, user_id, status, buyer_full_name, buyer_phone, delivery_address, delivery_city, delivery_region, delivery_notes, dawurobo_order_id, delivery_priority')
       .eq('id', order_id)
       .maybeSingle()
 
@@ -52,7 +50,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Delivery already dispatched for this order' }, { status: 409 })
     }
 
-    // Verify caller has items in this order via seller_id directly
     const { data: sellerItems } = await supabase
       .from('shop_order_items')
       .select('id, title_snapshot, quantity')
@@ -63,7 +60,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'You do not have items in this order' }, { status: 403 })
     }
 
-    // Fetch seller's profile for pickup address and phone
     const { data: sellerProfile } = await supabase
       .from('profiles')
       .select('username, phone, address')
@@ -92,37 +88,39 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Order is missing delivery address or buyer phone' }, { status: 400 })
     }
 
-    // Build item descriptions
     const itemDescriptions = sellerItems
-      .map(i => `${i.quantity}x ${i.title_snapshot}`)
+      .map((i) => `${i.quantity}x ${i.title_snapshot}`)
       .join(', ')
 
-    // Create Dawurobo order
     const priority = String((order as Record<string, unknown>).delivery_priority || 'standard')
 
     const dawuroboPayload = {
-      pickup: {
-        address: pickupAddress,
-        contact_name: pickupName,
-        contact_phone: pickupPhone,
+      order_reference: `GAVEL-${order_id}`,
+      customer: {
+        name: order.buyer_full_name || 'Customer',
+        phone: order.buyer_phone,
       },
-      dropoff: {
+      delivery: {
         address: order.delivery_address,
         city: order.delivery_city || '',
-        contact_name: order.buyer_full_name || 'Customer',
-        contact_phone: order.buyer_phone,
-        notes: [order.delivery_notes, priority !== 'standard' ? `Priority: ${priority}` : '']
-          .filter(Boolean)
-          .join(' | ') || '',
+        region: (order as Record<string, unknown>).delivery_region as string || 'Greater Accra',
       },
-      package_description: itemDescriptions,
-      service_type: priority,
-      reference: `gavel-order-${order_id}`,
+      item: itemDescriptions,
+      pickup: {
+        address: pickupAddress,
+        contact_person: pickupName,
+        contact_phone: pickupPhone,
+      },
+      payment: {
+        method: 'mobile_money',
+        amount: 0,
+        is_paid: true,
+      },
+      priority,
     }
 
     const dawuroboOrder = await dawuroboRequest<DawuroboOrder>('POST', '/orders', dawuroboPayload)
 
-    // Save Dawurobo order ID + initial status
     await supabase
       .from('shop_orders')
       .update({
@@ -131,7 +129,6 @@ export async function POST(req: Request) {
       })
       .eq('id', order_id)
 
-    // Log initial delivery event
     await supabase.from('delivery_events').insert({
       order_id,
       status: dawuroboOrder.status || 'pending',
@@ -146,6 +143,7 @@ export async function POST(req: Request) {
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to create delivery'
+    console.error('[delivery/create] Error:', message)
     return NextResponse.json({ error: message }, { status: 502 })
   }
 }

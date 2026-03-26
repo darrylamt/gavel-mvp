@@ -456,7 +456,7 @@ export async function GET(request: Request) {
 
   const query = service
     .from('shop_products')
-    .select('id, title, description, price, seller_base_price, commission_rate, stock, status, category, image_url, image_urls, created_at, created_by, shop_id')
+    .select('id, title, description, price, seller_base_price, commission_rate, stock, status, category, requires_cargo, image_url, image_urls, created_at, created_by, shop_id')
     .order('created_at', { ascending: false })
     .limit(300)
 
@@ -506,6 +506,7 @@ export async function POST(request: Request) {
       ? normalizeCommissionPercent(body.commission_percent, globalCommissionPercent)
       : globalCommissionPercent
     const variants = normalizeVariantInput(body.variants)
+    const requiresCargo = body.requires_cargo === true
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -557,13 +558,14 @@ export async function POST(request: Request) {
         stock: effectiveStock,
         status,
         category,
+        requires_cargo: requiresCargo,
         // Keep legacy image_url in sync so public shop views always have a primary image
         image_url: imageUrls[0] ?? null,
         image_urls: imageUrls,
         created_by: selectedShop.owner_id,
         shop_id: selectedShop.id,
       })
-      .select('id, title, description, price, seller_base_price, commission_rate, stock, status, category, image_urls, created_at, created_by, shop_id')
+      .select('id, title, description, price, seller_base_price, commission_rate, stock, status, category, requires_cargo, image_urls, created_at, created_by, shop_id')
       .single()
 
     if (error) {
@@ -635,6 +637,7 @@ export async function PATCH(request: Request) {
       ? normalizeCommissionPercent(body.commission_percent, globalCommissionPercent)
       : globalCommissionPercent
     const variants = normalizeVariantInput(body.variants)
+    const requiresCargo = body.requires_cargo === true
 
     if (!id) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
@@ -687,6 +690,7 @@ export async function PATCH(request: Request) {
       stock: number
       status: string
       category: string
+      requires_cargo: boolean
       image_url: string | null
       image_urls?: string[]
       shop_id: string
@@ -699,6 +703,7 @@ export async function PATCH(request: Request) {
       stock: effectiveStock,
       status,
       category,
+      requires_cargo: requiresCargo,
       image_url: imageUrl || (imageUrls[0] ?? null),
       image_urls: imageUrls,
       shop_id: selectedShop.id,
@@ -717,7 +722,7 @@ export async function PATCH(request: Request) {
     }
 
     const { data, error } = await updateQuery
-      .select('id, title, description, price, seller_base_price, commission_rate, stock, status, category, image_url, image_urls, created_at, created_by, shop_id')
+      .select('id, title, description, price, seller_base_price, commission_rate, stock, status, category, requires_cargo, image_url, image_urls, created_at, created_by, shop_id')
       .single()
 
     if (error) {

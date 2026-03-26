@@ -47,6 +47,7 @@ export default function NewAuction() {
   const [anonymousBiddingEnabled, setAnonymousBiddingEnabled] = useState(true)
   const [accessCode, setAccessCode] = useState('')
   const [codeCopied, setCodeCopied] = useState(false)
+  const [requiresCargo, setRequiresCargo] = useState(false)
   const [aiDescriptionLoading, setAiDescriptionLoading] = useState(false)
   const [aiDescriptionError, setAiDescriptionError] = useState<string | null>(null)
   const [descriptionGeneratedByAi, setDescriptionGeneratedByAi] = useState(false)
@@ -230,6 +231,7 @@ export default function NewAuction() {
         is_private: isPrivate,
         access_code: isPrivate ? accessCode : null,
         anonymous_bidding_enabled: isPrivate ? anonymousBiddingEnabled : true,
+        requires_cargo: requiresCargo,
       }
 
       console.log('Creating auction:', payload)
@@ -613,6 +615,30 @@ export default function NewAuction() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Delivery type */}
+        <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+          <div>
+            <h2 className="text-lg font-semibold">Delivery Type</h2>
+            <p className="text-xs text-gray-500 mt-0.5">This determines the delivery options available to the winner at checkout.</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <label className={`flex-1 flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-all ${!requiresCargo ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100' : 'border-gray-200 hover:border-gray-300'}`}>
+              <input type="radio" name="delivery_type" checked={!requiresCargo} onChange={() => setRequiresCargo(false)} className="mt-0.5 accent-orange-500" />
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Standard</p>
+                <p className="text-xs text-gray-500">Fits in a backpack or small box (under 10kg)</p>
+              </div>
+            </label>
+            <label className={`flex-1 flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-all ${requiresCargo ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100' : 'border-gray-200 hover:border-gray-300'}`}>
+              <input type="radio" name="delivery_type" checked={requiresCargo} onChange={() => setRequiresCargo(true)} className="mt-0.5 accent-orange-500" />
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Cargo</p>
+                <p className="text-xs text-gray-500">Large, heavy or bulky item (furniture, appliances, over 10kg)</p>
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Submit */}

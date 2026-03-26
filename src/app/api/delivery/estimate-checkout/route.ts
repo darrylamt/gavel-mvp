@@ -16,66 +16,61 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Ghana approximate center — used as coordinate fallback
+const GHANA_CENTER = { lat: 5.6037, lng: -0.1870 }
+
 /**
  * POST /api/delivery/estimate-checkout
- * Accepts cart items + the Dawurobo location the buyer selected.
- * Looks up the seller's pickup address server-side, calls Dawurobo /estimates,
- * and returns three delivery tier options (Economy / Standard / Cargo).
+ * Accepts cart items + buyer delivery address. Looks up the seller's pickup address
+ * server-side, checks whether any product requires cargo, calls Dawurobo /estimates,
+ * and returns the appropriate delivery tier options.
+ *
+ * requires_cargo = false → Economy + Standard options
+ * requires_cargo = true  → Cargo option only
+ * Mixed cart             → Cargo only (covers all items safely)
  *
  * Body: {
  *   items: { product_id, quantity }[]
- *   dropoff_address: string      – buyer's street address
- *   dropoff_location_id: string  – Dawurobo location ID selected from the dropdown
- *   dropoff_location_name: string – human-readable name, used as city fallback
+ *   dropoff_address: string
+ *   dropoff_city: string
+ *   dropoff_region?: string
  * }
  */
 export async function POST(req: Request) {
-  const baseUrl = process.env.DAWUROBO_BASE_URL || '(not set)'
-  const appId = process.env.DAWUROBO_APP_ID || '(not set)'
-  const apiKey = process.env.DAWUROBO_API_KEY || ''
-  console.log('[delivery/estimate-checkout] DAWUROBO_BASE_URL:', baseUrl)
-  console.log('[delivery/estimate-checkout] DAWUROBO_APP_ID:', appId)
-  console.log('[delivery/estimate-checkout] DAWUROBO_API_KEY:', apiKey ? apiKey.slice(0, 10) + '…' : '(not set)')
-
   try {
     const {
       items,
       dropoff_address,
-      dropoff_location_id,
-      dropoff_location_name,
+      dropoff_city,
+      dropoff_region,
     } = (await req.json()) as {
       items?: { product_id: string; quantity: number }[]
       dropoff_address?: string
-      dropoff_location_id?: string | number
-      dropoff_location_name?: string
+      dropoff_city?: string
+      dropoff_region?: string
     }
 
     if (!Array.isArray(items) || items.length === 0 || !dropoff_address?.trim()) {
-      return NextResponse.json(
-        { error: 'items and dropoff_address are required' },
-        { status: 400 }
-      )
-    }
-
-    if (!dropoff_location_id && !dropoff_location_name) {
-      return NextResponse.json(
-        { error: 'A delivery location must be selected' },
-        { status: 400 }
-      )
+      return NextResponse.json({ options: [] }, { status: 400 })
     }
 
     const productIds = items.map((i) => i.product_id).filter(Boolean)
 
-    // Resolve the primary seller for this cart
+    // Resolve seller and check cargo requirement
     const { data: products } = await supabase
       .from('shop_products')
-      .select('id, shop_id')
+      .select('id, shop_id, requires_cargo')
       .in('id', productIds)
-      .limit(1)
 
-    const shopId = products?.[0]?.shop_id
+    if (!products || products.length === 0) {
+      return NextResponse.json({ options: [] })
+    }
+
+    const hasCargo = products.some((p) => p.requires_cargo === true)
+    const shopId = products[0]?.shop_id
+
     if (!shopId) {
-      return NextResponse.json({ options: null, error: 'Product not found' }, { status: 404 })
+      return NextResponse.json({ options: [] })
     }
 
     const { data: shop } = await supabase
@@ -85,7 +80,7 @@ export async function POST(req: Request) {
       .maybeSingle()
 
     if (!shop?.owner_id) {
-      return NextResponse.json({ options: null, error: 'Shop not found' }, { status: 404 })
+      return NextResponse.json({ options: [] })
     }
 
     const { data: sellerProfile } = await supabase
@@ -95,58 +90,60 @@ export async function POST(req: Request) {
       .maybeSingle()
 
     if (!sellerProfile?.address) {
-      return NextResponse.json({
-        options: null,
-        error: 'Seller pickup address not configured. Contact the seller directly.',
-      })
-    }
-
-    // Build the Dawurobo estimate payload
-    const dropoffPayload: Record<string, unknown> = {
-      address: dropoff_address.trim(),
-      city: dropoff_location_name?.trim() || '',
-    }
-    if (dropoff_location_id !== undefined && dropoff_location_id !== null) {
-      dropoffPayload.location_id = String(dropoff_location_id)
+      return NextResponse.json({ options: [] })
     }
 
     let estimate: DawuroboEstimate
     try {
       estimate = await dawuroboRequest<DawuroboEstimate>('POST', '/estimates', {
-        pickup: { address: String(sellerProfile.address) },
-        dropoff: dropoffPayload,
+        pickup_location: {
+          address: String(sellerProfile.address),
+          coordinates: GHANA_CENTER,
+        },
+        delivery_location: {
+          address: dropoff_address.trim(),
+          coordinates: GHANA_CENTER,
+        },
+        priority: hasCargo ? 'cargo' : 'standard',
+        order_date: new Date().toISOString(),
       })
-    } catch (err: unknown) {
-      console.error('[delivery/estimate-checkout] Dawurobo estimate error:', err instanceof Error ? err.message : err)
+    } catch {
       return NextResponse.json({ options: [] })
     }
 
     const base = Math.max(0, Number(estimate.estimated_price) || 0)
     const mins = Math.max(10, Number(estimate.estimated_duration_minutes) || 30)
 
-    const options: DeliveryOption[] = [
-      {
-        priority: 'economy',
-        label: 'Economy',
-        description: 'Standard delivery',
-        price: Math.round(base * 100) / 100,
-        duration_label: `~${Math.ceil(mins * 1.3)} min`,
-      },
-      {
-        priority: 'standard',
-        label: 'Standard',
-        description: 'Faster pickup',
-        price: Math.round(base * 1.2 * 100) / 100,
-        duration_label: `~${Math.ceil(mins)} min`,
-      },
-      {
-        priority: 'cargo',
-        label: 'Cargo',
-        description: 'Bulky / heavy items',
-        price: Math.round(base * 1.5 * 100) / 100,
-        duration_label: `~${Math.ceil(mins * 1.1)} min`,
-      },
-    ]
+    let options: DeliveryOption[]
+
+    if (hasCargo) {
+      options = [
+        {
+          priority: 'cargo',
+          label: 'Cargo',
+          description: 'Large / heavy items',
+          price: Math.round(base * 100) / 100,
+          duration_label: `~${Math.ceil(mins)} min`,
+        },
+      ]
+    } else {
+      options = [
+        {
+          priority: 'economy',
+          label: 'Economy',
+          description: 'Standard delivery',
+          price: Math.round(base * 100) / 100,
+          duration_label: `~${Math.ceil(mins * 1.3)} min`,
+        },
+        {
+          priority: 'standard',
+          label: 'Standard',
+          description: 'Faster pickup',
+          price: Math.round(base * 1.2 * 100) / 100,
+          duration_label: `~${Math.ceil(mins)} min`,
+        },
+      ]
+    }
 
     return NextResponse.json({ options })
   } catch (err: unknown) {

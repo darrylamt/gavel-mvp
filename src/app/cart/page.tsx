@@ -2,12 +2,11 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { Trash2, ShoppingCart, Tag, ChevronRight, Truck, PackageOpen, Package, Loader2, MapPin, ChevronDown, Search } from 'lucide-react'
+import { Trash2, ShoppingCart, Tag, ChevronRight, Truck, PackageOpen, Package, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { supabase } from '@/lib/supabaseClient'
 import { useTopToast } from '@/components/ui/TopToastProvider'
 import type { DeliveryOption } from '@/app/api/delivery/estimate-checkout/route'
-import type { DawuroboLocation } from '@/lib/dawurobo'
 
 const PRIORITY_ICONS = {
   economy: Package,
@@ -23,24 +22,16 @@ export default function CartPage() {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+  const [city, setCity] = useState('')
+  const [region, setRegion] = useState('Greater Accra')
   const [notes, setNotes] = useState('')
-
-  // Location dropdown
-  const [locations, setLocations] = useState<DawuroboLocation[]>([])
-  const [locationsLoading, setLocationsLoading] = useState(true)
-  const [locationsError, setLocationsError] = useState<string | null>(null)
-  const [selectedLocation, setSelectedLocation] = useState<DawuroboLocation | null>(null)
-  const [locationSearch, setLocationSearch] = useState('')
-  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
-  const locationDropdownRef = useRef<HTMLDivElement>(null)
-  // Fallback manual city input when locations unavailable
-  const [manualCity, setManualCity] = useState('')
 
   // Delivery estimate
   const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[] | null>(null)
   const [selectedPriority, setSelectedPriority] = useState<string>('standard')
   const [deliveryFee, setDeliveryFee] = useState(0)
   const [estimateLoading, setEstimateLoading] = useState(false)
+  const estimateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Discount
   const [discountCode, setDiscountCode] = useState('')
@@ -55,40 +46,6 @@ export default function CartPage() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
   const total = Math.max(0, subtotal - discountAmount + deliveryFee)
-
-  // Fetch locations on mount
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const res = await fetch('/api/delivery/locations')
-        const data = await res.json()
-        if (data.locations && (data.locations as DawuroboLocation[]).length > 0) {
-          setLocations(data.locations as DawuroboLocation[])
-        } else if (data.error) {
-          setLocationsError(data.error as string)
-        } else {
-          setLocationsError('No delivery locations returned. Enter your city manually.')
-        }
-      } catch {
-        setLocationsError('Could not load delivery locations. Enter your city manually.')
-      } finally {
-        setLocationsLoading(false)
-      }
-    }
-    fetchLocations()
-  }, [])
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (locationDropdownRef.current && !locationDropdownRef.current.contains(e.target as Node)) {
-        setLocationDropdownOpen(false)
-        setLocationSearch('')
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   // Pre-fill from profile
   useEffect(() => {
@@ -108,35 +65,29 @@ export default function CartPage() {
     loadDefaults()
   }, [])
 
-  const triggerEstimate = async (
-    locationOrCity: DawuroboLocation | { id: null; name: string },
-    currentAddress: string
-  ) => {
-    const trimmedAddress = currentAddress.trim()
-    if (!trimmedAddress || !locationOrCity.name.trim() || items.length === 0) {
+  const runEstimate = async (currentAddress: string, currentCity: string) => {
+    if (!currentAddress.trim() || !currentCity.trim() || items.length === 0) {
       setDeliveryOptions(null)
       setDeliveryFee(0)
       return
     }
-
     setEstimateLoading(true)
     try {
-      const body: Record<string, unknown> = {
-        items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
-        dropoff_address: trimmedAddress,
-        dropoff_location_name: locationOrCity.name,
-      }
-      if (locationOrCity.id !== null) body.dropoff_location_id = locationOrCity.id
-
       const res = await fetch('/api/delivery/estimate-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+          dropoff_address: currentAddress.trim(),
+          dropoff_city: currentCity.trim(),
+          dropoff_region: region.trim(),
+        }),
       })
       const data = await res.json()
-      if (data.options) {
-        setDeliveryOptions(data.options as DeliveryOption[])
-        const def = (data.options as DeliveryOption[]).find((o) => o.priority === 'standard') ?? data.options[0]
+      const opts = data.options as DeliveryOption[] | undefined
+      if (opts && opts.length > 0) {
+        setDeliveryOptions(opts)
+        const def = opts.find((o) => o.priority === 'standard') ?? opts[0]
         setSelectedPriority(def.priority)
         setDeliveryFee(def.price)
       } else {
@@ -151,39 +102,23 @@ export default function CartPage() {
     }
   }
 
-  const handleSelectLocation = (location: DawuroboLocation) => {
-    setSelectedLocation(location)
-    setLocationDropdownOpen(false)
-    setLocationSearch('')
-    setDeliveryOptions(null)
-    setDeliveryFee(0)
-    if (address.trim() && items.length > 0) {
-      triggerEstimate(location, address)
-    }
+  const scheduleEstimate = (newAddress: string, newCity: string) => {
+    if (estimateTimerRef.current) clearTimeout(estimateTimerRef.current)
+    estimateTimerRef.current = setTimeout(() => runEstimate(newAddress, newCity), 800)
   }
 
-  // Re-trigger estimate when address changes
-  const addressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const handleAddressChange = (value: string) => {
-    setAddress(value)
-    if (addressTimerRef.current) clearTimeout(addressTimerRef.current)
-    const locationOrCity = selectedLocation ?? (manualCity.trim() ? { id: null, name: manualCity.trim() } : null)
-    if (!locationOrCity) return
-    addressTimerRef.current = setTimeout(() => {
-      if (value.trim()) triggerEstimate(locationOrCity, value)
-    }, 600)
-  }
-
-  const handleManualCityChange = (value: string) => {
-    setManualCity(value)
-    setSelectedLocation(null)
+  const handleAddressChange = (val: string) => {
+    setAddress(val)
     setDeliveryOptions(null)
     setDeliveryFee(0)
-    if (addressTimerRef.current) clearTimeout(addressTimerRef.current)
-    if (!value.trim() || !address.trim()) return
-    addressTimerRef.current = setTimeout(() => {
-      triggerEstimate({ id: null, name: value.trim() }, address)
-    }, 600)
+    scheduleEstimate(val, city)
+  }
+
+  const handleCityChange = (val: string) => {
+    setCity(val)
+    setDeliveryOptions(null)
+    setDeliveryFee(0)
+    scheduleEstimate(address, val)
   }
 
   const selectOption = (option: DeliveryOption) => {
@@ -195,13 +130,8 @@ export default function CartPage() {
     if (items.length === 0 || isCheckingOut) return
     setCheckoutError(null)
 
-    if (!fullName.trim() || !phone.trim() || !address.trim()) {
+    if (!fullName.trim() || !phone.trim() || !address.trim() || !city.trim()) {
       setCheckoutError('Please complete your delivery details before checkout.')
-      return
-    }
-    const cityName = selectedLocation?.name || manualCity.trim()
-    if (!cityName) {
-      setCheckoutError('Please select a delivery location or enter your city.')
       return
     }
 
@@ -225,7 +155,8 @@ export default function CartPage() {
             full_name: fullName.trim(),
             phone: phone.trim(),
             address: address.trim(),
-            city: selectedLocation?.name || manualCity.trim(),
+            city: city.trim(),
+            region: region.trim(),
             notes: notes.trim(),
           },
           delivery_meta: {
@@ -307,14 +238,6 @@ export default function CartPage() {
     setDiscountAmount(0)
     setDiscountError(null)
   }, [items])
-
-  const filteredLocations = locationSearch.trim()
-    ? locations.filter((l) =>
-        l.name.toLowerCase().includes(locationSearch.toLowerCase()) ||
-        (l.city && l.city.toLowerCase().includes(locationSearch.toLowerCase())) ||
-        (l.region && l.region.toLowerCase().includes(locationSearch.toLowerCase()))
-      )
-    : locations
 
   const inputCls =
     'w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all'
@@ -417,138 +340,60 @@ export default function CartPage() {
                 <input value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} placeholder="Full name" />
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} placeholder="Phone number" type="tel" />
                 <textarea value={address} onChange={(e) => handleAddressChange(e.target.value)} rows={2} className={inputCls} placeholder="Street address / landmark" />
-
-                {/* Location dropdown or manual city fallback */}
-                {locationsLoading ? (
-                  <div className={`${inputCls} flex items-center gap-2 text-gray-400`}>
-                    <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
-                    Loading locations…
-                  </div>
-                ) : locationsError || locations.length === 0 ? (
-                  <input
-                    value={manualCity}
-                    onChange={(e) => handleManualCityChange(e.target.value)}
-                    className={inputCls}
-                    placeholder="City / Area (e.g. East Legon, Accra)"
-                  />
-                ) : (
-                  <div className="relative" ref={locationDropdownRef}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLocationDropdownOpen((o) => !o)
-                        setLocationSearch('')
-                      }}
-                      className={`w-full flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm text-left transition-all ${
-                        locationDropdownOpen
-                          ? 'border-orange-400 ring-2 ring-orange-100'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                      <span className={`flex-1 truncate ${selectedLocation ? 'text-gray-900' : 'text-gray-400'}`}>
-                        {selectedLocation
-                          ? [selectedLocation.name, selectedLocation.region].filter(Boolean).join(', ')
-                          : 'Select delivery location'}
-                      </span>
-                      <ChevronDown className={`h-3.5 w-3.5 flex-shrink-0 text-gray-400 transition-transform ${locationDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {locationDropdownOpen && (
-                      <div className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-                        <div className="border-b border-gray-100 px-3 py-2 flex items-center gap-2">
-                          <Search className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-                          <input
-                            autoFocus
-                            type="text"
-                            value={locationSearch}
-                            onChange={(e) => setLocationSearch(e.target.value)}
-                            placeholder="Search locations…"
-                            className="flex-1 text-sm outline-none bg-transparent placeholder-gray-400"
-                          />
-                        </div>
-                        <div className="max-h-52 overflow-y-auto">
-                          {filteredLocations.length === 0 ? (
-                            <p className="px-4 py-3 text-xs text-gray-400">No matching locations</p>
-                          ) : (
-                            filteredLocations.map((loc) => (
-                              <button
-                                key={String(loc.id)}
-                                type="button"
-                                onClick={() => handleSelectLocation(loc)}
-                                className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-orange-50 hover:text-orange-900 ${
-                                  selectedLocation?.id === loc.id ? 'bg-orange-50 text-orange-900 font-semibold' : 'text-gray-800'
-                                }`}
-                              >
-                                <span className="font-medium">{loc.name}</span>
-                                {(loc.city || loc.region) && (
-                                  <span className="ml-1.5 text-xs text-gray-400">
-                                    {[loc.city, loc.region].filter(Boolean).join(', ')}
-                                  </span>
-                                )}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
+                <input value={city} onChange={(e) => handleCityChange(e.target.value)} className={inputCls} placeholder="City / Area (e.g. East Legon, Accra)" />
+                <input value={region} onChange={(e) => setRegion(e.target.value)} className={inputCls} placeholder="Region (e.g. Greater Accra)" />
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="Order notes (optional)" />
               </div>
             </div>
 
-            {/* Delivery options */}
-            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Truck className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                <h2 className="text-sm font-bold text-gray-900">Delivery Option</h2>
-              </div>
+            {/* Delivery options — shown only when estimate succeeds */}
+            {(estimateLoading || deliveryOptions) && (
+              <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Truck className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                  <h2 className="text-sm font-bold text-gray-900">Delivery Option</h2>
+                </div>
 
-              {!(selectedLocation || manualCity.trim()) ? (
-                <p className="text-xs text-gray-400">Select a delivery location above to see delivery options.</p>
-              ) : !address.trim() ? (
-                <p className="text-xs text-gray-400">Enter your street address to see delivery options.</p>
-              ) : estimateLoading ? (
-                <div className="flex items-center gap-2 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                  <span className="text-xs text-gray-500">Calculating delivery fee…</span>
-                </div>
-              ) : deliveryOptions ? (
-                <div className="space-y-2">
-                  {deliveryOptions.map((option) => {
-                    const Icon = PRIORITY_ICONS[option.priority]
-                    const selected = selectedPriority === option.priority
-                    return (
-                      <button
-                        key={option.priority}
-                        type="button"
-                        onClick={() => selectOption(option)}
-                        className={`w-full flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all ${
-                          selected
-                            ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-orange-100' : 'bg-gray-100'}`}>
-                          <Icon className={`h-4 w-4 ${selected ? 'text-orange-600' : 'text-gray-500'}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-semibold ${selected ? 'text-orange-900' : 'text-gray-900'}`}>
-                            {option.label}
+                {estimateLoading ? (
+                  <div className="flex items-center gap-2 py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                    <span className="text-xs text-gray-500">Calculating delivery fee…</span>
+                  </div>
+                ) : deliveryOptions ? (
+                  <div className="space-y-2">
+                    {deliveryOptions.map((option) => {
+                      const Icon = PRIORITY_ICONS[option.priority]
+                      const selected = selectedPriority === option.priority
+                      return (
+                        <button
+                          key={option.priority}
+                          type="button"
+                          onClick={() => selectOption(option)}
+                          className={`w-full flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all ${
+                            selected
+                              ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                            <Icon className={`h-4 w-4 ${selected ? 'text-orange-600' : 'text-gray-500'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-semibold ${selected ? 'text-orange-900' : 'text-gray-900'}`}>
+                              {option.label}
+                            </p>
+                            <p className="text-xs text-gray-500">{option.description} · {option.duration_label}</p>
+                          </div>
+                          <p className={`text-sm font-bold flex-shrink-0 ${selected ? 'text-orange-700' : 'text-gray-700'}`}>
+                            GH₵ {option.price.toLocaleString()}
                           </p>
-                          <p className="text-xs text-gray-500">{option.description} · {option.duration_label}</p>
-                        </div>
-                        <p className={`text-sm font-bold flex-shrink-0 ${selected ? 'text-orange-700' : 'text-gray-700'}`}>
-                          GH₵ {option.price.toLocaleString()}
-                        </p>
-                      </button>
-                    )
-                  })}
-                </div>
-              ) : null}
-            </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {/* Discount code */}
             <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
@@ -592,19 +437,15 @@ export default function CartPage() {
                     <span className="font-semibold text-green-700">− GH₵ {discountAmount.toLocaleString()}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">
-                    Delivery
-                    {deliveryOptions && <span className="ml-1 text-gray-400 text-xs capitalize">({selectedPriority})</span>}
-                  </span>
-                  <span className={`font-semibold ${estimateLoading ? 'text-gray-400' : deliveryFee > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
-                    {estimateLoading
-                      ? '…'
-                      : deliveryFee > 0
-                        ? `GH₵ ${deliveryFee.toLocaleString()}`
-                        : '—'}
-                  </span>
-                </div>
+                {deliveryFee > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">
+                      Delivery
+                      {deliveryOptions && <span className="ml-1 text-gray-400 text-xs capitalize">({selectedPriority})</span>}
+                    </span>
+                    <span className="font-semibold text-gray-900">GH₵ {deliveryFee.toLocaleString()}</span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 border-t border-gray-100 pt-3 flex items-center justify-between">
