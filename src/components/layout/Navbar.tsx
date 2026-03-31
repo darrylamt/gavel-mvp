@@ -132,70 +132,83 @@ export default function Navbar() {
       {/* ── Main header ── */}
       <header className="fixed inset-x-0 top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 md:sticky">
         <div className="mx-auto max-w-7xl px-4 md:px-6">
-          <div className="flex h-14 items-center justify-between gap-2">
+          <div className="flex h-14 md:h-16 items-center gap-4">
 
-            {/* Left: hamburger + logo + desktop nav */}
-            <div className="flex items-center gap-2 md:gap-6 min-w-0">
-              <button
-                onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden flex-shrink-0 -ml-1 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                aria-label="Open menu"
-              >
-                <Menu className="h-5 w-5 text-gray-700" />
-              </button>
+            {/* Mobile: hamburger */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden flex-shrink-0 -ml-1 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5 text-gray-700" />
+            </button>
 
-              <Link href="/" className="flex-shrink-0 flex items-center hover:opacity-80 transition-opacity">
-                <Image src={navLogo} alt="Gavel" className="h-7 w-auto" priority />
-              </Link>
+            {/* Logo */}
+            <Link href="/" className="flex-shrink-0 flex items-center hover:opacity-80 transition-opacity">
+              <Image src={navLogo} alt="Gavel" className="h-7 w-auto" priority />
+            </Link>
 
-              {/* Desktop nav */}
-              <nav className="hidden md:flex items-center gap-0.5">
-                {/* Market dropdown */}
-                <div className="relative group">
-                  <button className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                    Market
-                    <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-                  </button>
-                  <div className="invisible absolute left-0 top-full z-50 pt-1.5 opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-150">
-                    <div className="w-44 rounded-xl border border-gray-100 bg-white py-1 shadow-xl shadow-black/5">
-                      {[
-                        { href: '/auctions', label: 'Auctions' },
-                        { href: '/auctions/winners', label: 'Recent Winners' },
-                        { href: '/shop', label: 'Buy Now' },
-                      ].map(({ href, label }) => (
-                        <Link key={href} href={href} className="flex px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors">
-                          {label}
-                        </Link>
-                      ))}
-                    </div>
+            {/* Desktop nav links — centered */}
+            <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
+              {/* Auctions dropdown */}
+              <div className="relative group">
+                <button className="flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                  Auctions
+                  <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                </button>
+                <div className="invisible absolute left-0 top-full z-50 pt-1.5 opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-150">
+                  <div className="w-44 rounded-xl border border-gray-100 bg-white py-1 shadow-xl shadow-black/5">
+                    {[
+                      { href: '/auctions', label: 'Live Auctions' },
+                      { href: '/auctions/winners', label: 'Recent Winners' },
+                    ].map(({ href, label }) => (
+                      <Link key={href} href={href} className="flex px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                        {label}
+                      </Link>
+                    ))}
                   </div>
                 </div>
+              </div>
 
-                <Link href="/shop/sellers" className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                  Shops
-                </Link>
-                {!loading && user && profileRole === 'seller' && (
-                  <Link href="/seller" className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                    Seller
-                  </Link>
-                )}
-                {isAdmin && (
-                  <Link href="/admin" className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                    Admin
-                  </Link>
-                )}
-                <Link href="/tokens" className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                  Tokens
-                </Link>
-              </nav>
-            </div>
+              <Link href="/shop" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                Shop
+              </Link>
 
-            {/* Right: actions */}
-            <div className="flex items-center gap-1">
-              {/* Desktop: starred, cart, notifications */}
+              <Link href="/shop/sellers" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                Sellers
+              </Link>
+
+              <Link href="/tokens" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                Tokens
+              </Link>
+
+              {!loading && user && profileRole === 'seller' && (
+                <Link href="/seller" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                  Seller
+                </Link>
+              )}
+              {isAdmin && (
+                <Link href="/admin" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                  Admin
+                </Link>
+              )}
+            </nav>
+
+            {/* Right side actions */}
+            <div className="flex items-center gap-1.5 ml-auto md:ml-0">
+
+              {/* Token balance — desktop */}
+              {!loading && user && (
+                <Link href="/tokens" className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors">
+                  <span className="text-sm leading-none">🪙</span>
+                  <span className="font-semibold text-amber-700 text-sm leading-none">{tokens ?? 0}</span>
+                </Link>
+              )}
+
+              {/* Starred — desktop */}
               <Link
                 href="/starred"
-                className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                 aria-label="Starred items"
               >
                 <Heart className="h-[1.1rem] w-[1.1rem]" />
@@ -206,9 +219,10 @@ export default function Navbar() {
                 )}
               </Link>
 
+              {/* Cart */}
               <Link
                 href="/cart"
-                className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                className="relative flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                 aria-label="Cart"
               >
                 <ShoppingCart className="h-[1.1rem] w-[1.1rem]" />
@@ -219,21 +233,15 @@ export default function Navbar() {
                 )}
               </Link>
 
-              <div className="hidden md:block">
-                <NotificationsDropdown />
-              </div>
+              {/* Notifications */}
+              <NotificationsDropdown />
 
-              {/* Token balance */}
-              {!loading && user && (
-                <Link href="/tokens" className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors">
-                  <span className="text-sm leading-none">🪙</span>
-                  <span className="font-semibold text-amber-700 text-sm leading-none">{tokens ?? 0}</span>
-                </Link>
-              )}
-
-              {/* Become a seller */}
+              {/* Sell on Gavel — desktop */}
               {!loading && canBecomeSeller && (
-                <Link href="/seller/apply" className="hidden lg:flex items-center rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap">
+                <Link
+                  href="/seller/apply"
+                  className="hidden lg:flex items-center rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-semibold text-orange-700 hover:bg-orange-100 transition-colors whitespace-nowrap"
+                >
                   Sell on Gavel
                 </Link>
               )}
@@ -273,23 +281,6 @@ export default function Navbar() {
                   </div>
                 </div>
               ) : null}
-
-              {/* Mobile: cart + notifications */}
-              <Link
-                href="/cart"
-                className="relative md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
-                aria-label="Cart"
-              >
-                <ShoppingCart className="h-[1.1rem] w-[1.1rem]" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-orange-500 flex items-center justify-center text-[9px] font-bold text-white px-1 leading-none">
-                    {itemCount}
-                  </span>
-                )}
-              </Link>
-              <div className="md:hidden">
-                <NotificationsDropdown />
-              </div>
             </div>
 
           </div>

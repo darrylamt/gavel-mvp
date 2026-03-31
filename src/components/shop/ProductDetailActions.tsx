@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart } from 'lucide-react'
+import { Heart, ShoppingCart, Zap } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useCart } from '@/hooks/useCart'
 import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useTopToast } from '@/components/ui/TopToastProvider'
@@ -50,6 +51,7 @@ export default function ProductDetailActions({
   variantLabel = null,
   variants = [],
 }: Props) {
+  const router = useRouter()
   const { addToCart } = useCart()
   const [quantity, setQuantity] = useState(1)
   const { isStarredProduct, toggleStarredProduct } = useStarredProducts()
@@ -80,100 +82,130 @@ export default function ProductDetailActions({
 
   const maxQuantity = Math.max(1, Math.min(effectiveStock, 99))
 
+  const handleAddToCart = () => {
+    let addedAny = false
+    for (let i = 0; i < quantity; i += 1) {
+      const added = addToCart({
+        productId,
+        variantId: selectedVariant?.id ?? variantId,
+        variantLabel: selectedVariantLabel,
+        title,
+        price: effectivePrice,
+        imageUrl: selectedVariant?.imageUrl ?? imageUrl,
+        availableStock: effectiveStock,
+      })
+      if (!added) break
+      addedAny = true
+    }
+
+    if (!addedAny) {
+      notify({ title: 'Stock limit reached', description: 'You cannot add more of this item.', variant: 'warning' })
+      return
+    }
+
+    notify({ title: 'Added to cart', description: `${title} was added to your cart.`, variant: 'success' })
+  }
+
+  const handleBuyNow = () => {
+    let addedAny = false
+    for (let i = 0; i < quantity; i += 1) {
+      const added = addToCart({
+        productId,
+        variantId: selectedVariant?.id ?? variantId,
+        variantLabel: selectedVariantLabel,
+        title,
+        price: effectivePrice,
+        imageUrl: selectedVariant?.imageUrl ?? imageUrl,
+        availableStock: effectiveStock,
+      })
+      if (!added) break
+      addedAny = true
+    }
+
+    if (!addedAny) {
+      notify({ title: 'Stock limit reached', description: 'You cannot add more of this item.', variant: 'warning' })
+      return
+    }
+
+    router.push('/cart')
+  }
+
   return (
-    <div className="relative">
-      <div className="flex flex-wrap items-center gap-3">
-        {hasVariants && (
-          <div className="w-full space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Variant</label>
-            <select
-              value={selectedVariant?.id ?? ''}
-              onChange={(event) => {
-                const nextVariantId = event.target.value
-                setSelectedVariantId(nextVariantId)
-                setQuantity(1)
-
-                const nextVariant = variants.find((option) => option.id === nextVariantId) ?? null
-                window.dispatchEvent(
-                  new CustomEvent('product-variant-image-change', {
-                    detail: {
-                      productId,
-                      imageUrl: nextVariant?.imageUrl ?? imageUrl,
-                    },
-                  })
-                )
-              }}
-              className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm text-gray-900 outline-none focus:border-gray-500"
-            >
-              {variants.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {formatVariantLabel(option)} — GH₵ {formatGhsAmount(Number(option.price))} ({option.stock} in stock)
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {priceBreakdown.hasDiscount && priceBreakdown.previousPrice !== null ? (
-          <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
-            <p className="text-gray-500 line-through">GH₵ {formatGhsAmount(priceBreakdown.previousPrice)}</p>
-            <p className="text-lg font-semibold text-gray-900">GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</p>
-            <p className="font-semibold text-emerald-700">
-              You save GH₵ {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
-            </p>
-          </div>
-        ) : (
-          <p className="w-full text-lg font-semibold text-gray-900">GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</p>
-        )}
-
-        <input
-          type="number"
-          min={1}
-          max={maxQuantity}
-          value={quantity}
-          onChange={(event) => {
-            const parsed = Number(event.target.value)
-            if (Number.isNaN(parsed)) {
+    <div className="space-y-4">
+      {/* Variant selector */}
+      {hasVariants && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Variant</label>
+          <select
+            value={selectedVariant?.id ?? ''}
+            onChange={(event) => {
+              const nextVariantId = event.target.value
+              setSelectedVariantId(nextVariantId)
               setQuantity(1)
-              return
-            }
+              const nextVariant = variants.find((option) => option.id === nextVariantId) ?? null
+              window.dispatchEvent(
+                new CustomEvent('product-variant-image-change', {
+                  detail: { productId, imageUrl: nextVariant?.imageUrl ?? imageUrl },
+                })
+              )
+            }}
+            className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+          >
+            {variants.map((option) => (
+              <option key={option.id} value={option.id}>
+                {formatVariantLabel(option)} — GH₵ {formatGhsAmount(Number(option.price))} ({option.stock} in stock)
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-            setQuantity(Math.max(1, Math.min(maxQuantity, Math.floor(parsed))))
-          }}
-          className="h-12 w-16 border border-gray-300 text-center text-sm font-semibold outline-none"
-        />
+      {/* Discount banner */}
+      {priceBreakdown.hasDiscount && priceBreakdown.previousPrice !== null && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm">
+          <p className="text-gray-400 line-through text-xs">GH₵ {formatGhsAmount(priceBreakdown.previousPrice)}</p>
+          <p className="text-base font-bold text-gray-900">GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</p>
+          <p className="text-xs font-semibold text-emerald-700 mt-0.5">
+            You save GH₵ {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
+          </p>
+        </div>
+      )}
 
+      {/* Quantity + actions row */}
+      <div className="flex items-center gap-2">
+        {/* Quantity stepper */}
+        <div className="flex items-center rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+            className="h-11 w-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 font-bold text-lg transition-colors"
+            aria-label="Decrease quantity"
+          >
+            −
+          </button>
+          <span className="w-9 text-center text-sm font-semibold text-gray-900">{quantity}</span>
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+            disabled={quantity >= maxQuantity}
+            className="h-11 w-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:text-gray-300 font-bold text-lg transition-colors"
+            aria-label="Increase quantity"
+          >
+            +
+          </button>
+        </div>
+
+        {/* Add to cart */}
         <button
-          onClick={() => {
-            let addedAny = false
-            for (let i = 0; i < quantity; i += 1) {
-              const added = addToCart({
-                productId,
-                variantId: selectedVariant?.id ?? variantId,
-                variantLabel: selectedVariantLabel,
-                title,
-                price: effectivePrice,
-                imageUrl: selectedVariant?.imageUrl ?? imageUrl,
-                availableStock: effectiveStock,
-              })
-
-              if (!added) break
-              addedAny = true
-            }
-
-            if (!addedAny) {
-              notify({ title: 'Stock limit reached', description: 'You cannot add more of this item.', variant: 'warning' })
-              return
-            }
-
-            notify({ title: 'Added to cart', description: `${title} was added to your cart.`, variant: 'success' })
-          }}
+          onClick={handleAddToCart}
           disabled={effectiveStock <= 0}
-          className="h-12 min-w-44 border border-gray-900 px-6 text-xs font-semibold uppercase tracking-[0.18em] text-gray-900 transition hover:bg-gray-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex-1 h-11 flex items-center justify-center gap-2 rounded-xl border border-gray-900 text-sm font-semibold text-gray-900 hover:bg-gray-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 transition-all"
         >
+          <ShoppingCart className="h-4 w-4" />
           Add to Cart
         </button>
 
+        {/* Wishlist */}
         <button
           type="button"
           onClick={() => {
@@ -185,15 +217,25 @@ export default function ProductDetailActions({
             })
           }}
           aria-label="Toggle starred"
-          className={`flex h-12 w-12 items-center justify-center border transition ${
+          className={`h-11 w-11 flex-shrink-0 flex items-center justify-center rounded-xl border transition-all ${
             isStarred
-              ? 'border-red-300 bg-red-50 text-red-600'
-              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              ? 'border-red-200 bg-red-50 text-red-500'
+              : 'border-gray-200 text-gray-500 hover:bg-gray-50'
           }`}
         >
           <Heart className={`h-4 w-4 ${isStarred ? 'fill-current' : ''}`} />
         </button>
       </div>
+
+      {/* Buy Now */}
+      <button
+        onClick={handleBuyNow}
+        disabled={effectiveStock <= 0}
+        className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-orange-500 text-sm font-bold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50 transition-all shadow-sm shadow-orange-200"
+      >
+        <Zap className="h-4 w-4" />
+        Buy Now
+      </button>
     </div>
   )
 }
