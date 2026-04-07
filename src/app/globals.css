@@ -158,3 +158,17 @@
   }
 }
 
+@keyframes bidSlam {
+  0%   { transform: translateY(-36px) scale(1.05); opacity: 0.4; box-shadow: 0 24px 48px rgba(0,0,0,0.18); }
+  55%  { transform: translateY(5px) scale(1.015); opacity: 1; box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+  72%  { transform: translateY(-3px) scale(0.997); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+  88%  { transform: translateY(2px) scale(1); }
+  100% { transform: translateY(0) scale(1); box-shadow: none; }
+}
+
+@keyframes priceFlip {
+  0%   { transform: scaleY(0) translateY(-4px); opacity: 0; }
+  60%  { transform: scaleY(1.08) translateY(1px); opacity: 1; }
+  100% { transform: scaleY(1) translateY(0); opacity: 1; }
+}
+

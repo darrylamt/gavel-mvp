@@ -682,6 +682,9 @@ export async function PATCH(request: Request) {
     const listingPrice = applyCommission(effectivePrice, commissionPercent)
     const sellerBasePrice = Number(effectivePrice.toFixed(2))
 
+    // Auto-promote from sold_out → active when stock is restocked
+    const effectiveStatus = status === 'sold_out' && effectiveStock > 0 ? 'active' : status
+
     const updatePayload: {
       title: string
       description: string | null
@@ -701,7 +704,7 @@ export async function PATCH(request: Request) {
       description: description || null,
       price: listingPrice,
       stock: effectiveStock,
-      status,
+      status: effectiveStatus,
       category,
       requires_cargo: requiresCargo,
       image_url: imageUrl || (imageUrls[0] ?? null),

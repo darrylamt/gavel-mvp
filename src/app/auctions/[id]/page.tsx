@@ -613,13 +613,44 @@ export default function AuctionDetailPage() {
     }
   }
 
+  const showMobileBidBar = !hasEnded && !isScheduled && !!userId
+
   return (
     <PrivateAuctionGuard
       auctionId={auction.id}
       auctionTitle={auction.title}
       isPrivate={auction.is_private}
     >
-      <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8 md:px-6">
+      {/* Mobile sticky bid bar */}
+      {showMobileBidBar && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Current price</span>
+            <span className="text-sm font-black text-gray-900 tabular-nums">GH₵ {liveCurrentPrice.toLocaleString()}</span>
+            <span className="ml-auto text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-100 rounded-full px-2 py-0.5">
+              {bidderCount} bidder{bidderCount !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <BidForm
+            hasEnded={false}
+            bidAmount={bidAmount}
+            isPlacingBid={isPlacingBid}
+            error={bidError}
+            isLoggedIn
+            currentPrice={liveCurrentPrice}
+            minIncrement={auction.min_increment}
+            maxIncrement={auction.max_increment}
+            onBidAmountChange={setBidAmount}
+            onSubmit={placeBid}
+            compact
+          />
+          {bidError && (
+            <p className="mt-1.5 text-xs font-medium text-red-500">{bidError}</p>
+          )}
+        </div>
+      )}
+
+      <main className={`mx-auto w-full max-w-5xl px-4 py-6 sm:py-8 md:px-6 ${showMobileBidBar ? 'pb-32 lg:pb-8' : ''}`}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
 
         {/* Breadcrumb */}
@@ -639,7 +670,7 @@ export default function AuctionDetailPage() {
               <ImageGallery images={fallbackImages} />
             </div>
 
-            {/* Title + share */}
+            {/* Title + share + mobile countdown */}
             <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
               <div className="flex items-start justify-between gap-3">
                 <AuctionHeader
@@ -652,6 +683,17 @@ export default function AuctionDetailPage() {
                 />
                 <ShareAuctionButton auctionId={auction.id} />
               </div>
+
+              {/* Countdown — mobile only (shown inline under title) */}
+              {(auction.starts_at || auction.ends_at) && (
+                <div className="mt-3 lg:hidden">
+                  <AuctionCountdown
+                    targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
+                    phase={countdownPhase}
+                    timeLeft={timeLeft}
+                  />
+                </div>
+              )}
 
               {/* Private auction notice */}
               {auction.is_private && (
@@ -738,17 +780,24 @@ export default function AuctionDetailPage() {
                 )}
               </div>
             ) : null}
+
+            {/* Bid list — in left col on desktop, full width on mobile */}
+            <div className="hidden lg:block">
+              <BidList bids={bids} currentUserId={userId} />
+            </div>
           </section>
 
           {/* Right column / sidebar */}
           <aside className="space-y-4">
-            {/* Countdown */}
+            {/* Countdown — desktop only */}
             {(auction.starts_at || auction.ends_at) && (
-              <AuctionCountdown
-                targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
-                phase={countdownPhase}
-                timeLeft={timeLeft}
-              />
+              <div className="hidden lg:block">
+                <AuctionCountdown
+                  targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
+                  phase={countdownPhase}
+                  timeLeft={timeLeft}
+                />
+              </div>
             )}
 
             {/* Status banners */}
@@ -775,18 +824,36 @@ export default function AuctionDetailPage() {
               </div>
             )}
 
-            {/* Bid form */}
-            <BidForm
-              hasEnded={hasEnded || isScheduled}
-              bidAmount={bidAmount}
-              isPlacingBid={isPlacingBid}
-              error={bidError}
-              isLoggedIn={!!userId}
-              minIncrement={auction.min_increment}
-              maxIncrement={auction.max_increment}
-              onBidAmountChange={setBidAmount}
-              onSubmit={placeBid}
-            />
+            {/* Bid form — desktop only (mobile uses sticky bottom bar) */}
+            <div className="hidden lg:block">
+              <BidForm
+                hasEnded={hasEnded || isScheduled}
+                bidAmount={bidAmount}
+                isPlacingBid={isPlacingBid}
+                error={bidError}
+                isLoggedIn={!!userId}
+                currentPrice={liveCurrentPrice}
+                minIncrement={auction.min_increment}
+                maxIncrement={auction.max_increment}
+                onBidAmountChange={setBidAmount}
+                onSubmit={placeBid}
+              />
+            </div>
+
+            {/* Sign-in prompt on mobile for non-logged-in users */}
+            {!userId && !hasEnded && !isScheduled && (
+              <div className="lg:hidden">
+                <BidForm
+                  hasEnded={false}
+                  bidAmount=""
+                  isPlacingBid={false}
+                  error={null}
+                  isLoggedIn={false}
+                  onBidAmountChange={() => {}}
+                  onSubmit={() => {}}
+                />
+              </div>
+            )}
 
             {/* Winner panel */}
             <WinnerPanel
@@ -799,8 +866,8 @@ export default function AuctionDetailPage() {
           </aside>
         </div>
 
-        {/* Bid list */}
-        <div className="mt-5">
+        {/* Bid list — mobile (full width below grid) */}
+        <div className="mt-5 lg:hidden">
           <BidList bids={bids} currentUserId={userId} />
         </div>
       </main>
