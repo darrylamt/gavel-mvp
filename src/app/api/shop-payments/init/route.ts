@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { calculateDiscountAmount, resolveDiscountCode } from '@/lib/discounts'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 type CheckoutItemInput = {
   product_id: string
@@ -30,6 +31,11 @@ const supabase = createClient(
 )
 
 export async function POST(req: Request) {
+  // Rate limit: 10 checkout initiations per minute per IP
+  const ip = getClientIp(req)
+  const rl = rateLimit('shop-payments-init', ip, 10, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   try {
     const { user_id, email, items, delivery, discount_code, delivery_meta } = (await req.json()) as {
       user_id?: string
@@ -262,7 +268,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(json.data)
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to initialize checkout payment'
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('Shop payment init error:', error)
+    return NextResponse.json({ error: 'Failed to initialize checkout. Please try again.' }, { status: 500 })
   }
 }

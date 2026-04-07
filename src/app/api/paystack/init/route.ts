@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,6 +17,11 @@ function normalizeAuctionId(raw: unknown) {
 }
 
 export async function POST(req: Request) {
+  // Rate limit: 10 payment initiations per minute per IP
+  const ip = getClientIp(req)
+  const rl = rateLimit('paystack-init', ip, 10, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   const payload = await req.json()
   const auction_id = normalizeAuctionId(payload.auction_id)
   const user_id = payload.user_id

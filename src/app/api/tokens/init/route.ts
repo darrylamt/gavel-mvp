@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,19 +15,31 @@ const PACKS: Record<string, { tokens: number; amount: number }> = {
 }
 
 export async function POST(req: Request) {
-  const { pack, user_id, email } = await req.json()
+  // Rate limit: 5 token purchase initiations per minute per IP
+  const ip = getClientIp(req)
+  const rl = rateLimit('tokens-init', ip, 5, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
+  let body: { pack?: string; user_id?: string; email?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  const { pack, user_id, email } = body
+
+  if (!pack || !user_id || !email) {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
 
   const selected = PACKS[pack]
   if (!selected) {
-    return NextResponse.json(
-      { error: 'Invalid token pack' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Invalid token pack' }, { status: 400 })
   }
 
-  const res = await fetch(
-    'https://api.paystack.co/transaction/initialize',
-    {
+  try {
+    const res = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
@@ -42,17 +55,18 @@ export async function POST(req: Request) {
         },
         callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/tokens/success`,
       }),
+    })
+
+    const json = await res.json()
+
+    if (!json.status) {
+      console.error('Paystack token init failed:', json.message)
+      return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 })
     }
-  )
 
-  const json = await res.json()
-
-  if (!json.status) {
-    return NextResponse.json(
-      { error: 'Paystack init failed' },
-      { status: 500 }
-    )
+    return NextResponse.json(json.data)
+  } catch (error) {
+    console.error('Token init error:', error)
+    return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 })
   }
-
-  return NextResponse.json(json.data)
 }

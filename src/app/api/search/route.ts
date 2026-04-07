@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { generateEmbedding } from '@/lib/embeddings'
 import { createClient } from '@supabase/supabase-js'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 type SearchResult = {
   id: string
@@ -14,6 +15,11 @@ type SearchResult = {
 }
 
 export async function POST(req: Request) {
+  // Rate limit: 30 searches per minute per IP
+  const ip = getClientIp(req)
+  const rl = rateLimit('search', ip, 30, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   try {
     const { query } = await req.json()
 
@@ -104,9 +110,6 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error('Search API error:', error)
-    const message = error instanceof Error ? error.message : 'Search failed'
-    const details = error instanceof Error ? error.stack : ''
-    console.error('Error details:', details)
-    return NextResponse.json({ error: message, results: [], noResults: true }, { status: 500 })
+    return NextResponse.json({ error: 'Search failed. Please try again.', results: [], noResults: true }, { status: 500 })
   }
 }

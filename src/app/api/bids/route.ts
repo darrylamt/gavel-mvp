@@ -5,6 +5,7 @@ import { maskBidderEmail } from '@/lib/maskBidderEmail'
 import { queueBidNotifications } from '@/lib/arkesel/events'
 import { queueArkeselNotification } from '@/lib/arkesel/queue'
 import { sendNotificationEmail } from '@/lib/resend-service'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -97,6 +98,11 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  // Rate limit: 10 bids per minute per IP
+  const ip = getClientIp(req)
+  const rl = rateLimit('bids', ip, 10, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   const authHeader = req.headers.get('authorization') || ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
   if (!token) {
@@ -278,7 +284,7 @@ export async function POST(req: Request) {
   if (bidError) {
     console.error('Bid insert error:', bidError)
     return NextResponse.json(
-      { error: `Failed to place bid: ${bidError.message}` },
+      { error: 'Failed to place bid. Please try again.' },
       { status: 500 }
     )
   }
