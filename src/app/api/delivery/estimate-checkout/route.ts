@@ -112,7 +112,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ options: [] })
     }
 
-    const { available_options, service_type } = estimate.data
+    const available_options = estimate.data?.available_options ?? []
+    const service_type = estimate.data?.service_type ?? 'standard'
     const isIntercity = service_type === 'Intercity'
 
     let options: DeliveryOption[]
