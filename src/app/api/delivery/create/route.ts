@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
-import { dawuroboRequest, type DawuroboOrder } from '@/lib/dawurobo'
+import { dawuroboRequest, type DawuroboCreateOrderResponse } from '@/lib/dawurobo'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -117,29 +117,32 @@ export async function POST(req: Request) {
         is_paid: true,
       },
       priority,
+      ...(order.delivery_notes ? { special_instructions: order.delivery_notes } : {}),
     }
 
-    const dawuroboOrder = await dawuroboRequest<DawuroboOrder>('POST', '/orders', dawuroboPayload)
+    const response = await dawuroboRequest<DawuroboCreateOrderResponse>('POST', '/orders', dawuroboPayload)
+    const dawuroboOrderId = response.data.order_details.order_id
+    const dawuroboStatus = response.data.status || 'pending'
 
     await supabase
       .from('shop_orders')
       .update({
-        dawurobo_order_id: dawuroboOrder.id,
-        dawurobo_status: dawuroboOrder.status || 'pending',
+        dawurobo_order_id: dawuroboOrderId,
+        dawurobo_status: dawuroboStatus,
       })
       .eq('id', order_id)
 
     await supabase.from('delivery_events').insert({
       order_id,
-      status: dawuroboOrder.status || 'pending',
+      status: dawuroboStatus,
       description: 'Delivery order created with Dawurobo',
       timestamp: new Date().toISOString(),
     })
 
     return NextResponse.json({
       success: true,
-      dawurobo_order_id: dawuroboOrder.id,
-      status: dawuroboOrder.status,
+      dawurobo_order_id: dawuroboOrderId,
+      status: dawuroboStatus,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to create delivery'

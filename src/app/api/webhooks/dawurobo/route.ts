@@ -11,12 +11,21 @@ const supabase = createClient(
 const SMS_TRIGGER_STATUSES = new Set(['picked_up', 'in_transit', 'delivered', 'failed'])
 
 const STATUS_DESCRIPTIONS: Record<string, string> = {
+  order_created: 'Your delivery order has been created.',
+  accepted: 'Your delivery order has been accepted.',
+  rejected: 'Your delivery order was rejected.',
+  received: 'Your package has been received at the facility.',
   assigned: 'A rider has been assigned to your delivery.',
   picked_up: 'Your order has been picked up and is on its way.',
   in_transit: 'Your order is in transit to your address.',
   delivered: 'Your order has been delivered.',
   failed: 'Delivery attempt failed. Our team will contact you.',
+  cancelled: 'Your delivery has been cancelled.',
+  rescheduled: 'Your delivery has been rescheduled.',
   returned: 'Your order has been returned to the sender.',
+  returned_to_vendor: 'Your order has been returned to the vendor.',
+  refunded: 'A refund has been initiated for your order.',
+  updated: 'Your delivery details have been updated.',
 }
 
 export async function POST(req: Request) {
@@ -51,8 +60,9 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const dawuroboOrderId = payload.order_id as string | undefined
-  const newStatus = payload.status as string | undefined
+  const orderData = payload.order_data as Record<string, unknown> | undefined
+  const dawuroboOrderId = orderData?.order_id as string | undefined
+  const newStatus = orderData?.status as string | undefined
   const eventTimestamp = (payload.timestamp as string | undefined) ?? new Date().toISOString()
 
   if (!dawuroboOrderId || !newStatus) {

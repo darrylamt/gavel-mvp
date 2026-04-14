@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
-import { dawuroboRequest, type DawuroboEstimate } from '@/lib/dawurobo'
+import { dawuroboRequest, type DawuroboEstimateResponse } from '@/lib/dawurobo'
+import { getCoordinatesForLocation } from '@/lib/ghanaLocations'
 
 export type DeliveryOption = {
   priority: 'economy' | 'standard' | 'cargo'
@@ -15,9 +16,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
-
-// Ghana approximate center — used as coordinate fallback
-const GHANA_CENTER = { lat: 5.6037, lng: -0.1870 }
 
 /**
  * POST /api/delivery/estimate-checkout
@@ -93,16 +91,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ options: [] })
     }
 
-    let estimate: DawuroboEstimate
+    // Resolve dropoff coordinates from region > city — drives the Haversine estimate.
+    // Pickup coordinates are optional per Dawurobo docs; ORS will resolve from the address.
+    const dropoffCoords = getCoordinatesForLocation(dropoff_region || dropoff_city || '')
+
+    let estimate: DawuroboEstimateResponse
     try {
-      estimate = await dawuroboRequest<DawuroboEstimate>('POST', '/estimates', {
+      estimate = await dawuroboRequest<DawuroboEstimateResponse>('POST', '/estimates', {
         pickup_location: {
           address: String(sellerProfile.address),
-          coordinates: GHANA_CENTER,
         },
         delivery_location: {
           address: dropoff_address.trim(),
-          coordinates: GHANA_CENTER,
+          coordinates: dropoffCoords,
         },
         priority: hasCargo ? 'cargo' : 'standard',
         order_date: new Date().toISOString(),
@@ -111,36 +112,50 @@ export async function POST(req: Request) {
       return NextResponse.json({ options: [] })
     }
 
-    const base = Math.max(0, Number(estimate.estimated_price) || 0)
-    const mins = Math.max(10, Number(estimate.estimated_duration_minutes) || 30)
+    const { available_options, service_type } = estimate.data
+    const isIntercity = service_type === 'Intercity'
 
     let options: DeliveryOption[]
 
-    if (hasCargo) {
+    if (isIntercity) {
+      const intercity = available_options[0]
+      options = [
+        {
+          priority: 'standard',
+          label: 'Intercity',
+          description: intercity?.description ?? 'Intercity delivery',
+          price: intercity?.price ?? 50,
+          duration_label: '1-2 days',
+        },
+      ]
+    } else if (hasCargo) {
+      const cargoOption = available_options.find((o) => o.priority === 'cargo')
       options = [
         {
           priority: 'cargo',
           label: 'Cargo',
-          description: 'Large / heavy items',
-          price: Math.round(base * 100) / 100,
-          duration_label: `~${Math.ceil(mins)} min`,
+          description: cargoOption?.description ?? 'Large / heavy items',
+          price: cargoOption?.price ?? 70,
+          duration_label: 'Same day',
         },
       ]
     } else {
+      const economyOption = available_options.find((o) => o.priority === 'economy')
+      const standardOption = available_options.find((o) => o.priority === 'standard')
       options = [
         {
           priority: 'economy',
           label: 'Economy',
-          description: 'Standard delivery',
-          price: Math.round(base * 100) / 100,
-          duration_label: `~${Math.ceil(mins * 1.3)} min`,
+          description: economyOption?.description ?? 'Standard delivery',
+          price: economyOption?.price ?? 28,
+          duration_label: 'Same day',
         },
         {
           priority: 'standard',
           label: 'Standard',
-          description: 'Faster pickup',
-          price: Math.round(base * 1.2 * 100) / 100,
-          duration_label: `~${Math.ceil(mins)} min`,
+          description: standardOption?.description ?? 'Faster pickup',
+          price: standardOption?.price ?? 35,
+          duration_label: 'Same day',
         },
       ]
     }

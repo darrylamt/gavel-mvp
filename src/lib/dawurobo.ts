@@ -44,7 +44,7 @@ export async function dawuroboRequest<T = unknown>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-Api-Key':    API_KEY,
+    'X-API-Key':    API_KEY,
     'X-Timestamp':  TIMESTAMP,
     'X-Nonce':      NONCE,
     'X-Signature':  signature,
@@ -93,14 +93,58 @@ export type DawuroboLocation = {
   [key: string]: unknown
 }
 
-export type DawuroboEstimate = {
-  estimated_price: number
-  currency: string
-  estimated_duration_minutes: number
+export type DawuroboCreateOrderResponse = {
+  status: string
+  data: {
+    order_details: {
+      order_id: string
+      estimated_delivery?: string
+    }
+    status: string
+  }
 }
 
-export type DawuroboOrder = {
-  id: string
+export type DawuroboEstimateOption = {
+  priority: 'economy' | 'standard' | 'cargo'
+  price: number
+  description: string
+}
+
+export type DawuroboEstimateResponse = {
   status: string
+  data: {
+    estimated_price: number
+    pickup_time?: string
+    delivery_time?: string
+    delivery_window?: { earliest: string; latest: string }
+    priority_level?: string
+    service_type: string
+    available_options: DawuroboEstimateOption[]
+    location_coverage?: {
+      delivery_available: boolean
+      service_area: string
+    }
+  }
+}
+
+export type DawuroboWebhookOrderData = {
+  external_order_reference?: string
+  order_id: string
+  status: string
+  status_reason?: string
+  rider_info?: { id: string; name: string; phone: string }
+  delivery_info?: {
+    recipient_name: string
+    recipient_phone: string
+    delivery_address: string
+    delivery_date: string
+  }
+  timestamps?: Record<string, string>
   tracking_url?: string
+}
+
+export type DawuroboWebhookPayload = {
+  event_type: string
+  timestamp: string
+  order_data: DawuroboWebhookOrderData
 }
