@@ -160,5 +160,5 @@ export function getCoordinatesForLocation(regionOrCity: string): { lat: number; 
   const direct = REGION_COORDINATES[regionOrCity]
   if (direct) return direct
   const region = CITY_REGION_MAP[regionOrCity.toLowerCase()]
-  return (region && REGION_COORDINATES[region]) ?? REGION_COORDINATES['Greater Accra']!
+  return (region ? REGION_COORDINATES[region] : undefined) ?? REGION_COORDINATES['Greater Accra']!
 }
