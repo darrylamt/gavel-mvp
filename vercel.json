@@ -3,6 +3,10 @@
     {
       "path": "/api/payouts/auto-release?secret=gavel-payout-release-2026-abc123xyz",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/referrals/process-payouts?secret=523518576fddae43b3e71a550e0907a3905dd4fd7cb930d204c33248ab51001e",
+      "schedule": "0 9 1 * *"
     }
   ]
 }
