@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
     const { data: order, error: orderError } = await supabase
       .from('shop_orders')
-      .select('id, user_id, status, buyer_full_name, buyer_phone, delivery_address, delivery_city, delivery_region, delivery_notes, dawurobo_order_id, delivery_priority')
+      .select('id, user_id, status, buyer_full_name, buyer_phone, delivery_address, delivery_city, delivery_region, delivery_notes, dawurobo_order_id, delivery_priority, delivery_fee')
       .eq('id', order_id)
       .maybeSingle()
 
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
       },
       payment: {
         method: 'mobile_money',
-        amount: 0,
+        amount: Math.max(1, Number((order as Record<string, unknown>).delivery_fee) || 1),
         is_paid: true,
       },
       priority,
