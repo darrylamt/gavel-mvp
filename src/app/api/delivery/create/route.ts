@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
     const pickupAddress = sellerProfile?.address ?? ''
     const pickupPhone = sellerProfile?.phone ?? ''
-    const pickupName = sellerProfile?.username || sellerShop?.name || 'Seller'
+    const pickupName = sellerShop?.name || sellerProfile?.username || 'Seller'
 
     if (!pickupAddress) {
       return NextResponse.json(
