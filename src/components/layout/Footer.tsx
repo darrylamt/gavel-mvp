@@ -77,6 +77,8 @@ export default function Footer() {
                 { href: '/auctions', label: 'Auctions' },
                 { href: '/shop', label: 'Shop' },
                 { href: '/tokens', label: 'Tokens' },
+                { href: '/referrals', label: 'Referrals' },
+                { href: '/leaderboard', label: 'Leaderboard' },
                 { href: '/seller/apply', label: 'Become a Seller' },
               ].map(({ href, label }) => (
                 <li key={label}>

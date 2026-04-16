@@ -265,6 +265,7 @@ export default function Navbar() {
                     {[
                       { href: '/profile/orders', label: 'Track Orders' },
                       { href: '/profile', label: 'My Profile' },
+                      { href: '/referrals', label: 'Referrals & Earnings' },
                       ...(profileRole === 'seller' ? [{ href: '/seller', label: 'Seller Dashboard' }] : []),
                       { href: '/tokens', label: 'Buy Tokens' },
                       { href: '/profile/settings', label: 'Settings' },
@@ -388,6 +389,8 @@ export default function Navbar() {
                 {[
                   { href: '/profile/orders', label: 'Track Orders' },
                   { href: '/profile', label: 'My Profile' },
+                  { href: '/referrals', label: 'Referrals & Earnings' },
+                  { href: '/leaderboard', label: 'Leaderboard' },
                   { href: '/starred', label: 'Starred Items' },
                   { href: '/cart', label: 'Cart' },
                   ...(profileRole === 'seller' ? [{ href: '/seller', label: 'Seller Dashboard' }] : []),
