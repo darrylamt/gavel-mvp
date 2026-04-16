@@ -62,13 +62,17 @@ export default function AuthCallbackPage() {
 
               // Link referral if a gavel_ref cookie is present (new user signup)
               if (!existingProfile) {
-                const gavelRef = document.cookie
+                const rawCookie = document.cookie
                   .split(';')
                   .find((c) => c.trim().startsWith('gavel_ref='))
-                  ?.split('=')[1]
+                const gavelRef = rawCookie
+                  ? rawCookie.trim().split('=').slice(1).join('=')
+                  : null
 
                 if (gavelRef) {
                   const referralCode = decodeURIComponent(gavelRef)
+                  // Clear cookie immediately — no need to keep it after use
+                  document.cookie = 'gavel_ref=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax'
                   fetch('/api/referrals/link', {
                     method: 'POST',
                     headers: {

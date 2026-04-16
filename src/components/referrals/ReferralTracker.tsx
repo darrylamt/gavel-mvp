@@ -30,7 +30,8 @@ export default function ReferralTracker() {
       // Set 30-day cookie
       const expires = new Date()
       expires.setDate(expires.getDate() + 30)
-      document.cookie = `gavel_ref=${encodeURIComponent(ref)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`
+      const secure = location.protocol === 'https:' ? '; Secure' : ''
+      document.cookie = `gavel_ref=${encodeURIComponent(ref)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${secure}`
     })
   }, [searchParams])
 
