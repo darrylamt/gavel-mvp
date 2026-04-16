@@ -61,6 +61,7 @@ export async function sendArkeselSMS(input: {
     sender: sender,
     message: input.message,
     recipients: [normalizedTo],
+    sandbox: false,
   }
 
   try {
@@ -88,13 +89,13 @@ export async function sendArkeselSMS(input: {
       return { success: false, error: String(message) }
     }
 
-    // Check for success in response
-    const success = payload?.code === '1000' || payload?.status === 'success' || response.ok
-    if (!success) {
+    // v2 success: { status: 'success', data: [...] }
+    if (payload?.status !== 'success') {
       return { success: false, error: payload?.message || 'SMS delivery failed' }
     }
 
-    const messageId = payload?.data?.message_id || payload?.message_id || payload?.id
+    const firstItem = Array.isArray(payload?.data) ? payload.data[0] : null
+    const messageId = firstItem?.id || payload?.data?.message_id || payload?.message_id
     return { success: true, messageId: messageId ? String(messageId) : undefined }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'

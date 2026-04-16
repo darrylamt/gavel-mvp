@@ -30,13 +30,16 @@ export async function sendNotificationEmail<T extends EmailTemplateKey>(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { subject, html } = emailTemplates[template](data as any)
+    const rendered = emailTemplates[template](data as any)
+    const { subject, html } = rendered
+    const text = 'text' in rendered ? (rendered as { subject: string; html: string; text: string }).text : undefined
 
     const result = await resend.emails.send({
-      from: 'Gavel Ghana <notifications@gavelghana.com>',
+      from: 'Gavel <noreply@gavelgh.com>',
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
+      ...(text ? { text } : {}),
     })
 
     if (result.error) {

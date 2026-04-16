@@ -54,25 +54,25 @@ export async function POST(req: Request) {
     const otp = String(Math.floor(100000 + Math.random() * 900000))
     const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000)
 
-    // Store OTP in referrals record (upsert in case record doesn't exist yet)
-    const { error: upsertErr } = await supabase
+    // Try updating an existing referral record first (preserves referral_code)
+    const { data: updateResult, error: updateErr } = await supabase
       .from('referrals')
-      .upsert(
-        {
-          user_id: authData.user.id,
-          referral_code: '', // will be set if missing by generate endpoint
-          phone_otp: otp,
-          phone_otp_expires_at: expiresAt.toISOString(),
-        },
-        { onConflict: 'user_id', ignoreDuplicates: false }
-      )
+      .update({ phone_otp: otp, phone_otp_expires_at: expiresAt.toISOString() })
+      .eq('user_id', authData.user.id)
+      .select('user_id')
+      .maybeSingle()
 
-    if (upsertErr) {
-      // Try update if upsert fails (record already exists but code can't be blank)
+    if (!updateResult && !updateErr) {
+      // No existing record — generate a referral code via RPC then insert
+      const { data: newCode } = await supabase.rpc('generate_referral_code')
       await supabase
         .from('referrals')
-        .update({ phone_otp: otp, phone_otp_expires_at: expiresAt.toISOString() })
-        .eq('user_id', authData.user.id)
+        .insert({
+          user_id: authData.user.id,
+          referral_code: String(newCode || ''),
+          phone_otp: otp,
+          phone_otp_expires_at: expiresAt.toISOString(),
+        })
     }
 
     // Send OTP via Arkesel directly (real-time security flow — skip queue)

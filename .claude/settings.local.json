@@ -3,7 +3,35 @@
     "allow": [
       "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
       "Bash(ls /c/Users/amoat/Documents/gavel-mobile/app/\\\\\\(auth\\\\\\)/_layout.tsx)",
-      "Bash(cat /c/Users/amoat/Documents/gavel-mobile/app/\\\\\\(auth\\\\\\)/_layout.tsx)"
+      "Bash(cat /c/Users/amoat/Documents/gavel-mobile/app/\\\\\\(auth\\\\\\)/_layout.tsx)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__get_advisors",
+      "mcp__claude_ai_Supabase__get_logs",
+      "Bash(node -e ':*)",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "mcp__claude_ai_Vercel__list_teams",
+      "mcp__claude_ai_Vercel__list_projects",
+      "mcp__claude_ai_Vercel__list_deployments",
+      "mcp__claude_ai_Vercel__get_project",
+      "mcp__claude_ai_Vercel__get_runtime_logs",
+      "mcp__claude_ai_Vercel__get_deployment",
+      "mcp__claude_ai_Vercel__get_deployment_build_logs",
+      "Bash(grep -r \"coordinates\\\\|geocod\\\\|lat\\\\|lng\\\\|latitude\\\\|longitude\" src/lib/ --include=\"*.ts\" -l)",
+      "Bash(grep -r \"city_coordinates\\\\|CITY_COORD\\\\|ghana.*coord\\\\|coord.*ghana\" src/ --include=\"*.ts\" -i -l)",
+      "Bash(xargs grep:*)",
+      "Bash(ls -1t \"/c/Users/Darryl Amoatey/OneDrive - Smart Workplace/Documents/gavel-mvp/supabase/migrations\"/*.sql)",
+      "Bash(find \"/c/Users/Darryl Amoatey/OneDrive - Smart Workplace/Documents/gavel-mvp\" -name \"*.sql\" -type f -exec grep -l \"create table.*profiles\\\\|CREATE TABLE.*profiles\" {} \\\\;)",
+      "Bash(find \"/c/Users/Darryl Amoatey/OneDrive - Smart Workplace/Documents/gavel-mvp\" -name \"*.sql\" -exec grep -H \"create table.*profiles\\\\|CREATE TABLE.*profiles\" {} \\\\;)",
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(ls node_modules/.bin/tsc*)",
+      "Bash(npm run:*)",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('hex'\\)\\)\")",
+      "Bash(mv ARKESEL_API_REFERENCE.md docs/)",
+      "Bash(mv PAYSTACK_API_REFERENCE.md docs/)",
+      "Bash(mv RESEND_API_REFERENCE.md docs/)",
+      "Bash(ls node_modules/typescript/bin/)"
     ]
   }
 }

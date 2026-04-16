@@ -11,6 +11,7 @@ import {
   queueReferralEarningNotification,
 } from '@/lib/arkesel/events'
 import { processReferralCommission } from '@/lib/referrals'
+import { sendNotificationEmail } from '@/lib/resend-service'
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -104,6 +105,24 @@ export async function POST(req: Request) {
             userId: commission.referrer_id,
             commissionGHS: Number(commission.commission_amount),
             commissionId: commission.id,
+          }).catch(() => {})
+
+          // Email notification
+          const referrerId = commission.referrer_id
+          const commGHS = Number(commission.commission_amount)
+          supabase.auth.admin.getUserById(referrerId).then(({ data: lu }) => {
+            const email = lu.user?.email
+            if (!email) return
+            supabase.from('referrals').select('pending_earnings').eq('user_id', referrerId).maybeSingle().then(({ data: ref }) => {
+              supabase.from('profiles').select('username').eq('id', referrerId).maybeSingle().then(({ data: prof }) => {
+                sendNotificationEmail(email, 'referralEarning', {
+                  referrerName: (prof as { username?: string } | null)?.username || email.split('@')[0],
+                  commissionGHS: commGHS,
+                  totalPendingGHS: Number((ref as { pending_earnings?: number } | null)?.pending_earnings ?? commGHS),
+                  dashboardUrl: 'https://gavelgh.com/referrals',
+                }).catch(() => {})
+              })
+            })
           }).catch(() => {})
         }
       }

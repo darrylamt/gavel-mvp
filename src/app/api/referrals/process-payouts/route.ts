@@ -4,6 +4,7 @@ import 'server-only'
 import { initiateTransfer } from '@/lib/paystack-transfer'
 import { getPreviousPeriod, getPeriodRange, MIN_WITHDRAWAL_GHS } from '@/lib/referrals'
 import { queueReferralPayoutNotification } from '@/lib/arkesel/events'
+import { sendNotificationEmail } from '@/lib/resend-service'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -148,12 +149,26 @@ export async function POST(req: Request) {
         p_amount: totalAmount,
       })
 
-      // Send SMS notification
-      await queueReferralPayoutNotification({
+      // Send SMS + email notifications (fire-and-forget)
+      queueReferralPayoutNotification({
         userId: referrer.user_id,
         amountGHS: totalAmount,
         period,
-      })
+      }).catch(() => {})
+
+      supabase.auth.admin.getUserById(referrer.user_id).then(({ data: authLookup }) => {
+        const email = authLookup.user?.email
+        if (!email) return
+        supabase.from('profiles').select('username').eq('id', referrer.user_id).maybeSingle().then(({ data: prof }) => {
+          const periodLabel = new Date(`${period}-01`).toLocaleDateString('en-GH', { month: 'long', year: 'numeric' })
+          sendNotificationEmail(email, 'referralPayout', {
+            referrerName: (prof as { username?: string } | null)?.username || email.split('@')[0],
+            amountGHS: totalAmount,
+            period: periodLabel,
+            dashboardUrl: 'https://gavelgh.com/referrals',
+          }).catch(() => {})
+        })
+      }).catch(() => {})
 
       results.processed++
     } catch (err) {

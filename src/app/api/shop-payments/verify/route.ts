@@ -410,6 +410,24 @@ export async function POST(req: Request) {
             commissionGHS: Number(commission.commission_amount),
             commissionId: commission.id,
           }).catch(() => {})
+
+          // Email notification
+          const referrerId = commission.referrer_id
+          const commGHS = Number(commission.commission_amount)
+          supabase.auth.admin.getUserById(referrerId).then(({ data: lu }) => {
+            const email = lu.user?.email
+            if (!email) return
+            supabase.from('referrals').select('pending_earnings').eq('user_id', referrerId).maybeSingle().then(({ data: ref }) => {
+              supabase.from('profiles').select('username').eq('id', referrerId).maybeSingle().then(({ data: prof }) => {
+                sendNotificationEmail(email, 'referralEarning', {
+                  referrerName: (prof as { username?: string } | null)?.username || email.split('@')[0],
+                  commissionGHS: commGHS,
+                  totalPendingGHS: Number((ref as { pending_earnings?: number } | null)?.pending_earnings ?? commGHS),
+                  dashboardUrl: 'https://gavelgh.com/referrals',
+                }).catch(() => {})
+              })
+            })
+          }).catch(() => {})
         }
       }
     }
