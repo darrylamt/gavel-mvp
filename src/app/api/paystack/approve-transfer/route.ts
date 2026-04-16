@@ -15,87 +15,97 @@ const supabase = createClient(
  */
 export async function POST(req: Request) {
   try {
-    // Verify Paystack signature
+    // Verify Paystack signature using raw body (same approach as main webhook)
+    const rawBody = await req.text()
     const hash = crypto
       .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
-      .update(JSON.stringify(await req.clone().json()))
+      .update(rawBody)
       .digest('hex')
 
     const signature = req.headers.get('x-paystack-signature')
 
     if (hash !== signature) {
-      console.error('Invalid Paystack signature')
-      return NextResponse.json(
-        { status: 'declined', reason: 'Invalid signature' },
-        { status: 400 }
-      )
+      console.error('Invalid Paystack signature on transfer approval')
+      return NextResponse.json({ approved: false }, { status: 400 })
     }
 
-    const body = await req.json()
-    const { transfer_code, reference } = body
-
-    if (!transfer_code || !reference) {
-      return NextResponse.json(
-        { status: 'declined', reason: 'Missing required fields' },
-        { status: 400 }
-      )
+    let body: Record<string, unknown>
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      return NextResponse.json({ approved: false }, { status: 400 })
     }
 
-    // Extract payout_id from reference (format: payout_{id}_{timestamp})
-    const parts = reference.split('_')
-    if (parts.length < 3 || parts[0] !== 'payout') {
-      console.error('Invalid reference format:', reference)
-      return NextResponse.json(
-        { status: 'declined', reason: 'Invalid reference format' },
-        { status: 400 }
-      )
+    // Paystack sends approval payload as { event: 'transfer.approval', data: { transfer_code, reference, ... } }
+    const data = (body.data ?? {}) as Record<string, unknown>
+    const transfer_code = String(data.transfer_code || '')
+    const reference = String(data.reference || '')
+
+    if (!transfer_code) {
+      console.error('Transfer approval missing transfer_code in body.data')
+      return NextResponse.json({ approved: false }, { status: 400 })
     }
 
-    const payout_id = parts[1]
+    // Look up payout by reference (format: payout_{id}_{timestamp}) if available,
+    // otherwise fall back to transfer_code already saved on the payout record.
+    let payout_id: string | null = null
 
-    // Fetch payout to check if it's on hold
-    const { data: payout, error } = await supabase
-      .from('payouts')
-      .select('status')
-      .eq('id', payout_id)
-      .single()
+    if (reference) {
+      const parts = reference.split('_')
+      if (parts.length >= 3 && parts[0] === 'payout') {
+        payout_id = parts[1]
+      }
+    }
 
-    if (error || !payout) {
-      console.error('Payout not found:', payout_id, error)
-      return NextResponse.json(
-        { status: 'declined', reason: 'Payout not found' },
-        { status: 404 }
-      )
+    let payout: { status: string } | null = null
+
+    if (payout_id) {
+      const { data: byId, error } = await supabase
+        .from('payouts')
+        .select('status')
+        .eq('id', payout_id)
+        .maybeSingle()
+
+      if (!error) payout = byId
+    }
+
+    // Fallback: look up by transfer_code saved when the payout was initiated
+    if (!payout) {
+      const { data: byCode } = await supabase
+        .from('payouts')
+        .select('id, status')
+        .eq('transfer_code', transfer_code)
+        .maybeSingle()
+
+      if (byCode) {
+        payout_id = byCode.id
+        payout = { status: byCode.status }
+      }
+    }
+
+    if (!payout) {
+      console.error('Transfer approval: payout not found for transfer_code:', transfer_code, 'reference:', reference)
+      // Return approved: false so Paystack doesn't keep retrying an unknown transfer
+      return NextResponse.json({ approved: false })
     }
 
     // Reject if payout is on hold
     if (payout.status === 'on_hold') {
       console.log('Transfer declined - payout on hold:', payout_id)
-      return NextResponse.json({
-        status: 'declined',
-        reason: 'Payout is currently on hold',
-      })
+      return NextResponse.json({ approved: false })
     }
 
     // Reject if payout is not in processing state
     if (payout.status !== 'processing') {
-      console.log('Transfer declined - invalid status:', payout.status)
-      return NextResponse.json({
-        status: 'declined',
-        reason: `Invalid payout status: ${payout.status}`,
-      })
+      console.log('Transfer declined - invalid status:', payout.status, 'for payout:', payout_id)
+      return NextResponse.json({ approved: false })
     }
 
     // Approve the transfer
     console.log('Transfer approved:', payout_id, transfer_code)
-    return NextResponse.json({
-      status: 'approved',
-    })
+    return NextResponse.json({ approved: true })
   } catch (error) {
     console.error('Error in transfer approval:', error)
-    return NextResponse.json(
-      { status: 'declined', reason: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ approved: false }, { status: 500 })
   }
 }
