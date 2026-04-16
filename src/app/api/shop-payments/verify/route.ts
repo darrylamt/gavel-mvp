@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
-import { queueShopOrderPaidNotifications } from '@/lib/arkesel/events'
+import { queueShopOrderPaidNotifications, queueReferralEarningNotification } from '@/lib/arkesel/events'
 import { sendNotificationEmail } from '@/lib/resend-service'
+import { processReferralCommission } from '@/lib/referrals'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -380,6 +381,35 @@ export async function POST(req: Request) {
           }
         } else {
           console.warn('No payout account with recipient code found for seller:', sellerId)
+        }
+      }
+
+      // Referral commission — triggered once per order (on the buyer's gross spend, minus delivery fee)
+      const itemsSubtotal = (metadata.items ?? []).reduce(
+        (sum, item) => sum + Number(item.unit_price) * Number(item.quantity),
+        0
+      )
+      const referralResult = await processReferralCommission(supabase, {
+        buyerId: metadata.user_id,
+        grossAmountGHS: itemsSubtotal,
+        orderId: String(orderId),
+        transactionReference: paymentReference,
+      })
+
+      if (referralResult.created) {
+        // Notify referrer (fire-and-forget)
+        const { data: commission } = await supabase
+          .from('referral_commissions')
+          .select('id, referrer_id, commission_amount')
+          .eq('order_id', String(orderId))
+          .maybeSingle<{ id: string; referrer_id: string; commission_amount: number }>()
+
+        if (commission) {
+          queueReferralEarningNotification({
+            userId: commission.referrer_id,
+            commissionGHS: Number(commission.commission_amount),
+            commissionId: commission.id,
+          }).catch(() => {})
         }
       }
     }

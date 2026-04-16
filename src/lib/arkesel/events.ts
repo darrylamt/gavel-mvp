@@ -610,3 +610,35 @@ export async function queueAuctionCountdownNotification(input: {
 
   await Promise.allSettled(tasks)
 }
+
+// ─── Referral Notifications ───────────────────────────────────────────────────
+
+export async function queueReferralPayoutNotification(input: {
+  userId: string
+  amountGHS: number
+  period: string
+}) {
+  const monthLabel = new Date(`${input.period}-01`).toLocaleDateString('en-GH', {
+    month: 'long',
+    year: 'numeric',
+  })
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `Your Gavel referral payout of GHS ${input.amountGHS.toFixed(2)} for ${monthLabel} has been sent! Check your account. 🎉`,
+    category: 'transactional',
+    dedupeKey: `referral-payout:${input.userId}:${input.period}`,
+  })
+}
+
+export async function queueReferralEarningNotification(input: {
+  userId: string
+  commissionGHS: number
+  commissionId: string
+}) {
+  return queueArkeselNotification({
+    userId: input.userId,
+    message: `You earned GHS ${input.commissionGHS.toFixed(2)} in referral commission from a purchase by your referral! Visit gavelgh.com/referrals to track your earnings.`,
+    category: 'transactional',
+    dedupeKey: `referral-earning:${input.commissionId}`,
+  })
+}

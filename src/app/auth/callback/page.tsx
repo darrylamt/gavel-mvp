@@ -53,11 +53,31 @@ export default function AuthCallbackPage() {
                       id: session.user.id,
                       token_balance: 3,
                     },
-                    { 
+                    {
                       onConflict: 'id',
-                      ignoreDuplicates: false 
+                      ignoreDuplicates: false
                     }
                   )
+              }
+
+              // Link referral if a gavel_ref cookie is present (new user signup)
+              if (!existingProfile) {
+                const gavelRef = document.cookie
+                  .split(';')
+                  .find((c) => c.trim().startsWith('gavel_ref='))
+                  ?.split('=')[1]
+
+                if (gavelRef) {
+                  const referralCode = decodeURIComponent(gavelRef)
+                  fetch('/api/referrals/link', {
+                    method: 'POST',
+                    headers: {
+                      Authorization: `Bearer ${session.access_token}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ referral_code: referralCode }),
+                  }).catch(() => {})
+                }
               }
             }
 

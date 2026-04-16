@@ -6,7 +6,40 @@ import AdminShell from '@/components/admin/AdminShell'
 import MiniBarChart from '@/components/admin/MiniBarChart'
 import { DashboardPayload } from '@/components/admin/AdminTypes'
 import PieChartCard from '@/components/base/PieChartCard'
-import { Users, Gavel, TrendingUp, Store, X, Search, SlidersHorizontal } from 'lucide-react'
+import { Users, Gavel, TrendingUp, Store, X, Search, SlidersHorizontal, GitBranch } from 'lucide-react'
+
+type ReferralSummary = {
+  monthly_paid: number
+  total_pending: number
+  active_referrers: number
+  top_referrer_this_month: string
+}
+
+type ReferralCommission = {
+  id: string
+  referrer_masked: string
+  referred_masked: string
+  gross_amount: number
+  commission_amount: number
+  status: string
+  triggered_at: string
+  order_id: string | null
+}
+
+type ReferralPayoutBatch = {
+  id: string
+  referrer_id: string
+  amount: number
+  period: string
+  status: string
+  created_at: string
+}
+
+type AdminReferralData = {
+  summary: ReferralSummary
+  commissions: ReferralCommission[]
+  payout_batches: ReferralPayoutBatch[]
+}
 
 export default function AdminPage() {
   const [data, setData] = useState<DashboardPayload>({ users: [], auctions: [], sellers: [], purchases: [] })
@@ -16,6 +49,10 @@ export default function AdminPage() {
   const [sellerSearch, setSellerSearch] = useState('')
   const [auctionSearch, setAuctionSearch] = useState('')
   const [auctionStatusFilter, setAuctionStatusFilter] = useState('all')
+  const [referralData, setReferralData] = useState<AdminReferralData | null>(null)
+  const [referralCommissionFilter, setReferralCommissionFilter] = useState('all')
+  const [referralLoading, setReferralLoading] = useState(false)
+  const [referralLoaded, setReferralLoaded] = useState(false)
 
   // Modal state
   const [selectedUser, setSelectedUser] = useState<DashboardPayload['users'][0] | null>(null)
@@ -51,6 +88,18 @@ export default function AdminPage() {
 
     loadDashboard()
   }, [])
+
+  async function loadReferralData() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) return
+    setReferralLoading(true)
+    const res = await fetch(`/api/admin/referrals?status=${referralCommissionFilter}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    if (res.ok) setReferralData(await res.json())
+    setReferralLoading(false)
+    setReferralLoaded(true)
+  }
 
   const activeAuctions = useMemo(
     () => data.auctions.filter((auction) => auction.status === 'active').length,
@@ -498,6 +547,137 @@ export default function AdminPage() {
           </div>
         </Modal>
       )}
+
+      {/* ─── Referrals Section ──────────────────────────────────────── */}
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <GitBranch className="h-5 w-5 text-orange-500" />
+            <h2 className="text-base font-semibold text-gray-900">Referral Programme</h2>
+          </div>
+          {!referralLoaded && (
+            <button
+              onClick={loadReferralData}
+              disabled={referralLoading}
+              className="rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+            >
+              {referralLoading ? 'Loading…' : 'Load Data'}
+            </button>
+          )}
+        </div>
+
+        {!referralLoaded ? (
+          <p className="px-5 py-8 text-center text-sm text-gray-400">Click &quot;Load Data&quot; to view referral stats.</p>
+        ) : referralLoading ? (
+          <div className="flex justify-center py-8"><div className="h-7 w-7 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" /></div>
+        ) : referralData ? (
+          <div className="p-5 space-y-6">
+            {/* Summary cards */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <StatCard label="Paid This Month" value={`GHS ${Number(referralData.summary.monthly_paid).toFixed(2)}`} icon={<GitBranch className="h-5 w-5" />} color="green" />
+              <StatCard label="Total Pending" value={`GHS ${Number(referralData.summary.total_pending).toFixed(2)}`} icon={<GitBranch className="h-5 w-5" />} color="blue" />
+              <StatCard label="Active Referrers" value={String(referralData.summary.active_referrers)} icon={<Users className="h-5 w-5" />} color="violet" />
+              <StatCard label="Top Referrer" value={referralData.summary.top_referrer_this_month} icon={<TrendingUp className="h-5 w-5" />} color="orange" />
+            </div>
+
+            {/* Commission filter + table */}
+            <div>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-gray-700">Commissions</h3>
+                <div className="flex gap-1.5">
+                  {(['all', 'pending', 'approved', 'paid', 'cancelled'] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => { setReferralCommissionFilter(f); setReferralLoaded(false) }}
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${referralCommissionFilter === f ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {referralData.commissions.length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-400">No commissions found.</p>
+              ) : (
+                <div className="max-h-72 overflow-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <th className="pb-2">Referrer</th>
+                        <th className="pb-2">Referred User</th>
+                        <th className="pb-2 text-right">Order</th>
+                        <th className="pb-2 text-right">Commission</th>
+                        <th className="pb-2 text-right">Status</th>
+                        <th className="pb-2 text-right">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {referralData.commissions.map((c) => (
+                        <tr key={c.id} className="hover:bg-gray-50">
+                          <td className="py-2 font-mono text-xs text-gray-700">{c.referrer_masked}</td>
+                          <td className="py-2 font-mono text-xs text-gray-700">{c.referred_masked}</td>
+                          <td className="py-2 text-right text-xs text-gray-600">GHS {Number(c.gross_amount).toFixed(2)}</td>
+                          <td className="py-2 text-right text-xs font-medium text-orange-600">GHS {Number(c.commission_amount).toFixed(2)}</td>
+                          <td className="py-2 text-right">
+                            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+                              c.status === 'paid' ? 'bg-emerald-50 text-emerald-700'
+                              : c.status === 'approved' ? 'bg-blue-50 text-blue-700'
+                              : c.status === 'cancelled' ? 'bg-red-50 text-red-600'
+                              : 'bg-yellow-50 text-yellow-700'
+                            }`}>{c.status}</span>
+                          </td>
+                          <td className="py-2 text-right text-xs text-gray-400">
+                            {new Date(c.triggered_at).toLocaleDateString('en-GH', { day: 'numeric', month: 'short' })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Payout batches */}
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-gray-700">Payout Batches</h3>
+              {referralData.payout_batches.length === 0 ? (
+                <p className="py-4 text-center text-sm text-gray-400">No payout batches yet.</p>
+              ) : (
+                <div className="max-h-48 overflow-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <th className="pb-2">Period</th>
+                        <th className="pb-2 text-right">Amount</th>
+                        <th className="pb-2 text-right">Status</th>
+                        <th className="pb-2 text-right">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {referralData.payout_batches.map((p) => (
+                        <tr key={p.id} className="hover:bg-gray-50">
+                          <td className="py-2 font-medium text-gray-800">{p.period}</td>
+                          <td className="py-2 text-right text-gray-700">GHS {Number(p.amount).toFixed(2)}</td>
+                          <td className="py-2 text-right">
+                            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+                              p.status === 'paid' ? 'bg-emerald-50 text-emerald-700'
+                              : p.status === 'failed' ? 'bg-red-50 text-red-600'
+                              : 'bg-blue-50 text-blue-700'
+                            }`}>{p.status}</span>
+                          </td>
+                          <td className="py-2 text-right text-xs text-gray-400">
+                            {new Date(p.created_at).toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </div>
 
       {/* Seller Detail Modal */}
       {selectedSeller && (

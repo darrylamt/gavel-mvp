@@ -8,7 +8,9 @@ import {
   queuePayoutFailedNotification,
   queuePayoutReversedNotification,
   queueSwapSubmissionReceivedNotification,
+  queueReferralEarningNotification,
 } from '@/lib/arkesel/events'
+import { processReferralCommission } from '@/lib/referrals'
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -78,6 +80,33 @@ export async function POST(req: Request) {
           auction_payment_due_at: null,
         })
         .eq('id', String(auction_id))
+
+      // Referral commission for auction payment
+      const grossAmountGHS = Number(event.data?.amount ?? 0) / 100
+      const result = await processReferralCommission(supabase, {
+        buyerId: String(user_id),
+        grossAmountGHS,
+        auctionId: String(auction_id),
+        transactionReference: event.data?.reference ?? undefined,
+      })
+
+      if (result.created) {
+        // Notify referrer of new earning (fire-and-forget)
+        const { data: commission } = await supabase
+          .from('referral_commissions')
+          .select('id, referrer_id, commission_amount')
+          .eq('auction_id', String(auction_id))
+          .eq('referred_user_id', String(user_id))
+          .maybeSingle<{ id: string; referrer_id: string; commission_amount: number }>()
+
+        if (commission) {
+          queueReferralEarningNotification({
+            userId: commission.referrer_id,
+            commissionGHS: Number(commission.commission_amount),
+            commissionId: commission.id,
+          }).catch(() => {})
+        }
+      }
     }
 
     // Handle swap deposit payment

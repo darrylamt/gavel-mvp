@@ -4,6 +4,8 @@ import Navbar from '@/components/layout/Navbar'
 import InAppBrowserBanner from '@/components/layout/InAppBrowserBanner'
 import WelcomeTourModal from '@/components/layout/WelcomeTourModal'
 import PhoneNumberPrompt from '@/components/PhoneNumberPrompt'
+import { Suspense } from 'react'
+import ReferralTracker from '@/components/referrals/ReferralTracker'
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from 'next'
@@ -105,6 +107,9 @@ export default function RootLayout({
           <InAppBrowserBanner />
           <WelcomeTourModal />
           <PhoneNumberPrompt />
+          <Suspense fallback={null}>
+            <ReferralTracker />
+          </Suspense>
           {children}
           <Footer />
           <Analytics />
