@@ -84,6 +84,7 @@ function PhoneVerificationPanel({
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
+  const [smsOptIn, setSmsOptIn] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -107,7 +108,7 @@ function PhoneVerificationPanel({
     const res = await fetch('/api/referrals/verify-otp', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp }),
+      body: JSON.stringify({ phone, otp, sms_opt_in: smsOptIn }),
     })
     const data = await res.json()
     setLoading(false)
@@ -172,6 +173,17 @@ function PhoneVerificationPanel({
                   {loading ? 'Verifying…' : 'Verify'}
                 </button>
               </div>
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={smsOptIn}
+                  onChange={(e) => setSmsOptIn(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-orange-500 cursor-pointer"
+                />
+                <span className="text-xs text-gray-500">
+                  Send me SMS updates about new auctions, deals, and offers from Gavel
+                </span>
+              </label>
               <button
                 onClick={() => { setStep('phone'); setOtp('') }}
                 className="text-xs text-gray-500 underline"
@@ -291,7 +303,7 @@ export default function ReferralsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Earn with Gavel</h1>
         <p className="mt-2 text-gray-600">
-          Share your link. Earn <strong>2%</strong> of every purchase your referrals make — forever.
+          Share your link. Earn <strong>2%</strong> of every purchase or sale* your referrals make — forever.
         </p>
       </div>
 
@@ -491,8 +503,8 @@ export default function ReferralsPage() {
               data.leaderboard_display === 'name' ? 'bg-orange-500' : 'bg-gray-200'
             }`}
           >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-              data.leaderboard_display === 'name' ? 'translate-x-5' : 'translate-x-0.5'
+            <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              data.leaderboard_display === 'name' ? 'translate-x-5' : 'translate-x-0'
             }`} />
           </button>
           <span className="text-sm text-gray-700">

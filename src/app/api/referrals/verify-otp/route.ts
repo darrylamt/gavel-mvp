@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { phone, otp } = (await req.json()) as { phone?: string; otp?: string }
+    const { phone, otp, sms_opt_in } = (await req.json()) as { phone?: string; otp?: string; sms_opt_in?: boolean }
     if (!phone?.trim() || !otp?.trim()) {
       return NextResponse.json({ error: 'Phone and OTP are required' }, { status: 400 })
     }
@@ -71,18 +71,19 @@ export async function POST(req: Request) {
       })
       .eq('user_id', userId)
 
-    // Also update profile.phone if not already set
+    // Update profile: set phone if not already set; always save sms_opt_in preference
     const { data: profile } = await supabase
       .from('profiles')
       .select('phone')
       .eq('id', userId)
       .maybeSingle<{ phone: string | null }>()
 
-    if (!profile?.phone) {
-      await supabase
-        .from('profiles')
-        .update({ phone: phone.trim() })
-        .eq('id', userId)
+    const profileUpdate: Record<string, unknown> = {}
+    if (!profile?.phone) profileUpdate.phone = phone.trim()
+    if (typeof sms_opt_in === 'boolean') profileUpdate.sms_opt_in = sms_opt_in
+
+    if (Object.keys(profileUpdate).length > 0) {
+      await supabase.from('profiles').update(profileUpdate).eq('id', userId)
     }
 
     // Approve any pending commissions for this referrer (queued while unverified)
