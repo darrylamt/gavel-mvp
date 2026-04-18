@@ -1,6 +1,6 @@
-import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { verifyDawuroboWebhook } from '@/lib/dawurobo'
 import { queueShopNotifications } from '@/lib/arkesel/events'
 
 const supabase = createClient(
@@ -32,25 +32,8 @@ export async function POST(req: Request) {
   const rawBody = await req.text()
   const signature = req.headers.get('X-Webhook-Signature') || ''
 
-  if (process.env.DAWUROBO_WEBHOOK_SECRET) {
-    const expected = crypto
-      .createHmac('sha256', process.env.DAWUROBO_WEBHOOK_SECRET)
-      .update(rawBody, 'utf8')
-      .digest('hex')
-
-    let isValid = false
-    try {
-      isValid = crypto.timingSafeEqual(
-        Buffer.from(expected),
-        Buffer.from(signature)
-      )
-    } catch {
-      isValid = false
-    }
-
-    if (!isValid) {
-      return Response.json({ error: 'Invalid signature' }, { status: 401 })
-    }
+  if (!verifyDawuroboWebhook(rawBody, signature)) {
+    return Response.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
   let payload: Record<string, unknown>

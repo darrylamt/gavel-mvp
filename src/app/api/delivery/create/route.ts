@@ -94,6 +94,8 @@ export async function POST(req: Request) {
 
     const priority = String((order as Record<string, unknown>).delivery_priority || 'standard')
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+
     const dawuroboPayload = {
       order_reference: `GAVEL-${order_id}`,
       customer: {
@@ -117,6 +119,7 @@ export async function POST(req: Request) {
         is_paid: true,
       },
       priority,
+      webhook_url: `${siteUrl}/api/webhooks/dawurobo`,
       ...(order.delivery_notes ? { special_instructions: order.delivery_notes } : {}),
     }
 

@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 
-const BASE_URL = process.env.DAWUROBO_BASE_URL || 'https://api.dawurobo.com'
-const APP_ID = process.env.DAWUROBO_APP_ID || ''
+const BASE_URL = process.env.DAWUROBO_BASE_URL || 'https://delivery.dawurobo.com'
+const APP_ID = process.env.DAWUROBO_APP_ID || 'gavelgh'
 const API_KEY = process.env.DAWUROBO_API_KEY ?? ''
 const WEBHOOK_SECRET = process.env.DAWUROBO_WEBHOOK_SECRET ?? ''
 
