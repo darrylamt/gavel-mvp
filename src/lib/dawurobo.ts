@@ -73,13 +73,12 @@ export function verifyDawuroboWebhook(rawBody: string, signature: string): boole
   if (!WEBHOOK_SECRET || !signature) return false
   const expected = crypto
     .createHmac('sha256', WEBHOOK_SECRET)
-    .update(rawBody)
+    .update(rawBody, 'utf8')
     .digest('hex')
+  const sig = signature.trim()
+  if (expected.length !== sig.length) return false
   try {
-    return crypto.timingSafeEqual(
-      Buffer.from(expected, 'hex'),
-      Buffer.from(signature, 'hex')
-    )
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))
   } catch {
     return false
   }
