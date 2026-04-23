@@ -82,9 +82,7 @@ export function verifyDawuroboWebhook(rawBody: string, signature: string): boole
     .update(rawBody, 'utf8')
     .digest('hex')
   const sig = signature.trim()
-  console.log('[dwh-exp]', expected)
-  console.log('[dwh-sig]', sig)
-  console.log('[dwh-len]', expected.length, sig.length)
+  console.log(JSON.stringify({ dwh: 1, exp: expected, sig, expLen: expected.length, sigLen: sig.length, secretPrefix: WEBHOOK_SECRET.slice(0, 10) }))
   if (expected.length !== sig.length) return false
   try {
     return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))
