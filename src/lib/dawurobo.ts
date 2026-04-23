@@ -71,8 +71,11 @@ export async function dawuroboRequest<T = unknown>(
  */
 export function verifyDawuroboWebhook(rawBody: string, signature: string): boolean {
   if (!WEBHOOK_SECRET || !signature) return false
+  const secret = WEBHOOK_SECRET.startsWith('whsec_')
+    ? WEBHOOK_SECRET.slice('whsec_'.length)
+    : WEBHOOK_SECRET
   const expected = crypto
-    .createHmac('sha256', WEBHOOK_SECRET)
+    .createHmac('sha256', secret)
     .update(rawBody, 'utf8')
     .digest('hex')
   const sig = signature.trim()
