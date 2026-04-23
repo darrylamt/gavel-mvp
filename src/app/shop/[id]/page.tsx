@@ -7,6 +7,7 @@ import ProductDetailActions from '@/components/shop/ProductDetailActions'
 import ShopProductCard from '@/components/shop/ShopProductCard'
 import ProductReviewsSection from '@/components/shop/ProductReviewsSection'
 import ProductImageGallery from '@/components/shop/ProductImageGallery'
+import ProductShareButton from '@/components/shop/ProductShareButton'
 import { formatGhsAmount, getBuyNowDiscountBreakdown } from '@/lib/buyNowPricing'
 
 type Props = {
@@ -376,6 +377,17 @@ export default async function ShopProductDetailPage({ params }: Props) {
                 You save GHS {formatGhsAmount(headlinePricing.discountAmount)}
               </p>
             )}
+
+            {/* Share */}
+            <div className="mt-3">
+              <ProductShareButton
+                title={product.title}
+                price={`GHS ${formatGhsAmount(headlinePricing.currentPrice)}`}
+                imageUrl={mainImage}
+                url={productUrl}
+                shopName={shop?.name ?? null}
+              />
+            </div>
 
             {/* Actions (add to cart, buy now, variants) */}
             <div className="mt-5">
