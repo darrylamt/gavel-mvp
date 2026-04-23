@@ -31,6 +31,7 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
 export async function POST(req: Request) {
   const rawBody = await req.text()
   const signature = req.headers.get('X-Webhook-Signature') || ''
+  console.log(JSON.stringify({ dwh_body: rawBody.slice(0, 200), dwh_bodyLen: rawBody.length }))
 
   if (!verifyDawuroboWebhook(rawBody, signature)) {
     return Response.json({ error: 'Invalid signature' }, { status: 401 })
