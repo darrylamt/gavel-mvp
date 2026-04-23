@@ -71,14 +71,18 @@ export async function dawuroboRequest<T = unknown>(
  */
 export function verifyDawuroboWebhook(rawBody: string, signature: string): boolean {
   if (!WEBHOOK_SECRET || !signature) return false
-  const secret = WEBHOOK_SECRET.startsWith('whsec_')
+  const hexSecret = WEBHOOK_SECRET.startsWith('whsec_')
     ? WEBHOOK_SECRET.slice('whsec_'.length)
     : WEBHOOK_SECRET
+  // Dawurobo uses the hex-decoded bytes as the HMAC key
+  const keyBytes = Buffer.from(hexSecret, 'hex')
+  const key = keyBytes.length > 0 ? keyBytes : Buffer.from(hexSecret)
   const expected = crypto
-    .createHmac('sha256', secret)
+    .createHmac('sha256', key)
     .update(rawBody, 'utf8')
     .digest('hex')
   const sig = signature.trim()
+  console.log('[dawurobo-webhook] expected:', expected, 'received:', sig)
   if (expected.length !== sig.length) return false
   try {
     return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))
