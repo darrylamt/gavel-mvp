@@ -174,6 +174,14 @@ export default function Navbar() {
                 Shop
               </Link>
 
+              <Link href="/properties" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                Properties
+              </Link>
+
+              <Link href="/autos" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                Autos
+              </Link>
+
               <Link href="/shop/sellers" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
                 Sellers
               </Link>
@@ -366,6 +374,8 @@ export default function Navbar() {
             {[
               { href: '/auctions', label: 'Auctions' },
               { href: '/shop', label: 'Buy Now' },
+              { href: '/properties', label: 'Properties' },
+              { href: '/autos', label: 'Autos' },
               { href: '/shop/sellers', label: 'Shops' },
               { href: '/auctions/winners', label: 'Recent Winners' },
               { href: '/tokens', label: 'Tokens' },

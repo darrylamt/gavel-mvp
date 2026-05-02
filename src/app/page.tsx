@@ -27,11 +27,6 @@ const heroCategories = [
     image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80',
   },
   {
-    name: 'Vehicles',
-    tagline: 'Cars, bikes and accessories',
-    image: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80',
-  },
-  {
     name: 'Fashion',
     tagline: 'Clothing, shoes and lifestyle',
     image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=900&q=80',
@@ -290,6 +285,38 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Verticals Banner */}
+      <section className="mb-12">
+        <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gradient-to-br from-gray-900 to-gray-800 p-6 sm:p-8">
+          <p className="text-white/60 text-sm font-medium mb-1">Explore our specialist platforms</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-5">Looking for property or vehicles?</h2>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a
+              href="/properties"
+              className="flex items-center gap-3 rounded-xl bg-[#0F2557] border border-[#C9A84C]/30 px-5 py-4 hover:bg-[#1a3570] transition-colors group"
+            >
+              <span className="text-2xl">🏡</span>
+              <div>
+                <p className="font-bold text-white text-sm">Gavel Properties</p>
+                <p className="text-white/60 text-xs">Land, homes &amp; commercial</p>
+              </div>
+              <span className="ml-auto text-[#C9A84C] group-hover:translate-x-0.5 transition-transform">→</span>
+            </a>
+            <a
+              href="/autos"
+              className="flex items-center gap-3 rounded-xl bg-[#1A1A2E] border border-[#E63946]/30 px-5 py-4 hover:bg-[#252540] transition-colors group"
+            >
+              <span className="text-2xl">🚗</span>
+              <div>
+                <p className="font-bold text-white text-sm">Gavel Autos</p>
+                <p className="text-white/60 text-xs">Cars, SUVs, trucks &amp; more</p>
+              </div>
+              <span className="ml-auto text-[#E63946] group-hover:translate-x-0.5 transition-transform">→</span>
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* Popular Categories */}
       <section className="mb-4">

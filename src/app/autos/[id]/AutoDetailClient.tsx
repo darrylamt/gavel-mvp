@@ -1,0 +1,125 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Phone, Copy, Check } from 'lucide-react'
+import type { AutoListing, AutoAuction } from '@/types/autos'
+import { formatGhsPrice } from '@/lib/autoUtils'
+
+type Props = {
+  listing: AutoListing & { profiles: { username: string | null; avatar_url: string | null } | null }
+  auction: AutoAuction | null
+}
+
+function Countdown({ endTime }: { endTime: string }) {
+  const [timeLeft, setTimeLeft] = useState('')
+
+  useEffect(() => {
+    const update = () => {
+      const diff = new Date(endTime).getTime() - Date.now()
+      if (diff <= 0) { setTimeLeft('Auction ended'); return }
+      const d = Math.floor(diff / 86400000)
+      const h = Math.floor((diff % 86400000) / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      if (d > 0) setTimeLeft(`${d}d ${h}h ${m}m`)
+      else setTimeLeft(`${h}h ${m}m ${s}s`)
+    }
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [endTime])
+
+  return <>{timeLeft}</>
+}
+
+export default function AutoDetailClient({ listing, auction }: Props) {
+  const [bid, setBid] = useState('')
+  const [copied, setCopied] = useState(false)
+  const isAuction = listing.listing_type === 'auction'
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(window.location.href)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(`${listing.year} ${listing.make} ${listing.model} — Gavel Autos\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`
+
+  return (
+    <div className="sticky top-24 space-y-4">
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        {isAuction && auction ? (
+          <>
+            <p className="text-xs text-gray-500 mb-0.5">Current bid</p>
+            <p className="text-3xl font-black text-[#1A1A2E] mb-1">
+              {auction.current_bid ? formatGhsPrice(auction.current_bid) : formatGhsPrice(auction.reserve_price)}
+            </p>
+            <p className="text-sm text-gray-500 mb-1">{auction.bid_count} bid{auction.bid_count !== 1 ? 's' : ''}</p>
+            {auction.end_time && (
+              <p className="text-sm font-semibold text-[#E63946] mb-4">
+                ⏱ <Countdown endTime={auction.end_time} />
+              </p>
+            )}
+            <div className="mb-3">
+              <label className="text-xs text-gray-500 block mb-1">Your bid (GHS)</label>
+              <input
+                type="number"
+                value={bid}
+                onChange={e => setBid(e.target.value)}
+                placeholder={`Min: ${formatGhsPrice((auction.current_bid ?? auction.reserve_price) + 500)}`}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#E63946]"
+              />
+            </div>
+            <button className="w-full rounded-xl bg-[#E63946] text-white font-bold py-3 text-sm hover:bg-[#d42f3c] transition-colors">
+              Place Bid
+            </button>
+            <p className="text-xs text-center text-gray-400 mt-2">You need tokens to place a bid</p>
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-gray-500 mb-0.5">Asking price</p>
+            <p className="text-3xl font-black text-[#1A1A2E] mb-4">
+              {listing.price ? formatGhsPrice(listing.price) : 'Price on request'}
+            </p>
+            <button className="w-full rounded-xl bg-[#E63946] text-white font-bold py-3 text-sm hover:bg-[#d42f3c] transition-colors flex items-center justify-center gap-2 mb-2">
+              <Phone className="h-4 w-4" />
+              Contact Seller
+            </button>
+            <button className="w-full rounded-xl border-2 border-[#1A1A2E] text-[#1A1A2E] font-bold py-3 text-sm hover:bg-[#1A1A2E]/5 transition-colors">
+              Make Offer
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Share */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Share</p>
+        <div className="flex gap-2">
+          <button onClick={copyLink} className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+            {copied ? 'Copied!' : 'Copy link'}
+          </button>
+          <a href={waUrl} target="_blank" rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#25D366] py-2 text-sm font-semibold text-white hover:brightness-105 transition-all">
+            WhatsApp
+          </a>
+        </div>
+      </div>
+
+      {/* Safety tips */}
+      <details className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+        <summary className="px-4 py-3 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50">
+          🛡️ Tips for buying a used vehicle
+        </summary>
+        <div className="px-4 pb-4 space-y-2 text-xs text-gray-500">
+          <p>• Always inspect the vehicle in person before payment</p>
+          <p>• Verify the roadworthy certificate is genuine</p>
+          <p>• Check the chassis number matches documents</p>
+          <p>• Use Gavel escrow to protect your payment</p>
+          <p>• Be cautious of deals that seem too good to be true</p>
+        </div>
+      </details>
+    </div>
+  )
+}
