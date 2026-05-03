@@ -32,11 +32,8 @@ function AutosNavbar() {
 
           {/* CTA */}
           <div className="ml-auto flex items-center gap-3">
-            <Link href="/" className="hidden md:block text-xs text-white/50 hover:text-white/80 transition-colors">
+            <Link href="/" className="text-xs text-white/50 hover:text-white/80 transition-colors">
               ← Gavel
-            </Link>
-            <Link href="/autos/sell" className="rounded-lg bg-[#E63946] text-white px-4 py-2 text-sm font-bold hover:bg-[#d42f3c] transition-colors whitespace-nowrap">
-              List Vehicle
             </Link>
           </div>
         </div>
