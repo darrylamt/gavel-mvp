@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import AutoCard from '@/components/autos/AutoCard'
 import { AUTO_MAKES, VEHICLE_TYPES } from '@/lib/autoUtils'
+import { Car, Truck, Bus, Bike, Cog, Flame } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,6 +10,15 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
+const VEHICLE_TYPE_ICONS: Record<string, React.ElementType> = {
+  car: Car,
+  suv: Car,
+  truck: Truck,
+  bus: Bus,
+  motorbike: Bike,
+  heavy_equipment: Cog,
+}
 
 export default async function AutosHomePage() {
   const [
@@ -45,8 +55,6 @@ export default async function AutosHomePage() {
             <p className="text-white/70 text-lg mb-8">
               Auctions and fixed-price sales for cars, SUVs, trucks and more.
             </p>
-
-            {/* Search bar */}
             <form action="/autos/browse" method="get" className="bg-white rounded-2xl p-2 flex flex-col sm:flex-row gap-2 shadow-2xl">
               <select name="make" className="flex-1 px-4 py-2.5 text-sm text-gray-700 outline-none rounded-xl bg-white border border-gray-200">
                 <option value="">Any make</option>
@@ -82,18 +90,17 @@ export default async function AutosHomePage() {
 
           {!featured || featured.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
-              <p className="text-4xl mb-3">🚗</p>
+              <div className="flex items-center justify-center mb-4">
+                <div className="rounded-full bg-gray-100 p-4">
+                  <Car className="h-8 w-8 text-gray-400" strokeWidth={1.5} />
+                </div>
+              </div>
               <p className="font-semibold text-gray-700">No listings yet</p>
-              <p className="text-sm text-gray-400 mt-1">Be the first to list a vehicle on Gavel Autos</p>
-              <Link href="/autos/sell" className="mt-4 inline-block rounded-lg bg-[#E63946] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#d42f3c] transition-colors">
-                List Your Vehicle
-              </Link>
+              <p className="text-sm text-gray-400 mt-1">Check back soon for vehicle listings</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {featured.map((l) => (
-                <AutoCard key={l.id} listing={l as any} />
-              ))}
+              {featured.map((l) => <AutoCard key={l.id} listing={l as any} />)}
             </div>
           )}
         </section>
@@ -104,8 +111,8 @@ export default async function AutosHomePage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2.5">
                 <h2 className="text-2xl font-bold text-gray-900">Live Auto Auctions</h2>
-                <span className="rounded-full bg-[#E63946]/10 border border-[#E63946]/30 px-2.5 py-0.5 text-xs font-bold text-[#E63946]">
-                  🔥 Live
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#E63946]/10 border border-[#E63946]/30 px-2.5 py-0.5 text-xs font-bold text-[#E63946]">
+                  <Flame className="h-3 w-3" /> Live
                 </span>
               </div>
               <Link href="/autos/browse?listing_type=auction" className="text-sm font-semibold text-[#1A1A2E] hover:underline underline-offset-2">
@@ -113,9 +120,7 @@ export default async function AutosHomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {activeAuctions.map((l) => (
-                <AutoCard key={l.id} listing={l as any} />
-              ))}
+              {activeAuctions.map((l) => <AutoCard key={l.id} listing={l as any} />)}
             </div>
           </section>
         )}
@@ -140,22 +145,29 @@ export default async function AutosHomePage() {
         <section>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Browse by Type</h2>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-            {VEHICLE_TYPES.map(({ value, label, emoji }) => (
-              <Link
-                key={value}
-                href={`/autos/browse?vehicle_type=${value}`}
-                className="group rounded-2xl border border-gray-200 bg-white p-4 text-center hover:border-[#E63946]/50 hover:shadow-md transition-all"
-              >
-                <p className="text-3xl mb-1.5">{emoji}</p>
-                <p className="text-xs font-semibold text-gray-700 group-hover:text-[#E63946] transition-colors">{label}</p>
-              </Link>
-            ))}
+            {VEHICLE_TYPES.map(({ value, label }) => {
+              const Icon = VEHICLE_TYPE_ICONS[value] ?? Car
+              return (
+                <Link
+                  key={value}
+                  href={`/autos/browse?vehicle_type=${value}`}
+                  className="group rounded-2xl border border-gray-200 bg-white p-4 text-center hover:border-[#E63946]/50 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="rounded-xl bg-gray-100 p-2.5 group-hover:bg-[#E63946]/10 transition-colors">
+                      <Icon className="h-5 w-5 text-gray-500 group-hover:text-[#E63946] transition-colors" strokeWidth={1.5} />
+                    </div>
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700 group-hover:text-[#E63946] transition-colors">{label}</p>
+                </Link>
+              )
+            })}
           </div>
         </section>
 
         {/* Stats */}
         <section className="rounded-2xl bg-[#1A1A2E] p-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-3 gap-6">
             {stats.map(({ label, value }) => (
               <div key={label} className="text-center">
                 <p className="text-3xl font-black text-[#E63946]">{value}</p>
@@ -163,15 +175,6 @@ export default async function AutosHomePage() {
               </div>
             ))}
           </div>
-        </section>
-
-        {/* CTA */}
-        <section className="rounded-2xl bg-gradient-to-r from-[#E63946] to-[#c92530] p-8 text-center">
-          <h2 className="text-2xl font-black text-white mb-2">Ready to sell your vehicle?</h2>
-          <p className="text-white/80 mb-5">List in minutes. Reach thousands of serious buyers across Ghana.</p>
-          <Link href="/autos/sell" className="inline-block rounded-xl bg-white text-[#E63946] font-bold px-8 py-3 hover:bg-gray-50 transition-colors">
-            List Your Vehicle
-          </Link>
         </section>
 
       </div>

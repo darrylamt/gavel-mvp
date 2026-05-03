@@ -11,12 +11,12 @@ export const AUTO_MAKES = [
 ]
 
 export const VEHICLE_TYPES = [
-  { value: 'car', label: 'Car', emoji: '🚗' },
-  { value: 'suv', label: 'SUV', emoji: '🚙' },
-  { value: 'truck', label: 'Truck', emoji: '🚛' },
-  { value: 'bus', label: 'Bus', emoji: '🚌' },
-  { value: 'motorbike', label: 'Motorbike', emoji: '🏍️' },
-  { value: 'heavy_equipment', label: 'Heavy Equipment', emoji: '🚜' },
+  { value: 'car', label: 'Car' },
+  { value: 'suv', label: 'SUV' },
+  { value: 'truck', label: 'Truck' },
+  { value: 'bus', label: 'Bus' },
+  { value: 'motorbike', label: 'Motorbike' },
+  { value: 'heavy_equipment', label: 'Heavy Equipment' },
 ] as const
 
 export const ENGINE_SIZES = [

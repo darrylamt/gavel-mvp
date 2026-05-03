@@ -12,6 +12,7 @@ import HeroShowcaseCarousel from '@/components/home/HeroShowcaseCarousel'
 import ShopProductCard from '@/components/shop/ShopProductCard'
 import SearchHero from '@/components/home/SearchHero'
 import { getCategoryTheme } from '@/lib/categoryThemes'
+import { Flame, Clock, Home, Car, ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -144,7 +145,7 @@ export default async function HomePage() {
             <div className="flex items-center gap-2.5">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Ending Soon</h2>
               <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">
-                🔥 Live
+                <Flame className="h-3 w-3" /> Live
               </span>
             </div>
             <Link href="/auctions" className="text-sm font-semibold text-gray-600 hover:text-gray-900 underline underline-offset-2">
@@ -224,7 +225,7 @@ export default async function HomePage() {
             <div className="flex items-center gap-2.5">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Starting Soon</h2>
               <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 border border-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-600">
-                ⏰ Soon
+                <Clock className="h-3 w-3" /> Soon
               </span>
             </div>
             <Link href="/auctions" className="text-sm font-semibold text-gray-600 hover:text-gray-900 underline underline-offset-2">
@@ -298,23 +299,23 @@ export default async function HomePage() {
               href="/properties"
               className="flex items-center gap-3 rounded-xl bg-[#0F2557] border border-[#C9A84C]/30 px-5 py-4 hover:bg-[#1a3570] transition-colors group"
             >
-              <span className="text-2xl">🏡</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#C9A84C]/20 flex-shrink-0"><Home className="h-5 w-5 text-[#C9A84C]" /></div>
               <div>
                 <p className="font-bold text-white text-sm">Gavel Properties</p>
                 <p className="text-white/60 text-xs">Land, homes &amp; commercial</p>
               </div>
-              <span className="ml-auto text-[#C9A84C] group-hover:translate-x-0.5 transition-transform">→</span>
+              <ChevronRight className="ml-auto h-4 w-4 text-[#C9A84C] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
             </a>
             <a
               href="/autos"
               className="flex items-center gap-3 rounded-xl bg-[#1A1A2E] border border-[#E63946]/30 px-5 py-4 hover:bg-[#252540] transition-colors group"
             >
-              <span className="text-2xl">🚗</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E63946]/20 flex-shrink-0"><Car className="h-5 w-5 text-[#E63946]" /></div>
               <div>
                 <p className="font-bold text-white text-sm">Gavel Autos</p>
                 <p className="text-white/60 text-xs">Cars, SUVs, trucks &amp; more</p>
               </div>
-              <span className="ml-auto text-[#E63946] group-hover:translate-x-0.5 transition-transform">→</span>
+              <ChevronRight className="ml-auto h-4 w-4 text-[#E63946] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
             </a>
           </div>
         </div>

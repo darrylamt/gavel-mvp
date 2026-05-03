@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { MapPin, Phone, Share2, ChevronLeft } from 'lucide-react'
+import { MapPin, Phone, ChevronLeft, Home, BadgeCheck } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { PropertyListingWithAuction } from '@/types/properties'
 import { formatGhsPrice, PROPERTY_TYPE_LABELS, TITLE_TYPE_LABELS, getPropertyCommission } from '@/lib/propertyUtils'
@@ -89,7 +89,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
         </div>
       ) : (
         <div className="rounded-2xl bg-gradient-to-br from-[#0F2557] to-[#1a3570] h-48 flex items-center justify-center mb-8">
-          <span className="text-6xl">🏡</span>
+          <Home className="h-16 w-16 text-white/20" strokeWidth={1} />
         </div>
       )}
 
@@ -107,7 +107,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                 <span className="rounded-full bg-[#C9A84C] text-white text-xs font-bold px-3 py-1">Live Auction</span>
               )}
               {l.is_licensed_auctioneer && (
-                <span className="rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1">✓ Licensed Auctioneer</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1"><BadgeCheck className="h-3.5 w-3.5" /> Licensed Auctioneer</span>
               )}
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">{l.title}</h1>

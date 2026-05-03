@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Phone, Copy, Check } from 'lucide-react'
+import { Phone, Copy, Check, Clock, Shield } from 'lucide-react'
 import type { AutoListing, AutoAuction } from '@/types/autos'
 import { formatGhsPrice } from '@/lib/autoUtils'
 
@@ -56,8 +56,8 @@ export default function AutoDetailClient({ listing, auction }: Props) {
             </p>
             <p className="text-sm text-gray-500 mb-1">{auction.bid_count} bid{auction.bid_count !== 1 ? 's' : ''}</p>
             {auction.end_time && (
-              <p className="text-sm font-semibold text-[#E63946] mb-4">
-                ⏱ <Countdown endTime={auction.end_time} />
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-[#E63946] mb-4">
+                <Clock className="h-3.5 w-3.5 flex-shrink-0" /> <Countdown endTime={auction.end_time} />
               </p>
             )}
             <div className="mb-3">
@@ -110,7 +110,7 @@ export default function AutoDetailClient({ listing, auction }: Props) {
       {/* Safety tips */}
       <details className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
         <summary className="px-4 py-3 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50">
-          🛡️ Tips for buying a used vehicle
+          <span className="flex items-center gap-2"><Shield className="h-4 w-4 text-gray-500" strokeWidth={1.5} /> Tips for buying a used vehicle</span>
         </summary>
         <div className="px-4 pb-4 space-y-2 text-xs text-gray-500">
           <p>• Always inspect the vehicle in person before payment</p>

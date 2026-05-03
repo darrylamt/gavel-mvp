@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { AUTO_MAKES, VEHICLE_TYPES, ENGINE_SIZES, getAutoCommission, formatGhsPrice } from '@/lib/autoUtils'
 import { GHANA_REGIONS } from '@/lib/propertyUtils'
-import { Check } from 'lucide-react'
+import { Check, Car, Truck, Bus, Bike, Cog, CheckCircle2, XCircle } from 'lucide-react'
+
+const VEHICLE_TYPE_ICONS: Record<string, React.ElementType> = {
+  car: Car, suv: Car, truck: Truck, bus: Bus, motorbike: Bike, heavy_equipment: Cog,
+}
 
 const STEPS = ['Vehicle Basics', 'Vehicle Details', 'Documents & Location', 'Pricing & Photos']
 
@@ -205,13 +209,16 @@ export default function AutoSellPage() {
             <div>
               <label className={labelCls}>Vehicle Type</label>
               <div className="grid grid-cols-3 gap-2">
-                {VEHICLE_TYPES.map(({ value, label, emoji }) => (
-                  <button key={value} onClick={() => set('vehicle_type', value as FormData['vehicle_type'])}
-                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-sm font-medium transition-colors ${form.vehicle_type === value ? 'bg-[#1A1A2E] text-white border-[#1A1A2E]' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
-                    <span className="text-2xl">{emoji}</span>
-                    <span className="text-xs">{label}</span>
-                  </button>
-                ))}
+                {VEHICLE_TYPES.map(({ value, label }) => {
+                  const Icon = VEHICLE_TYPE_ICONS[value] ?? Car
+                  return (
+                    <button key={value} onClick={() => set('vehicle_type', value as FormData['vehicle_type'])}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-colors ${form.vehicle_type === value ? 'bg-[#1A1A2E] text-white border-[#1A1A2E]' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
+                      <Icon className="h-5 w-5" strokeWidth={1.5} />
+                      <span className="text-xs">{label}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -347,11 +354,11 @@ export default function AutoSellPage() {
             <div>
               <label className={labelCls}>Roadworthy Certificate</label>
               <div className="flex gap-2 mb-2">
-                <button onClick={() => set('roadworthy', true)} className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold ${toggleBtn(form.roadworthy)}`}>
-                  ✅ Yes
+                <button onClick={() => set('roadworthy', true)} className={`flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl border text-sm font-semibold ${toggleBtn(form.roadworthy)}`}>
+                  <CheckCircle2 className="h-4 w-4" /> Yes
                 </button>
-                <button onClick={() => set('roadworthy', false)} className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold ${toggleBtn(!form.roadworthy)}`}>
-                  ❌ No
+                <button onClick={() => set('roadworthy', false)} className={`flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl border text-sm font-semibold ${toggleBtn(!form.roadworthy)}`}>
+                  <XCircle className="h-4 w-4" /> No
                 </button>
               </div>
               {form.roadworthy && (
@@ -365,11 +372,11 @@ export default function AutoSellPage() {
             <div>
               <label className={labelCls}>Customs Cleared</label>
               <div className="flex gap-2">
-                <button onClick={() => set('customs_cleared', true)} className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold ${toggleBtn(form.customs_cleared)}`}>
-                  ✅ Yes
+                <button onClick={() => set('customs_cleared', true)} className={`flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl border text-sm font-semibold ${toggleBtn(form.customs_cleared)}`}>
+                  <CheckCircle2 className="h-4 w-4" /> Yes
                 </button>
-                <button onClick={() => set('customs_cleared', false)} className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold ${toggleBtn(!form.customs_cleared)}`}>
-                  ❌ No
+                <button onClick={() => set('customs_cleared', false)} className={`flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl border text-sm font-semibold ${toggleBtn(!form.customs_cleared)}`}>
+                  <XCircle className="h-4 w-4" /> No
                 </button>
               </div>
             </div>

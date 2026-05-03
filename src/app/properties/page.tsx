@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import PropertyCard from '@/components/properties/PropertyCard'
+import { Home, Layers, Building2, Building, Flame } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,6 +9,13 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
+const PROPERTY_TYPE_ICONS = {
+  land:        { Icon: Layers,    label: 'Land',        desc: 'Plots & parcels' },
+  residential: { Icon: Home,      label: 'Residential', desc: 'Homes & apartments' },
+  commercial:  { Icon: Building2, label: 'Commercial',  desc: 'Offices & retail' },
+  industrial:  { Icon: Building,  label: 'Industrial',  desc: 'Warehouses & factories' },
+}
 
 export default async function PropertiesHomePage() {
   const [
@@ -44,15 +52,9 @@ export default async function PropertiesHomePage() {
             <p className="text-white/70 text-lg mb-8">
               Buy, sell and auction land, homes and commercial property with confidence.
             </p>
-
-            {/* Search bar */}
             <form action="/properties/browse" method="get" className="bg-white rounded-2xl p-2 flex flex-col sm:flex-row gap-2 shadow-2xl">
-              <input
-                name="q"
-                type="text"
-                placeholder="Location, area or neighbourhood..."
-                className="flex-1 px-4 py-2.5 text-sm text-gray-900 outline-none rounded-xl"
-              />
+              <input name="q" type="text" placeholder="Location, area or neighbourhood..."
+                className="flex-1 px-4 py-2.5 text-sm text-gray-900 outline-none rounded-xl" />
               <select name="type" className="px-3 py-2.5 text-sm text-gray-700 border border-gray-200 rounded-xl outline-none bg-white">
                 <option value="">Any type</option>
                 <option value="land">Land</option>
@@ -84,15 +86,17 @@ export default async function PropertiesHomePage() {
 
           {!featured || featured.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
-              <p className="text-4xl mb-3">🏡</p>
+              <div className="flex items-center justify-center mb-4">
+                <div className="rounded-full bg-gray-100 p-4">
+                  <Home className="h-8 w-8 text-gray-400" strokeWidth={1.5} />
+                </div>
+              </div>
               <p className="font-semibold text-gray-700">No listings yet</p>
               <p className="text-sm text-gray-400 mt-1">Check back soon for property listings</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {featured.map((l) => (
-                <PropertyCard key={l.id} listing={l as any} />
-              ))}
+              {featured.map((l) => <PropertyCard key={l.id} listing={l as any} />)}
             </div>
           )}
         </section>
@@ -103,8 +107,8 @@ export default async function PropertiesHomePage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2.5">
                 <h2 className="text-2xl font-bold text-gray-900">Live Property Auctions</h2>
-                <span className="rounded-full bg-[#C9A84C]/20 border border-[#C9A84C]/40 px-2.5 py-0.5 text-xs font-bold text-[#C9A84C]">
-                  🔥 Live
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#C9A84C]/20 border border-[#C9A84C]/40 px-2.5 py-0.5 text-xs font-bold text-[#C9A84C]">
+                  <Flame className="h-3 w-3" /> Live
                 </span>
               </div>
               <Link href="/properties/browse?listing_type=auction" className="text-sm font-semibold text-[#0F2557] hover:underline underline-offset-2">
@@ -112,9 +116,7 @@ export default async function PropertiesHomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {activeAuctions.map((l) => (
-                <PropertyCard key={l.id} listing={l as any} />
-              ))}
+              {activeAuctions.map((l) => <PropertyCard key={l.id} listing={l as any} />)}
             </div>
           </section>
         )}
@@ -135,18 +137,15 @@ export default async function PropertiesHomePage() {
         <section>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Browse by Property Type</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { type: 'land', emoji: '🌿', label: 'Land', desc: 'Plots & parcels' },
-              { type: 'residential', emoji: '🏠', label: 'Residential', desc: 'Homes & apartments' },
-              { type: 'commercial', emoji: '🏢', label: 'Commercial', desc: 'Offices & retail' },
-              { type: 'industrial', emoji: '🏭', label: 'Industrial', desc: 'Warehouses & factories' },
-            ].map(({ type, emoji, label, desc }) => (
+            {(Object.entries(PROPERTY_TYPE_ICONS) as [string, { Icon: React.ElementType; label: string; desc: string }][]).map(([type, { Icon, label, desc }]) => (
               <Link
                 key={type}
                 href={`/properties/browse?property_type=${type}`}
                 className="group rounded-2xl border border-gray-200 bg-white p-5 hover:border-[#C9A84C]/50 hover:shadow-md transition-all"
               >
-                <p className="text-3xl mb-2">{emoji}</p>
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#0F2557]/8 group-hover:bg-[#C9A84C]/15 transition-colors">
+                  <Icon className="h-5 w-5 text-[#0F2557] group-hover:text-[#C9A84C] transition-colors" strokeWidth={1.5} />
+                </div>
                 <p className="font-bold text-gray-900 text-sm">{label}</p>
                 <p className="text-xs text-gray-500">{desc}</p>
               </Link>

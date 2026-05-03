@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { MapPin, ChevronLeft } from 'lucide-react'
+import { MapPin, ChevronLeft, CheckCircle2, XCircle, Car } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { AutoListingWithAuction } from '@/types/autos'
 import { formatGhsPrice, formatMileage, CONDITION_CONFIG } from '@/lib/autoUtils'
@@ -92,7 +92,7 @@ export default async function AutoDetailPage({ params }: { params: { id: string 
         </div>
       ) : (
         <div className="rounded-2xl bg-gradient-to-br from-[#1A1A2E] to-[#252540] h-48 flex items-center justify-center mb-8">
-          <span className="text-6xl">🚗</span>
+          <Car className="h-16 w-16 text-white/20" strokeWidth={1} />
         </div>
       )}
 
@@ -176,14 +176,17 @@ export default async function AutoDetailPage({ params }: { params: { id: string 
             <div className="grid grid-cols-2 gap-3">
               <div className={`rounded-xl border px-4 py-3 ${l.roadworthy ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-gray-50'}`}>
                 <p className="text-xs text-gray-500 mb-1">Roadworthy</p>
-                <p className={`text-sm font-semibold ${l.roadworthy ? 'text-emerald-700' : 'text-gray-500'}`}>
-                  {l.roadworthy ? `✅ Valid${l.roadworthy_expiry ? ` until ${new Date(l.roadworthy_expiry).toLocaleDateString('en-GH', { month: 'short', year: 'numeric' })}` : ''}` : '❌ Not provided'}
+                <p className={`flex items-center gap-1.5 text-sm font-semibold ${l.roadworthy ? 'text-emerald-700' : 'text-gray-400'}`}>
+                  {l.roadworthy
+                    ? <><CheckCircle2 className="h-4 w-4" /> Valid{l.roadworthy_expiry ? ` until ${new Date(l.roadworthy_expiry).toLocaleDateString('en-GH', { month: 'short', year: 'numeric' })}` : ''}</>
+                    : <><XCircle className="h-4 w-4" /> Not provided</>
+                  }
                 </p>
               </div>
               <div className={`rounded-xl border px-4 py-3 ${l.customs_cleared ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-gray-50'}`}>
                 <p className="text-xs text-gray-500 mb-1">Customs Cleared</p>
-                <p className={`text-sm font-semibold ${l.customs_cleared ? 'text-emerald-700' : 'text-gray-500'}`}>
-                  {l.customs_cleared ? '✅ Yes' : '❌ No'}
+                <p className={`flex items-center gap-1.5 text-sm font-semibold ${l.customs_cleared ? 'text-emerald-700' : 'text-gray-400'}`}>
+                  {l.customs_cleared ? <><CheckCircle2 className="h-4 w-4" /> Yes</> : <><XCircle className="h-4 w-4" /> No</>}
                 </p>
               </div>
             </div>

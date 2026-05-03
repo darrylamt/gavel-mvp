@@ -7,7 +7,14 @@ import {
   GHANA_REGIONS, PROPERTY_AMENITIES, calculateSizes,
   getPropertyCommission, formatGhsPrice
 } from '@/lib/propertyUtils'
-import { Check } from 'lucide-react'
+import { Check, Layers, Home, Building2, Building } from 'lucide-react'
+
+const PROPERTY_TYPE_CONFIG = [
+  { value: 'land',        Icon: Layers,    label: 'Land' },
+  { value: 'residential', Icon: Home,      label: 'Residential' },
+  { value: 'commercial',  Icon: Building2, label: 'Commercial' },
+  { value: 'industrial',  Icon: Building,  label: 'Industrial' },
+]
 
 const STEPS = ['Basic Details', 'Location & Size', 'Property Details', 'Pricing & Media']
 
@@ -224,15 +231,10 @@ export default function PropertySellPage() {
             <div>
               <label className={labelCls}>Property Type</label>
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { value: 'land', emoji: '🌿', label: 'Land' },
-                  { value: 'residential', emoji: '🏠', label: 'Residential' },
-                  { value: 'commercial', emoji: '🏢', label: 'Commercial' },
-                  { value: 'industrial', emoji: '🏭', label: 'Industrial' },
-                ].map(({ value, emoji, label }) => (
+                {PROPERTY_TYPE_CONFIG.map(({ value, Icon, label }) => (
                   <button key={value} onClick={() => set('property_type', value as FormData['property_type'])}
                     className={`flex items-center gap-3 p-3 rounded-xl border text-sm font-medium transition-colors ${form.property_type === value ? 'bg-[#0F2557] text-white border-[#0F2557]' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
-                    <span className="text-xl">{emoji}</span> {label}
+                    <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} /> {label}
                   </button>
                 ))}
               </div>

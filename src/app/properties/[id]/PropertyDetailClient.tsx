@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Phone, Share2, Copy, Check } from 'lucide-react'
+import { Phone, Copy, Check, Clock, BadgeCheck } from 'lucide-react'
 import type { PropertyListing, PropertyAuction } from '@/types/properties'
 import { formatGhsPrice } from '@/lib/propertyUtils'
 
@@ -59,8 +59,8 @@ export default function PropertyDetailClient({ listing, auction }: Props) {
               {auction.bid_count} bid{auction.bid_count !== 1 ? 's' : ''}
             </p>
             {auction.end_time && (
-              <p className="text-sm font-semibold text-[#C9A84C] mb-4">
-                ⏱ <Countdown endTime={auction.end_time} />
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-[#C9A84C] mb-4">
+                <Clock className="h-3.5 w-3.5 flex-shrink-0" /> <Countdown endTime={auction.end_time} />
               </p>
             )}
 
@@ -111,7 +111,7 @@ export default function PropertyDetailClient({ listing, auction }: Props) {
               {listing.contact_person ?? listing.profiles?.username ?? 'Seller'}
             </p>
             {listing.is_licensed_auctioneer && (
-              <p className="text-xs text-emerald-600 font-medium">✓ Licensed Auctioneer</p>
+              <p className="flex items-center gap-1 text-xs text-emerald-600 font-medium"><BadgeCheck className="h-3.5 w-3.5" /> Licensed Auctioneer</p>
             )}
           </div>
         </div>

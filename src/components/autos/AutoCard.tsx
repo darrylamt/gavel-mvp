@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { MapPin } from 'lucide-react'
+import { MapPin, Car, Clock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { AutoListing, AutoAuction } from '@/types/autos'
 import { formatGhsPrice, formatMileage, CONDITION_CONFIG } from '@/lib/autoUtils'
@@ -45,25 +45,20 @@ export default function AutoCard({ listing }: Props) {
           <img src={image} alt={listing.title} className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
         ) : (
           <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#1A1A2E] to-[#252540]">
-            <span className="text-4xl">🚗</span>
+            <Car className="h-12 w-12 text-white/30" strokeWidth={1} />
           </div>
         )}
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap">
+        <div className="absolute top-2 left-2">
           <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${conditionCfg.color}`}>
             {conditionCfg.label}
           </span>
         </div>
-        {isAuction && (
-          <div className="absolute top-2 right-2">
-            <span className="rounded-full bg-[#E63946] px-2.5 py-0.5 text-[11px] font-bold text-white">Live Auction</span>
-          </div>
-        )}
-        {!isAuction && (
-          <div className="absolute top-2 right-2">
-            <span className="rounded-full bg-[#1A1A2E] px-2.5 py-0.5 text-[11px] font-bold text-white">For Sale</span>
-          </div>
-        )}
+        <div className="absolute top-2 right-2">
+          {isAuction
+            ? <span className="rounded-full bg-[#E63946] px-2.5 py-0.5 text-[11px] font-bold text-white">Live Auction</span>
+            : <span className="rounded-full bg-[#1A1A2E] px-2.5 py-0.5 text-[11px] font-bold text-white">For Sale</span>
+          }
+        </div>
       </div>
 
       {/* Content */}
@@ -71,17 +66,10 @@ export default function AutoCard({ listing }: Props) {
         <p className="font-semibold text-gray-900 text-sm line-clamp-1 mb-0.5">{listing.year} {listing.make} {listing.model}</p>
         <p className="text-xs text-gray-500 line-clamp-1 mb-1.5">{listing.title}</p>
 
-        {/* Specs row */}
         <div className="flex items-center gap-2.5 text-xs text-gray-400 mb-2 flex-wrap">
-          {listing.mileage != null && listing.condition !== 'brand_new' && (
-            <span>{formatMileage(listing.mileage)}</span>
-          )}
-          {listing.transmission && (
-            <span className="capitalize">{listing.transmission}</span>
-          )}
-          {listing.fuel_type && (
-            <span className="capitalize">{listing.fuel_type}</span>
-          )}
+          {listing.mileage != null && listing.condition !== 'brand_new' && <span>{formatMileage(listing.mileage)}</span>}
+          {listing.transmission && <span className="capitalize">{listing.transmission}</span>}
+          {listing.fuel_type && <span className="capitalize">{listing.fuel_type}</span>}
         </div>
 
         {listing.region && (
@@ -97,8 +85,8 @@ export default function AutoCard({ listing }: Props) {
             <p className="text-base font-bold text-[#1A1A2E]">
               {auction.current_bid ? formatGhsPrice(auction.current_bid) : formatGhsPrice(auction.reserve_price)}
             </p>
-            <p className="text-xs text-[#E63946] font-medium mt-0.5">
-              ⏱ <Countdown endTime={auction.end_time} />
+            <p className="flex items-center gap-1 text-xs text-[#E63946] font-medium mt-0.5">
+              <Clock className="h-3 w-3" /> <Countdown endTime={auction.end_time} />
             </p>
           </div>
         ) : (
