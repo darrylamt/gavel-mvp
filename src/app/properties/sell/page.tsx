@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import {
@@ -75,6 +75,26 @@ export default function PropertySellPage() {
   const [form, setForm] = useState<FormData>(INITIAL)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [authorized, setAuthorized] = useState(false)
+
+  useEffect(() => {
+    async function checkAdmin() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { router.replace('/login'); return }
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
+      if (profile?.role !== 'admin') { router.replace('/properties'); return }
+      setAuthorized(true)
+    }
+    checkAdmin()
+  }, [router])
+
+  if (!authorized) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#C9A84C] border-t-transparent" />
+      </div>
+    )
+  }
 
   const set = (key: keyof FormData, value: FormData[keyof FormData]) =>
     setForm(prev => ({ ...prev, [key]: value }))

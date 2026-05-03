@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+// Note: sell routes are admin-only; the layout links simply point there and the sell page enforces auth
 
 export const metadata = {
   title: { default: 'Gavel Properties', template: '%s | Gavel Properties' },

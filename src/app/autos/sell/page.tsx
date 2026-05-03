@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { AUTO_MAKES, VEHICLE_TYPES, ENGINE_SIZES, getAutoCommission, formatGhsPrice } from '@/lib/autoUtils'
@@ -74,6 +74,26 @@ export default function AutoSellPage() {
   const [form, setForm] = useState<FormData>(INITIAL)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [authorized, setAuthorized] = useState(false)
+
+  useEffect(() => {
+    async function checkAdmin() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { router.replace('/login'); return }
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
+      if (profile?.role !== 'admin') { router.replace('/autos'); return }
+      setAuthorized(true)
+    }
+    checkAdmin()
+  }, [router])
+
+  if (!authorized) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#E63946] border-t-transparent" />
+      </div>
+    )
+  }
 
   const set = <K extends keyof FormData>(key: K, value: FormData[K]) =>
     setForm(prev => ({ ...prev, [key]: value }))
