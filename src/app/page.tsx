@@ -260,11 +260,8 @@ export default async function HomePage() {
       {/* Featured Products */}
       {products && products.length > 0 && (
         <section className="mb-12">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Products</h2>
-            <Link href="/shop" className="text-sm font-semibold text-gray-600 hover:text-gray-900 underline underline-offset-2">
-              See all
-            </Link>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6">
             {products.map((product) => (
@@ -282,6 +279,11 @@ export default async function HomePage() {
                 compactMobile
               />
             ))}
+          </div>
+          <div className="mt-5 text-center">
+            <Link href="/shop" className="inline-block rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm">
+              View more products
+            </Link>
           </div>
         </section>
       )}
