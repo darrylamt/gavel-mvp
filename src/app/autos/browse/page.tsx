@@ -105,7 +105,7 @@ export default function AutoBrowsePage() {
             <div>
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Vehicle Type</label>
               <div className="space-y-1.5">
-                {[{ value: '', label: 'All Types' }, ...VEHICLE_TYPES.map(v => ({ value: v.value, label: `${v.emoji} ${v.label}` }))].map(o => (
+                {[{ value: '', label: 'All Types' }, ...VEHICLE_TYPES.map(v => ({ value: v.value, label: v.label }))].map(o => (
                   <button key={o.value} onClick={() => setVehicleType(o.value)}
                     className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${vehicleType === o.value ? 'bg-[#1A1A2E] text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
                     {o.label}
