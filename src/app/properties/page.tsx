@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import PropertyCard from '@/components/properties/PropertyCard'
-import { formatGhsPrice } from '@/lib/propertyUtils'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,29 +9,24 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const stats = [
-  { label: 'Active Listings', value: '120+' },
-  { label: 'Properties Sold', value: '340+' },
-  { label: 'Registered Buyers', value: '2,100+' },
-  { label: 'Regions Covered', value: '16' },
-]
-
 export default async function PropertiesHomePage() {
-  const { data: featured } = await supabase
-    .from('property_listings')
-    .select('*, property_auctions(*)')
-    .eq('status', 'active')
-    .order('featured', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(6)
+  const [
+    { count: activeCount },
+    { count: soldCount },
+    { data: featured },
+    { data: activeAuctions },
+  ] = await Promise.all([
+    supabase.from('property_listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    supabase.from('property_listings').select('*', { count: 'exact', head: true }).eq('status', 'sold'),
+    supabase.from('property_listings').select('*, property_auctions(*)').eq('status', 'active').order('featured', { ascending: false }).order('created_at', { ascending: false }).limit(6),
+    supabase.from('property_listings').select('*, property_auctions(*)').eq('status', 'active').eq('listing_type', 'auction').order('created_at', { ascending: false }).limit(8),
+  ])
 
-  const { data: activeAuctions } = await supabase
-    .from('property_listings')
-    .select('*, property_auctions(*)')
-    .eq('status', 'active')
-    .eq('listing_type', 'auction')
-    .order('created_at', { ascending: false })
-    .limit(8)
+  const stats = [
+    { label: 'Active Listings', value: String(activeCount ?? 0) },
+    { label: 'Properties Sold', value: String(soldCount ?? 0) },
+    { label: 'Regions Covered', value: '16' },
+  ]
 
   return (
     <>
@@ -92,10 +86,7 @@ export default async function PropertiesHomePage() {
             <div className="rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
               <p className="text-4xl mb-3">🏡</p>
               <p className="font-semibold text-gray-700">No listings yet</p>
-              <p className="text-sm text-gray-400 mt-1">Be the first to list a property on Gavel Properties</p>
-              <Link href="/properties/sell" className="mt-4 inline-block rounded-lg bg-[#0F2557] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#1a3570] transition-colors">
-                List Your Property
-              </Link>
+              <p className="text-sm text-gray-400 mt-1">Check back soon for property listings</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -130,7 +121,7 @@ export default async function PropertiesHomePage() {
 
         {/* Stats bar */}
         <section className="rounded-2xl bg-[#0F2557] p-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-3 gap-6">
             {stats.map(({ label, value }) => (
               <div key={label} className="text-center">
                 <p className="text-3xl font-black text-[#C9A84C]">{value}</p>
@@ -161,15 +152,6 @@ export default async function PropertiesHomePage() {
               </Link>
             ))}
           </div>
-        </section>
-
-        {/* CTA */}
-        <section className="rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#d4b55c] p-8 text-center">
-          <h2 className="text-2xl font-black text-[#0F2557] mb-2">Ready to sell your property?</h2>
-          <p className="text-[#0F2557]/70 mb-5">List in minutes. Reach thousands of qualified buyers across Ghana.</p>
-          <Link href="/properties/sell" className="inline-block rounded-xl bg-[#0F2557] text-white font-bold px-8 py-3 hover:bg-[#1a3570] transition-colors">
-            List Your Property
-          </Link>
         </section>
 
       </div>

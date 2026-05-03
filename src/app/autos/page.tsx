@@ -10,29 +10,24 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const stats = [
-  { label: 'Vehicles Listed', value: '500+' },
-  { label: 'Sold This Month', value: '80+' },
-  { label: 'Registered Dealers', value: '45+' },
-  { label: 'Regions', value: '16' },
-]
-
 export default async function AutosHomePage() {
-  const { data: featured } = await supabase
-    .from('auto_listings')
-    .select('*, auto_auctions(*)')
-    .eq('status', 'active')
-    .order('featured', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(6)
+  const [
+    { count: activeCount },
+    { count: soldCount },
+    { data: featured },
+    { data: activeAuctions },
+  ] = await Promise.all([
+    supabase.from('auto_listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    supabase.from('auto_listings').select('*', { count: 'exact', head: true }).eq('status', 'sold'),
+    supabase.from('auto_listings').select('*, auto_auctions(*)').eq('status', 'active').order('featured', { ascending: false }).order('created_at', { ascending: false }).limit(6),
+    supabase.from('auto_listings').select('*, auto_auctions(*)').eq('status', 'active').eq('listing_type', 'auction').order('created_at', { ascending: false }).limit(8),
+  ])
 
-  const { data: activeAuctions } = await supabase
-    .from('auto_listings')
-    .select('*, auto_auctions(*)')
-    .eq('status', 'active')
-    .eq('listing_type', 'auction')
-    .order('created_at', { ascending: false })
-    .limit(8)
+  const stats = [
+    { label: 'Vehicles Listed', value: String(activeCount ?? 0) },
+    { label: 'Vehicles Sold', value: String(soldCount ?? 0) },
+    { label: 'Regions', value: '16' },
+  ]
 
   return (
     <>
