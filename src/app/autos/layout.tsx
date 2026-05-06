@@ -22,7 +22,6 @@ function AutosNavbar() {
             {[
               { href: '/autos/browse?type=sale', label: 'Buy' },
               { href: '/autos/browse?type=auction', label: 'Auctions' },
-              { href: '/autos/sell', label: 'Sell' },
             ].map(({ href, label }) => (
               <Link key={href} href={href} className="px-3.5 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 {label}
@@ -60,7 +59,6 @@ function AutosFooter() {
               {[
                 { href: '/autos/browse?type=sale', label: 'Buy a Vehicle' },
                 { href: '/autos/browse?type=auction', label: 'Auction a Vehicle' },
-                { href: '/autos/sell', label: 'Sell a Vehicle' },
               ].map(({ href, label }) => (
                 <Link key={href} href={href} className="block text-sm text-white/60 hover:text-white transition-colors">{label}</Link>
               ))}

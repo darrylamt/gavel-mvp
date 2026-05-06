@@ -23,7 +23,6 @@ function PropertiesNavbar() {
             {[
               { href: '/properties/browse?type=sale', label: 'Buy' },
               { href: '/properties/browse?type=auction', label: 'Auctions' },
-              { href: '/properties/sell', label: 'Sell' },
             ].map(({ href, label }) => (
               <Link key={href} href={href} className="px-3.5 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 {label}
@@ -61,7 +60,6 @@ function PropertiesFooter() {
               {[
                 { href: '/properties/browse?type=sale', label: 'Buy Property' },
                 { href: '/properties/browse?type=auction', label: 'Auction Property' },
-                { href: '/properties/sell', label: 'List Property' },
               ].map(({ href, label }) => (
                 <Link key={href} href={href} className="block text-sm text-white/60 hover:text-white transition-colors">{label}</Link>
               ))}

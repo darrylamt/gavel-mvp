@@ -54,6 +54,17 @@ export default function AdminPage() {
   const [referralLoading, setReferralLoading] = useState(false)
   const [referralLoaded, setReferralLoaded] = useState(false)
 
+  // Pagination
+  const [usersVisible, setUsersVisible] = useState(10)
+  const [sellersVisible, setSellersVisible] = useState(10)
+  const [purchasesVisible, setPurchasesVisible] = useState(10)
+  const [auctionsVisible, setAuctionsVisible] = useState(10)
+
+  // Reset pagination when filters change
+  useEffect(() => { setUsersVisible(10) }, [userSearch, userRoleFilter])
+  useEffect(() => { setSellersVisible(10) }, [sellerSearch])
+  useEffect(() => { setAuctionsVisible(10) }, [auctionSearch, auctionStatusFilter])
+
   // Modal state
   const [selectedUser, setSelectedUser] = useState<DashboardPayload['users'][0] | null>(null)
   const [selectedSeller, setSelectedSeller] = useState<DashboardPayload['sellers'][0] | null>(null)
@@ -228,7 +239,7 @@ export default function AdminPage() {
               <>
                 {/* Mobile cards */}
                 <div className="space-y-2 sm:hidden">
-                  {filteredUsers.slice(0, 30).map((user) => (
+                  {filteredUsers.slice(0, usersVisible).map((user) => (
                     <div key={user.id} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{user.username || '—'}</p>
@@ -248,7 +259,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Desktop table */}
-                <div className="hidden max-h-72 overflow-auto sm:block">
+                <div className="hidden sm:block">
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 text-xs font-medium uppercase tracking-wide text-gray-400">
@@ -259,7 +270,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {filteredUsers.slice(0, 30).map((user) => (
+                      {filteredUsers.slice(0, usersVisible).map((user) => (
                         <tr key={user.id} className="hover:bg-gray-50">
                           <td className="py-2.5 font-medium text-gray-900">{user.username || '—'}</td>
                           <td className="py-2.5 text-gray-600">{user.phone || '—'}</td>
@@ -276,6 +287,13 @@ export default function AdminPage() {
                       ))}
                     </tbody>
                   </table>
+                  {usersVisible < filteredUsers.length && (
+                    <div className="mt-3 text-center">
+                      <button onClick={() => setUsersVisible(v => v + 10)} className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                        Load 10 more ({filteredUsers.length - usersVisible} remaining)
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -308,7 +326,7 @@ export default function AdminPage() {
               <>
                 {/* Mobile cards */}
                 <div className="space-y-2 sm:hidden">
-                  {filteredSellers.slice(0, 30).map((seller) => (
+                  {filteredSellers.slice(0, sellersVisible).map((seller) => (
                     <div key={seller.userId} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{seller.name}</p>
@@ -328,7 +346,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Desktop table */}
-                <div className="hidden max-h-72 overflow-auto sm:block">
+                <div className="hidden sm:block">
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 text-xs font-medium uppercase tracking-wide text-gray-400">
@@ -339,7 +357,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {filteredSellers.slice(0, 30).map((seller) => (
+                      {filteredSellers.slice(0, sellersVisible).map((seller) => (
                         <tr key={seller.userId} className="hover:bg-gray-50">
                           <td className="py-2.5 font-medium text-gray-900">{seller.name}</td>
                           <td className="py-2.5 text-gray-600">{seller.phone}</td>
@@ -356,6 +374,13 @@ export default function AdminPage() {
                       ))}
                     </tbody>
                   </table>
+                  {sellersVisible < filteredSellers.length && (
+                    <div className="mt-3 text-center">
+                      <button onClick={() => setSellersVisible(v => v + 10)} className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                        Load 10 more ({filteredSellers.length - sellersVisible} remaining)
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -375,7 +400,7 @@ export default function AdminPage() {
             <>
               {/* Mobile cards */}
               <div className="space-y-3 sm:hidden">
-                {data.purchases.slice(0, 20).map((purchase) => (
+                {data.purchases.slice(0, purchasesVisible).map((purchase) => (
                   <div key={`${purchase.orderId}-${purchase.productTitle}`} className="rounded-xl border border-gray-100 bg-gray-50 p-3">
                     <div className="flex items-start justify-between">
                       <div>
@@ -409,7 +434,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {data.purchases.slice(0, 20).map((purchase) => (
+                    {data.purchases.slice(0, purchasesVisible).map((purchase) => (
                       <tr key={`${purchase.orderId}-${purchase.productTitle}`} className="align-top hover:bg-gray-50">
                         <td className="whitespace-nowrap py-2.5 text-xs text-gray-500">
                           {purchase.orderCreatedAt ? new Date(purchase.orderCreatedAt).toLocaleDateString() : '—'}
@@ -437,6 +462,13 @@ export default function AdminPage() {
                     ))}
                   </tbody>
                 </table>
+                {purchasesVisible < data.purchases.length && (
+                  <div className="mt-3 text-center">
+                    <button onClick={() => setPurchasesVisible(v => v + 10)} className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                      Load 10 more ({data.purchases.length - purchasesVisible} remaining)
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -480,7 +512,7 @@ export default function AdminPage() {
             <>
               {/* Mobile cards */}
               <div className="space-y-2 sm:hidden">
-                {filteredAuctions.slice(0, 60).map((auction) => (
+                {filteredAuctions.slice(0, auctionsVisible).map((auction) => (
                   <div key={auction.id} className="rounded-xl border border-gray-100 bg-gray-50 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -513,7 +545,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {filteredAuctions.slice(0, 60).map((auction) => (
+                    {filteredAuctions.slice(0, auctionsVisible).map((auction) => (
                       <tr key={auction.id} className="hover:bg-gray-50">
                         <td className="py-2.5 font-medium text-gray-900">{auction.title}</td>
                         <td className="py-2.5"><StatusBadge status={auction.status || 'unknown'} /></td>
@@ -530,6 +562,13 @@ export default function AdminPage() {
                     ))}
                   </tbody>
                 </table>
+                {auctionsVisible < filteredAuctions.length && (
+                  <div className="mt-3 text-center">
+                    <button onClick={() => setAuctionsVisible(v => v + 10)} className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                      Load 10 more ({filteredAuctions.length - auctionsVisible} remaining)
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}
