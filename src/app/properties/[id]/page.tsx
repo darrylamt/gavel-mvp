@@ -9,11 +9,12 @@ import { createServiceRoleClient } from '@/lib/serverSupabase'
 
 export const dynamic = 'force-dynamic'
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
   const { data } = await createServiceRoleClient()
     .from('property_listings')
     .select('title, city, region, price, property_type, listing_type')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle()
 
   if (!data) return { title: 'Property | Gavel Properties' }
@@ -34,12 +35,13 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   }
 }
 
-export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
+export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const db = createServiceRoleClient()
   const { data: listing } = await db
     .from('property_listings')
     .select('*, property_auctions(*)')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle()
 
   if (!listing || listing.status === 'archived') notFound()
