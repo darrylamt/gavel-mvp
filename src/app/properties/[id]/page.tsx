@@ -38,15 +38,22 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const { data: listing } = await supabase
+  const { data: listing, error } = await supabase
     .from('property_listings')
-    .select('*, property_auctions(*), profiles(username, avatar_url)')
+    .select('*, property_auctions(*)')
     .eq('id', params.id)
     .single()
 
-  if (!listing || listing.status === 'archived') notFound()
+  if (error || !listing || listing.status === 'archived') notFound()
 
-  const l = listing as PropertyListingWithAuction & { profiles: { username: string | null; avatar_url: string | null } | null }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username, avatar_url')
+    .eq('id', listing.seller_id)
+    .maybeSingle()
+    .then(r => ({ data: r.data ?? null }))
+
+  const l = { ...listing, profiles: profile } as PropertyListingWithAuction & { profiles: { username: string | null; avatar_url: string | null } | null }
   const auction = l.property_auctions?.[0]
   const isAuction = l.listing_type === 'auction'
   const images = l.images ?? []

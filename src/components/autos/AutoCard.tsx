@@ -40,10 +40,14 @@ export default function AutoCard({ listing }: Props) {
   return (
     <Link href={`/autos/${listing.id}`} className="group block rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
       {/* Image */}
-      <div className="relative aspect-[4/3] bg-[#F8F9FA] overflow-hidden">
+      <div className="relative aspect-[4/3] bg-gray-900 overflow-hidden">
         {image ? (
-          <img src={image} alt={listing.title} className="h-full w-full object-contain p-2 group-hover:scale-[1.03] transition-transform duration-300" />
-        ) : (
+          <>
+            <img src={image} alt={listing.title} className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+          </>
+        ) :
+          (
           <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#1A1A2E] to-[#252540]">
             <Car className="h-12 w-12 text-white/30" strokeWidth={1} />
           </div>

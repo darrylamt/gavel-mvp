@@ -2,13 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import AutoCard from '@/components/autos/AutoCard'
 import { AUTO_MAKES, VEHICLE_TYPES } from '@/lib/autoUtils'
-import { Car, Truck, Bus, Bike, Cog, Flame, ChevronRight } from 'lucide-react'
-
-const FEATURED_BRANDS = [
-  'Toyota', 'Mercedes-Benz', 'BMW', 'Lexus', 'Land Rover',
-  'Honda', 'Hyundai', 'Ford', 'Nissan', 'KIA',
-  'Mitsubishi', 'Volkswagen', 'Chevrolet', 'Isuzu', 'Peugeot',
-]
+import { Car, Truck, Bus, Bike, Cog, Flame } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,13 +12,24 @@ const supabase = createClient(
 )
 
 const VEHICLE_TYPE_ICONS: Record<string, React.ElementType> = {
-  car: Car,
-  suv: Car,
-  truck: Truck,
-  bus: Bus,
-  motorbike: Bike,
-  heavy_equipment: Cog,
+  car: Car, suv: Car, truck: Truck, bus: Bus, motorbike: Bike, heavy_equipment: Cog,
 }
+
+// Brand configs — slug maps to cdn.simpleicons.org/{slug}/color
+const BRAND_CONFIG = [
+  { name: 'Toyota',       slug: 'toyota' },
+  { name: 'Mercedes-Benz',slug: 'mercedesbenz' },
+  { name: 'BMW',          slug: 'bmw' },
+  { name: 'Honda',        slug: 'honda' },
+  { name: 'Hyundai',      slug: 'hyundai' },
+  { name: 'Ford',         slug: 'ford' },
+  { name: 'Nissan',       slug: 'nissan' },
+  { name: 'KIA',          slug: 'kia' },
+  { name: 'Volkswagen',   slug: 'volkswagen' },
+  { name: 'Peugeot',      slug: 'peugeot' },
+  { name: 'Mitsubishi',   slug: 'mitsubishi' },
+  { name: 'Lexus',        slug: 'lexus' },
+]
 
 export default async function AutosHomePage() {
   const [
@@ -41,22 +46,27 @@ export default async function AutosHomePage() {
 
   const stats = [
     { label: 'Vehicles Listed', value: String(activeCount ?? 0) },
-    { label: 'Vehicles Sold', value: String(soldCount ?? 0) },
-    { label: 'Regions', value: '16' },
+    { label: 'Vehicles Sold',   value: String(soldCount ?? 0) },
+    { label: 'Regions',         value: '16' },
   ]
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative bg-[#1A1A2E] overflow-hidden">
-        <div className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #E63946 0%, transparent 50%), radial-gradient(circle at 80% 30%, #252540 0%, transparent 60%)' }}
+      {/* Hero with real background image */}
+      <section className="relative bg-[#1A1A2E] overflow-hidden min-h-[520px] flex items-center">
+        {/* Background photo */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1920&q=80)' }}
         />
-        <div className="relative mx-auto max-w-7xl px-4 md:px-6 py-20 md:py-28">
-          <div className="max-w-2xl">
-            <p className="text-[#E63946] font-semibold text-sm mb-3 tracking-wide uppercase">Ghana&apos;s Best Auto Marketplace</p>
+        {/* Dark overlay so text stays readable */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1A1A2E]/95 via-[#1A1A2E]/80 to-[#1A1A2E]/30" />
+
+        <div className="relative w-full mx-auto max-w-7xl px-4 md:px-6 py-20 md:py-28">
+          <div className="max-w-xl">
+            <p className="text-[#E63946] font-semibold text-sm mb-3 tracking-widest uppercase">Ghana&apos;s Best Auto Marketplace</p>
             <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4">
-              Ghana&apos;s Best Place to<br />Buy and Sell Vehicles
+              Buy &amp; Sell<br />Vehicles in Ghana
             </h1>
             <p className="text-white/70 text-lg mb-8">
               Auctions and fixed-price sales for cars, SUVs, trucks and more.
@@ -81,6 +91,35 @@ export default async function AutosHomePage() {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 md:px-6 py-12 space-y-14">
+
+        {/* Brand logos */}
+        <section>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest text-center mb-8">Brands We Deal With</p>
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-4 items-center">
+            {BRAND_CONFIG.map(({ name, slug }) => (
+              <a
+                key={name}
+                href={`/autos/browse?make=${encodeURIComponent(name)}`}
+                title={name}
+                className="group flex flex-col items-center gap-1.5 py-2"
+              >
+                {/* Logo */}
+                <div className="h-8 w-8 flex items-center justify-center opacity-25 group-hover:opacity-60 transition-opacity">
+                  <img
+                    src={`https://cdn.simpleicons.org/${slug}/1A1A2E`}
+                    alt={name}
+                    className="max-h-8 max-w-8 w-auto h-auto"
+                    loading="lazy"
+                  />
+                </div>
+                {/* Brand name */}
+                <span className="text-[10px] font-semibold text-gray-300 group-hover:text-gray-500 transition-colors text-center leading-tight hidden sm:block">
+                  {name}
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
 
         {/* Featured */}
         <section>
@@ -130,40 +169,6 @@ export default async function AutosHomePage() {
             </div>
           </section>
         )}
-
-        {/* Brand showcase */}
-        <section className="py-10 -mx-4 md:-mx-6 px-4 md:px-6 bg-[#1A1A2E]/3 rounded-3xl overflow-hidden">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest text-center mb-8">Brands We Deal With</p>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-6 gap-y-4">
-            {FEATURED_BRANDS.map(brand => (
-              <a
-                key={brand}
-                href={`/autos/browse?make=${encodeURIComponent(brand)}`}
-                className="group flex items-center justify-center py-3 px-2"
-              >
-                <span className="text-center text-sm font-black tracking-wider text-gray-200 group-hover:text-gray-400 transition-colors uppercase leading-tight">
-                  {brand}
-                </span>
-              </a>
-            ))}
-          </div>
-        </section>
-
-      {/* Browse by make */}
-        <section>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Browse by Make</h2>
-          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-            {AUTO_MAKES.filter(m => m !== 'Other').map((make) => (
-              <Link
-                key={make}
-                href={`/autos/browse?make=${encodeURIComponent(make)}`}
-                className="flex-shrink-0 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:border-[#E63946]/50 hover:text-[#E63946] transition-colors whitespace-nowrap"
-              >
-                {make}
-              </Link>
-            ))}
-          </div>
-        </section>
 
         {/* Browse by vehicle type */}
         <section>

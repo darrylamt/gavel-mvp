@@ -39,11 +39,13 @@ export default async function PropertiesHomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative bg-[#0F2557] overflow-hidden">
-        <div className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #C9A84C 0%, transparent 60%), radial-gradient(circle at 80% 20%, #1a3570 0%, transparent 50%)' }}
+      <section className="relative bg-[#0F2557] overflow-hidden min-h-[520px] flex items-center">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=80)' }}
         />
-        <div className="relative mx-auto max-w-7xl px-4 md:px-6 py-20 md:py-28">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0F2557]/97 via-[#0F2557]/85 to-[#0F2557]/40" />
+        <div className="relative w-full mx-auto max-w-7xl px-4 md:px-6 py-20 md:py-28">
           <div className="max-w-2xl">
             <p className="text-[#C9A84C] font-semibold text-sm mb-3 tracking-wide uppercase">Ghana&apos;s Most Trusted</p>
             <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4">
