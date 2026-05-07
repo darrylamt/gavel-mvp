@@ -83,6 +83,7 @@ export default function AuctionDetailPage() {
   const [countdownPhase, setCountdownPhase] = useState<'starts' | 'ends' | 'ended'>('ends')
   const [watcherCount, setWatcherCount] = useState(0)
   const [descriptionExpanded, setDescriptionExpanded] = useState(false)
+  const [cdParts, setCdParts] = useState({ d: 0, h: 0, m: 0, s: 0 })
 
   const now = Date.now()
 
@@ -359,13 +360,21 @@ export default function AuctionDetailPage() {
       }
 
       if (endsAtMs != null && nowMs < endsAtMs) {
+        const diff = endsAtMs - nowMs
         setCountdownPhase('ends')
-        setTimeLeft(formatDuration(endsAtMs - nowMs))
+        setTimeLeft(formatDuration(diff))
+        setCdParts({
+          d: Math.floor(diff / 86400000),
+          h: Math.floor((diff % 86400000) / 3600000),
+          m: Math.floor((diff % 3600000) / 60000),
+          s: Math.floor((diff % 60000) / 1000),
+        })
         return
       }
 
       setCountdownPhase('ended')
       setTimeLeft('Auction Ended')
+      setCdParts({ d: 0, h: 0, m: 0, s: 0 })
     }
 
     tick()
@@ -614,263 +623,310 @@ export default function AuctionDetailPage() {
   }
 
   const showMobileBidBar = !hasEnded && !isScheduled && !!userId
+  const isEnding = !hasEnded && endsAtMs != null && (endsAtMs - Date.now()) < 1000 * 60 * 5
+  const isUrgent = !hasEnded && endsAtMs != null && (endsAtMs - Date.now()) < 1000 * 60 * 60
+  const lotId = auction.id.slice(0, 8).toUpperCase()
+  const increment = auction.min_increment ?? 500
+  const quickBids = [increment, increment * 2, increment * 5, increment * 10]
 
   return (
-    <PrivateAuctionGuard
-      auctionId={auction.id}
-      auctionTitle={auction.title}
-      isPrivate={auction.is_private}
-    >
+    <PrivateAuctionGuard auctionId={auction.id} auctionTitle={auction.title} isPrivate={auction.is_private}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+
       {/* Mobile sticky bid bar */}
       {showMobileBidBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Current price</span>
-            <span className="text-sm font-black text-gray-900 tabular-nums">GH₵ {liveCurrentPrice.toLocaleString()}</span>
-            <span className="ml-auto text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-100 rounded-full px-2 py-0.5">
-              {bidderCount} bidder{bidderCount !== 1 ? 's' : ''}
-            </span>
+        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-[#232830] bg-[#14181f]/97 backdrop-blur-sm px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960]">Current bid</span>
+            <span className="text-sm font-black text-[#f4f1ea] tabular-nums">GHS {liveCurrentPrice.toLocaleString()}</span>
+            <span className="ml-auto text-[10px] font-mono text-[#6b6960]">{bidderCount} bidder{bidderCount !== 1 ? 's' : ''}</span>
           </div>
-          <BidForm
-            hasEnded={false}
-            bidAmount={bidAmount}
-            isPlacingBid={isPlacingBid}
-            error={bidError}
-            isLoggedIn
-            currentPrice={liveCurrentPrice}
-            minIncrement={auction.min_increment}
-            maxIncrement={auction.max_increment}
-            onBidAmountChange={setBidAmount}
-            onSubmit={placeBid}
-            compact
-          />
-          {bidError && (
-            <p className="mt-1.5 text-xs font-medium text-red-500">{bidError}</p>
-          )}
+          <BidForm hasEnded={false} bidAmount={bidAmount} isPlacingBid={isPlacingBid} error={bidError} isLoggedIn
+            currentPrice={liveCurrentPrice} minIncrement={auction.min_increment} maxIncrement={auction.max_increment}
+            onBidAmountChange={setBidAmount} onSubmit={placeBid} compact />
+          {bidError && <p className="mt-1.5 text-xs text-red-400">{bidError}</p>}
         </div>
       )}
 
-      <main className={`mx-auto w-full max-w-5xl px-4 py-6 sm:py-8 md:px-6 ${showMobileBidBar ? 'pb-32 lg:pb-8' : ''}`}>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+      <div className={`bg-[#0a0c10] text-[#f4f1ea] min-h-screen ${showMobileBidBar ? 'pb-32 lg:pb-0' : ''}`}>
+        <div className="mx-auto max-w-7xl px-4 md:px-6 py-6">
 
-        {/* Breadcrumb */}
-        <nav className="mb-5 flex items-center gap-1.5 text-xs text-gray-400">
-          <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
-          <span>/</span>
-          <Link href="/auctions" className="hover:text-gray-600 transition-colors">Auctions</Link>
-          <span>/</span>
-          <span className="text-gray-600 font-medium line-clamp-1">{auction.title}</span>
-        </nav>
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-xs text-[#6b6960] mb-6">
+            <Link href="/" className="hover:text-[#f4f1ea] transition-colors">Home</Link>
+            <span>›</span>
+            <Link href="/auctions" className="hover:text-[#f4f1ea] transition-colors">Auctions</Link>
+            <span>›</span>
+            <span className="text-[#b8b3a8] truncate max-w-[200px]">{auction.title}</span>
+          </nav>
 
-        <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
-          {/* Left column */}
-          <section className="space-y-4">
-            {/* Image gallery */}
-            <div className="rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm">
-              <ImageGallery images={fallbackImages} />
-            </div>
+          {/* Hero grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-6 mb-10">
 
-            {/* Title + share + mobile countdown */}
-            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-              <div className="flex items-start justify-between gap-3">
-                <AuctionHeader
-                  title={auction.title}
-                  currentPrice={liveCurrentPrice}
-                  bidderCount={bidderCount}
-                  watcherCount={watcherCount}
-                  showBidders={!hasEnded && !isScheduled}
-                  showWatchers={!hasEnded && isScheduled}
-                />
-                <ShareAuctionButton auctionId={auction.id} />
+            {/* Left: Gallery + title block */}
+            <div className="space-y-5">
+              <div className="rounded-2xl overflow-hidden bg-[#11141a]">
+                <ImageGallery images={fallbackImages} />
               </div>
 
-              {/* Countdown — mobile only (shown inline under title) */}
-              {(auction.starts_at || auction.ends_at) && (
-                <div className="mt-3 lg:hidden">
-                  <AuctionCountdown
-                    targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
-                    phase={countdownPhase}
-                    timeLeft={timeLeft}
-                  />
+              {/* Title block */}
+              <div>
+                <p className="font-mono text-[11px] tracking-widest uppercase text-[#6b6960] mb-2">LOT {lotId}</p>
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="text-2xl md:text-3xl font-bold text-[#f4f1ea] leading-tight">{auction.title}</h1>
+                  <ShareAuctionButton auctionId={auction.id} />
                 </div>
-              )}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {!hasEnded && !isScheduled && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-green-600/40 bg-green-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-green-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+                      Live auction
+                    </span>
+                  )}
+                  {isScheduled && <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-400">Scheduled</span>}
+                  {hasEnded && <span className="rounded-full border border-[#232830] bg-[#11141a] px-2.5 py-0.5 text-[11px] font-semibold text-[#6b6960]">Ended</span>}
+                  {reserveMet && !hasEnded && <span className="rounded-full border border-green-600/40 bg-green-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-green-400">Reserve met</span>}
+                  {!reserveMet && !hasEnded && bids.length > 0 && <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-400">Reserve not met</span>}
+                  <span className="rounded-full border border-[#232830] px-2.5 py-0.5 text-[11px] font-semibold text-[#b8b3a8]">Escrow protected</span>
+                  <span className="rounded-full border border-[#232830] px-2.5 py-0.5 text-[11px] font-semibold text-[#b8b3a8]">7-day return</span>
+                </div>
+              </div>
 
               {/* Private auction notice */}
               {auction.is_private && (
-                <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50 p-3">
-                  <p className="text-xs font-semibold text-purple-800">Private Auction</p>
-                  <p className="mt-0.5 text-xs text-purple-700">
-                    {auction.anonymous_bidding_enabled === false
-                      ? 'Anonymous bidding is off. Bidder usernames are visible to participants.'
-                      : 'Anonymous bidding is on. Bidder identities are hidden.'}
+                <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
+                  <p className="text-sm font-semibold text-purple-300">Private Auction</p>
+                  <p className="mt-0.5 text-xs text-purple-400">
+                    {auction.anonymous_bidding_enabled === false ? 'Anonymous bidding is off.' : 'Anonymous bidding is on. Bidder identities are hidden.'}
                   </p>
+                </div>
+              )}
+
+              {/* Description */}
+              {formattedDescription && (
+                <div>
+                  <h2 className="text-sm font-bold text-[#f4f1ea] mb-3">Description</h2>
+                  <p className="text-sm text-[#b8b3a8] leading-relaxed whitespace-pre-line"
+                    style={!descriptionExpanded && shouldShowReadMore ? { display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : undefined}>
+                    {formattedDescription}
+                  </p>
+                  {shouldShowReadMore && (
+                    <button type="button" onClick={() => setDescriptionExpanded(p => !p)}
+                      className="mt-2 flex items-center gap-1 text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors">
+                      {descriptionExpanded ? <><ChevronUp className="h-3.5 w-3.5" /> Show less</> : <><ChevronDown className="h-3.5 w-3.5" /> Read more</>}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Seller + end date info */}
-            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-start gap-2.5">
-                  <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100">
-                    <Store className="h-3.5 w-3.5 text-gray-500" />
+            {/* Right: Sticky auction panel */}
+            <div className="lg:sticky lg:top-24 lg:self-start space-y-4">
+
+              {/* Main ticker card */}
+              <div className={`bg-[#14181f] border rounded-2xl overflow-hidden transition-all ${isEnding ? 'border-orange-500 shadow-[0_0_0_1px_rgba(249,115,22,0.5),0_20px_60px_-20px_rgba(249,115,22,0.2)]' : 'border-[#232830]'}`}>
+
+                {/* Status strip */}
+                <div className={`flex items-center gap-2.5 px-4 py-3 border-b border-[#232830] ${isEnding ? 'bg-orange-500/10' : 'bg-[#11141a]'}`}>
+                  <span className={`h-2 w-2 rounded-full flex-shrink-0 ${hasEnded ? 'bg-[#6b6960]' : 'bg-orange-500 animate-pulse'}`} />
+                  <span className="font-mono text-[11px] tracking-widest uppercase text-[#f4f1ea]">
+                    {hasEnded ? 'Auction closed' : isEnding ? 'Closing soon' : isScheduled ? 'Starting soon' : 'Live auction'}
+                  </span>
+                  <span className="ml-auto font-mono text-[11px] text-[#6b6960]">LOT {lotId}</span>
+                </div>
+
+                <div className="p-5">
+                  {/* Current bid */}
+                  <div className="flex items-end justify-between mb-2">
+                    <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960]">
+                      {hasEnded ? 'Final price' : 'Current bid'}
+                    </p>
+                    {reserveMet
+                      ? <span className="rounded-full bg-green-500/15 border border-green-600/40 px-2 py-0.5 text-[10px] font-semibold text-green-400">● Reserve met</span>
+                      : bids.length > 0
+                        ? <span className="rounded-full bg-amber-500/15 border border-amber-500/40 px-2 py-0.5 text-[10px] font-semibold text-amber-400">● Reserve not met</span>
+                        : null
+                    }
+                  </div>
+                  <p className="text-3xl font-bold text-orange-400 mb-1 tabular-nums">
+                    GHS {liveCurrentPrice.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-[#6b6960] mb-5">
+                    {bids.length} bid{bids.length !== 1 ? 's' : ''} · {watcherCount > 0 ? `${watcherCount} watching` : `${bidderCount} bidder${bidderCount !== 1 ? 's' : ''}`}
+                  </p>
+
+                  {/* Countdown */}
+                  {!hasEnded && (auction.starts_at || auction.ends_at) && (
+                    <div className={`rounded-xl border border-[#232830] p-4 mb-5 ${isUrgent ? 'bg-orange-500/8 border-orange-500/30' : 'bg-[#11141a]'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960]">
+                          {countdownPhase === 'starts' ? 'Starts in' : 'Closes in'}
+                        </p>
+                        {auction.ends_at && (
+                          <p className="font-mono text-[10px] text-[#6b6960]">
+                            {new Date(auction.ends_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-3">
+                        {[
+                          { v: cdParts.d, l: 'days' },
+                          { v: cdParts.h, l: 'hrs' },
+                          { v: cdParts.m, l: 'min' },
+                          { v: cdParts.s, l: 'sec' },
+                        ].map((u, i) => (
+                          <div key={i} className="flex items-baseline gap-1">
+                            <span className={`font-mono font-medium tabular-nums text-[28px] leading-none ${isUrgent ? 'text-orange-400' : 'text-[#f4f1ea]'}`}>
+                              {String(u.v).padStart(2, '0')}
+                            </span>
+                            <span className="font-mono text-[9px] tracking-widest uppercase text-[#6b6960]">{u.l}</span>
+                            {i < 3 && <span className="text-[#232830] ml-1">·</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bid input — desktop */}
+                  {!hasEnded && !isScheduled && (
+                    <div className="space-y-3 hidden lg:block">
+                      <div>
+                        <label className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] block mb-2">Place your bid</label>
+                        <div className="flex gap-2">
+                          <div className="flex flex-1 items-center bg-[#11141a] border border-[#232830] rounded-xl px-3 focus-within:border-orange-500/50 transition-colors">
+                            <span className="text-[#6b6960] text-sm mr-1">GHS</span>
+                            <input type="number" value={bidAmount} onChange={e => setBidAmount(e.target.value)}
+                              placeholder={String(liveCurrentPrice + increment)}
+                              className="flex-1 bg-transparent font-mono text-sm text-[#f4f1ea] py-2.5 outline-none tabular-nums"
+                            />
+                          </div>
+                          <button onClick={placeBid} disabled={isPlacingBid || !bidAmount || Number(bidAmount) <= liveCurrentPrice}
+                            className="rounded-xl bg-orange-500 text-white font-bold text-sm px-4 hover:bg-orange-600 transition-colors disabled:opacity-50">
+                            {isPlacingBid ? '…' : 'Bid'}
+                          </button>
+                        </div>
+                        {/* Quick-add buttons */}
+                        <div className="flex gap-1.5 mt-2">
+                          {quickBids.map(b => (
+                            <button key={b} onClick={() => setBidAmount(String(liveCurrentPrice + b))}
+                              className="flex-1 rounded-lg bg-[#11141a] border border-[#232830] py-1.5 text-[11px] font-mono text-[#b8b3a8] hover:border-orange-500/40 hover:text-orange-400 transition-colors">
+                              +{b >= 1000 ? `${b / 1000}k` : b}
+                            </button>
+                          ))}
+                        </div>
+                        {bidError && <p className="mt-2 text-xs text-red-400">{bidError}</p>}
+                        {!userId && (
+                          <p className="mt-2 text-xs text-[#6b6960]">
+                            <Link href="/login" className="text-orange-400 hover:text-orange-300">Log in</Link> to place a bid
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Winner panel */}
+                  <WinnerPanel hasEnded={hasEnded} isWinner={isWinner} paid={auction.paid}
+                    paymentDueAt={auction.auction_payment_due_at} onPay={payNow} />
+
+                  {/* Fees row */}
+                  {!hasEnded && (
+                    <div className="mt-4 pt-4 border-t border-[#232830] space-y-1.5">
+                      <div className="flex justify-between text-xs text-[#6b6960]">
+                        <span>Buyer's premium</span>
+                        <span className="font-mono">5.0%</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-[#6b6960]">
+                        <span>Est. total at current bid</span>
+                        <span className="font-mono text-[#b8b3a8]">GHS {(liveCurrentPrice * 1.05).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Seller card */}
+              <div className="bg-[#14181f] border border-[#232830] rounded-2xl p-4">
+                <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] mb-3">Seller</p>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white font-bold flex-shrink-0">
+                    {(sellerDisplayName || 'G').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                      {saleSource === 'seller' ? 'Seller' : 'Sale Source'}
+                    <p className="text-sm font-semibold text-[#f4f1ea]">
+                      {saleSource === 'seller' && auction.seller_shop_id
+                        ? <Link href={`/shop/seller/${auction.seller_shop_id}`} className="text-orange-400 hover:text-orange-300">{sellerDisplayName}</Link>
+                        : sellerDisplayName}
                     </p>
-                    <div className="font-semibold text-gray-800">
-                      {saleSource === 'seller' && auction.seller_shop_id ? (
-                        <Link href={`/shop/seller/${auction.seller_shop_id}`} className="text-orange-600 hover:text-orange-700 transition-colors">
-                          {sellerDisplayName}
-                        </Link>
-                      ) : saleSource === 'seller' ? (
-                        sellerDisplayName
-                      ) : (
-                        'Gavel Products'
-                      )}
-                    </div>
+                    <p className="text-xs text-[#6b6960]">{saleSource === 'seller' ? 'Verified seller' : 'Gavel Products'}</p>
                   </div>
                 </div>
-                {auction.ends_at && (
-                  <div className="flex items-start gap-2.5">
-                    <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100">
-                      <Clock className="h-3.5 w-3.5 text-gray-500" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Ends</p>
-                      <p className="font-semibold text-gray-800">{new Date(auction.ends_at).toLocaleString()}</p>
-                    </div>
+                <div className="flex gap-2">
+                  <button className="flex-1 rounded-xl border border-[#232830] py-2 text-xs font-medium text-[#b8b3a8] hover:border-orange-500/30 transition-colors">Ask question</button>
+                  {auction.seller_phone && (
+                    <a href={`tel:${auction.seller_phone}`} className="flex-1 text-center rounded-xl border border-[#232830] py-2 text-xs font-medium text-[#b8b3a8] hover:border-orange-500/30 transition-colors">
+                      Call
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Ends info */}
+              {auction.ends_at && (
+                <div className="bg-[#14181f] border border-[#232830] rounded-2xl px-4 py-3 flex items-center gap-3">
+                  <Clock className="h-4 w-4 text-[#6b6960] flex-shrink-0" />
+                  <div>
+                    <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960]">Closes</p>
+                    <p className="text-sm font-medium text-[#f4f1ea]">{new Date(auction.ends_at).toLocaleString()}</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* Description */}
-            {formattedDescription ? (
-              <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-                <h2 className="text-sm font-bold text-gray-900 mb-3">Description</h2>
-                <p
-                  className="text-sm text-gray-600 leading-relaxed whitespace-pre-line"
-                  style={
-                    !descriptionExpanded && shouldShowReadMore
-                      ? {
-                          display: '-webkit-box',
-                          WebkitLineClamp: 4,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }
-                      : undefined
-                  }
-                >
-                  {formattedDescription}
-                </p>
-                {shouldShowReadMore && (
-                  <button
-                    type="button"
-                    onClick={() => setDescriptionExpanded((prev) => !prev)}
-                    className="mt-2 flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700 transition-colors"
-                  >
-                    {descriptionExpanded ? (
-                      <><ChevronUp className="h-3.5 w-3.5" /> Show less</>
-                    ) : (
-                      <><ChevronDown className="h-3.5 w-3.5" /> Read more</>
-                    )}
-                  </button>
-                )}
-              </div>
-            ) : null}
-
-            {/* Bid list — in left col on desktop, full width on mobile */}
-            <div className="hidden lg:block">
+          {/* Bid history + Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-8 mb-10">
+            <div>
+              <h2 className="text-sm font-bold text-[#f4f1ea] mb-1">Bid history</h2>
+              <p className="text-xs text-[#6b6960] mb-4">Live · all bids are binding and recorded.</p>
               <BidList bids={bids} currentUserId={userId} />
             </div>
-          </section>
-
-          {/* Right column / sidebar */}
-          <aside className="space-y-4">
-            {/* Countdown — desktop only */}
-            {(auction.starts_at || auction.ends_at) && (
-              <div className="hidden lg:block">
-                <AuctionCountdown
-                  targetAt={countdownPhase === 'starts' ? auction.starts_at : auction.ends_at}
-                  phase={countdownPhase}
-                  timeLeft={timeLeft}
-                />
+            <div>
+              <h2 className="text-sm font-bold text-[#f4f1ea] mb-1">Activity</h2>
+              <p className="text-xs text-[#6b6960] mb-4">Watchers, bidders and engagement.</p>
+              <div className="bg-[#14181f] border border-[#232830] rounded-2xl overflow-hidden">
+                <div className="grid grid-cols-3">
+                  {[
+                    { l: 'Watching', v: watcherCount || '—' },
+                    { l: 'Bidders', v: bidderCount || '—' },
+                    { l: 'Bids', v: bids.length || '—' },
+                  ].map((s, i, a) => (
+                    <div key={i} className={`px-4 py-4 ${i < a.length - 1 ? 'border-r border-[#232830]' : ''}`}>
+                      <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] mb-1">{s.l}</p>
+                      <p className="font-mono text-xl text-[#f4f1ea]">{s.v}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
-
-            {/* Status banners */}
-            {isScheduled && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm font-semibold text-amber-800">Auction not started yet</p>
-                <p className="mt-0.5 text-xs text-amber-700">Bidding will open when the auction starts.</p>
-              </div>
-            )}
-            {hasEnded && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                <p className="text-sm font-semibold text-red-700">This auction has ended</p>
-              </div>
-            )}
-            {hasEnded && !reserveMet && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm font-semibold text-amber-800">Reserve price not met</p>
-                <p className="mt-1 text-xs text-amber-700">
-                  The final bid didn&apos;t reach the reserve price. This item was not sold.
-                </p>
-                <Link href="/contact#reserve-price" className="mt-2 inline-block text-xs font-semibold text-amber-800 underline underline-offset-2">
-                  Learn about reserve prices
-                </Link>
-              </div>
-            )}
-
-            {/* Bid form — desktop only (mobile uses sticky bottom bar) */}
-            <div className="hidden lg:block">
-              <BidForm
-                hasEnded={hasEnded || isScheduled}
-                bidAmount={bidAmount}
-                isPlacingBid={isPlacingBid}
-                error={bidError}
-                isLoggedIn={!!userId}
-                currentPrice={liveCurrentPrice}
-                minIncrement={auction.min_increment}
-                maxIncrement={auction.max_increment}
-                onBidAmountChange={setBidAmount}
-                onSubmit={placeBid}
-              />
             </div>
+          </div>
 
-            {/* Sign-in prompt on mobile for non-logged-in users */}
-            {!userId && !hasEnded && !isScheduled && (
-              <div className="lg:hidden">
-                <BidForm
-                  hasEnded={false}
-                  bidAmount=""
-                  isPlacingBid={false}
-                  error={null}
-                  isLoggedIn={false}
-                  onBidAmountChange={() => {}}
-                  onSubmit={() => {}}
-                />
+          {/* Trust footer */}
+          <div className="bg-[#14181f] border border-[#232830] rounded-2xl p-6 grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            {[
+              { title: 'Bidder verification', desc: 'All bidders pass identity checks. Suspicious activity is flagged in real time.' },
+              { title: 'Binding bids', desc: 'Every bid is contractual. Backing out forfeits a 5% deposit.' },
+              { title: 'Soft-close — 5 min', desc: 'Bids in the final 5 min extend the auction — no last-second sniping.' },
+              { title: 'Dispute resolution', desc: 'Funds held in escrow. 7-day window to resolve post-sale disputes.' },
+            ].map(({ title, desc }) => (
+              <div key={title}>
+                <p className="text-sm font-semibold text-[#f4f1ea] mb-1.5">{title}</p>
+                <p className="text-xs text-[#6b6960] leading-relaxed">{desc}</p>
               </div>
-            )}
+            ))}
+          </div>
 
-            {/* Winner panel */}
-            <WinnerPanel
-              hasEnded={hasEnded}
-              isWinner={isWinner}
-              paid={auction.paid}
-              paymentDueAt={auction.auction_payment_due_at}
-              onPay={payNow}
-            />
-          </aside>
         </div>
-
-        {/* Bid list — mobile (full width below grid) */}
-        <div className="mt-5 lg:hidden">
-          <BidList bids={bids} currentUserId={userId} />
-        </div>
-      </main>
+      </div>
     </PrivateAuctionGuard>
   )
 }
