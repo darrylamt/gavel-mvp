@@ -45,7 +45,7 @@ export default function PropertyCard({ listing }: Props) {
   return (
     <Link href={`/properties/${listing.id}`} className="group block rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
       {/* Image */}
-      <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+      <div className="relative aspect-[4/3] bg-[#FAFAF8] overflow-hidden">
         {image ? (
           <img src={image} alt={listing.title} className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
         ) : (

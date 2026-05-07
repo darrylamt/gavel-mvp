@@ -5,8 +5,9 @@ import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
 import { formatGhsPrice, getAutoCommission, AUTO_MAKES, VEHICLE_TYPES, ENGINE_SIZES, CONDITION_CONFIG } from '@/lib/autoUtils'
 import { GHANA_REGIONS } from '@/lib/propertyUtils'
-import { Check, X, Star, Search, Plus, Car, Truck, Bus, Bike, Cog, MapPin, CheckCircle2, XCircle } from 'lucide-react'
+import { Check, X, Star, Search, Plus, Car, Truck, Bus, Bike, Cog, MapPin, CheckCircle2, XCircle, Pencil } from 'lucide-react'
 import type { AutoListing } from '@/types/autos'
+import ImageUploader from '@/components/ImageUploader'
 
 type Row = AutoListing & { profiles: { username: string | null } | null }
 
@@ -32,7 +33,7 @@ type CreateForm = {
   roadworthy: boolean; roadworthy_expiry: string; customs_cleared: boolean
   region: string; city: string
   price: string; reserve_price: string; auction_start: string; auction_end: string
-  images: string
+  images: string[]
 }
 
 const EMPTY_FORM: CreateForm = {
@@ -40,11 +41,27 @@ const EMPTY_FORM: CreateForm = {
   description: '', mileage: '', transmission: '', fuel_type: '', drive_type: '',
   engine_size: '', color: '', previous_owners: '1', vin: '',
   roadworthy: false, roadworthy_expiry: '', customs_cleared: false,
-  region: '', city: '', price: '', reserve_price: '', auction_start: '', auction_end: '', images: '',
+  region: '', city: '', price: '', reserve_price: '', auction_start: '', auction_end: '', images: [],
 }
 
-function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [form, setForm] = useState<CreateForm>(EMPTY_FORM)
+function CreateModal({ onClose, onCreated, editing }: { onClose: () => void; onCreated: () => void; editing?: Row }) {
+  const [form, setForm] = useState<CreateForm>(() => editing ? {
+    listing_type: editing.listing_type,
+    vehicle_type: editing.vehicle_type as CreateForm['vehicle_type'],
+    make: editing.make, model: editing.model, year: String(editing.year),
+    condition: editing.condition as CreateForm['condition'],
+    description: editing.description ?? '',
+    mileage: editing.mileage != null ? String(editing.mileage) : '',
+    transmission: editing.transmission ?? '', fuel_type: editing.fuel_type ?? '',
+    drive_type: editing.drive_type ?? '', engine_size: editing.engine_size ?? '',
+    color: editing.color ?? '', previous_owners: String(editing.previous_owners ?? 1),
+    vin: editing.vin ?? '', roadworthy: editing.roadworthy,
+    roadworthy_expiry: editing.roadworthy_expiry ?? '', customs_cleared: editing.customs_cleared,
+    region: editing.region ?? '', city: editing.city ?? '',
+    price: editing.price != null ? String(editing.price) : '',
+    reserve_price: editing.reserve_price != null ? String(editing.reserve_price) : '',
+    auction_start: '', auction_end: '', images: editing.images ?? [],
+  } : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -62,15 +79,15 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { setError('Not authenticated'); setSaving(false); return }
 
-    const imageUrls = form.images.split('\n').map(s => s.trim()).filter(Boolean)
+    const imageUrls = form.images
     const price = form.listing_type === 'sale' ? Number(form.price) || null : null
     const reserve = form.listing_type === 'auction' ? Number(form.reserve_price) || 0 : null
     const commission = price ? getAutoCommission(price) : 0.05
     const title = `${form.year} ${form.make} ${form.model}`
 
-    const { data: listing, error: err } = await supabase.from('auto_listings').insert({
-      seller_id: session.user.id, listing_type: form.listing_type,
-      vehicle_type: form.vehicle_type || 'car', title, description: form.description.trim() || null,
+    const payload = {
+      listing_type: form.listing_type, vehicle_type: form.vehicle_type || 'car',
+      title, description: form.description.trim() || null,
       make: form.make, model: form.model, year: Number(form.year), price, reserve_price: reserve,
       condition: form.condition,
       mileage: form.mileage && form.condition !== 'brand_new' ? Number(form.mileage) : null,
@@ -82,16 +99,22 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       customs_cleared: form.customs_cleared, vin: form.vin.trim() || null,
       images: imageUrls.length ? imageUrls : null,
       region: form.region || null, city: form.city.trim() || null,
-      commission_rate: commission, status: 'active',
-    }).select('id').single()
+      commission_rate: commission,
+    }
 
-    if (err || !listing) { setError('Failed to create listing.'); setSaving(false); return }
-
-    if (form.listing_type === 'auction' && reserve && form.auction_start && form.auction_end) {
-      await supabase.from('auto_auctions').insert({
-        auto_id: listing.id, seller_id: session.user.id,
-        reserve_price: reserve, start_time: form.auction_start, end_time: form.auction_end,
-      })
+    if (editing) {
+      const { error: err } = await supabase.from('auto_listings').update(payload).eq('id', editing.id)
+      if (err) { setError('Failed to update listing.'); setSaving(false); return }
+    } else {
+      const { data: listing, error: err } = await supabase.from('auto_listings')
+        .insert({ ...payload, seller_id: session.user.id, status: 'active' }).select('id').single()
+      if (err || !listing) { setError('Failed to create listing.'); setSaving(false); return }
+      if (form.listing_type === 'auction' && reserve && form.auction_start && form.auction_end) {
+        await supabase.from('auto_auctions').insert({
+          auto_id: listing.id, seller_id: session.user.id,
+          reserve_price: reserve, start_time: form.auction_start, end_time: form.auction_end,
+          })
+      }
     }
     onCreated(); onClose()
   }
@@ -104,7 +127,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4">
-          <h2 className="text-base font-bold text-gray-900">New Vehicle Listing</h2>
+          <h2 className="text-base font-bold text-gray-900">{editing ? 'Edit Vehicle Listing' : 'New Vehicle Listing'}</h2>
           <button onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100"><X className="h-4 w-4" /></button>
         </div>
         <div className="p-5 space-y-5">
@@ -301,8 +324,8 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
           {/* Photos */}
           <div>
-            <label className={labelCls}>Photos (one URL per line)</label>
-            <textarea value={form.images} onChange={e => set('images', e.target.value)} rows={3} placeholder="https://..." className={`${inputCls} resize-none`} />
+            <label className={labelCls}>Photos</label>
+            <ImageUploader bucket="auto-images" value={form.images} onChange={urls => set('images', urls)} accentColor="#E63946" />
           </div>
 
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
@@ -310,7 +333,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         <div className="sticky bottom-0 border-t border-gray-100 bg-white px-5 py-4 flex gap-3">
           <button onClick={onClose} className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
           <button onClick={handleSubmit} disabled={saving} className="flex-1 rounded-lg bg-[#E63946] text-white py-2.5 text-sm font-semibold hover:bg-[#d42f3c] transition-colors disabled:opacity-50">
-            {saving ? 'Creating…' : 'Create Listing'}
+            {saving ? (editing ? 'Saving…' : 'Creating…') : (editing ? 'Save Changes' : 'Create Listing')}
           </button>
         </div>
       </div>
@@ -336,6 +359,7 @@ export default function AdminAutosPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [updating, setUpdating] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [editingListing, setEditingListing] = useState<Row | null>(null)
   const [visible, setVisible] = useState(PAGE_SIZE)
 
   useEffect(() => { load() }, [])
@@ -382,7 +406,13 @@ export default function AdminAutosPage() {
 
   return (
     <AdminShell>
-      {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreated={load} />}
+      {(showCreate || editingListing) && (
+        <CreateModal
+          editing={editingListing ?? undefined}
+          onClose={() => { setShowCreate(false); setEditingListing(null) }}
+          onCreated={load}
+        />
+      )}
 
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
         {/* Header */}
@@ -479,6 +509,10 @@ export default function AdminAutosPage() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        <button onClick={() => setEditingListing(l)}
+                          className="rounded-lg bg-gray-100 text-gray-600 p-1.5 hover:bg-gray-200 transition-colors" title="Edit">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
                         <button onClick={() => toggleFeatured(l.id, l.featured)} disabled={updating === l.id}
                           className={`rounded-lg p-1.5 transition-colors ${l.featured ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
                           title={l.featured ? 'Remove from featured' : 'Feature'}>

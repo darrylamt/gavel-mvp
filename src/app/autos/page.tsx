@@ -2,7 +2,13 @@ import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import AutoCard from '@/components/autos/AutoCard'
 import { AUTO_MAKES, VEHICLE_TYPES } from '@/lib/autoUtils'
-import { Car, Truck, Bus, Bike, Cog, Flame } from 'lucide-react'
+import { Car, Truck, Bus, Bike, Cog, Flame, ChevronRight } from 'lucide-react'
+
+const FEATURED_BRANDS = [
+  'Toyota', 'Mercedes-Benz', 'BMW', 'Lexus', 'Land Rover',
+  'Honda', 'Hyundai', 'Ford', 'Nissan', 'KIA',
+  'Mitsubishi', 'Volkswagen', 'Chevrolet', 'Isuzu', 'Peugeot',
+]
 
 export const dynamic = 'force-dynamic'
 
@@ -125,7 +131,25 @@ export default async function AutosHomePage() {
           </section>
         )}
 
-        {/* Browse by make */}
+        {/* Brand showcase */}
+        <section className="py-10 -mx-4 md:-mx-6 px-4 md:px-6 bg-[#1A1A2E]/3 rounded-3xl overflow-hidden">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest text-center mb-8">Brands We Deal With</p>
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-6 gap-y-4">
+            {FEATURED_BRANDS.map(brand => (
+              <a
+                key={brand}
+                href={`/autos/browse?make=${encodeURIComponent(brand)}`}
+                className="group flex items-center justify-center py-3 px-2"
+              >
+                <span className="text-center text-sm font-black tracking-wider text-gray-200 group-hover:text-gray-400 transition-colors uppercase leading-tight">
+                  {brand}
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+      {/* Browse by make */}
         <section>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Browse by Make</h2>
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">

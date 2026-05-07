@@ -7,8 +7,9 @@ import {
   formatGhsPrice, getPropertyCommission, GHANA_REGIONS,
   PROPERTY_AMENITIES, calculateSizes, PROPERTY_TYPE_LABELS,
 } from '@/lib/propertyUtils'
-import { Check, X, Star, Search, Plus, MapPin, Home, Layers, Building2, Building } from 'lucide-react'
+import { Check, X, Star, Search, Plus, MapPin, Home, Layers, Building2, Building, Pencil } from 'lucide-react'
 import type { PropertyListing } from '@/types/properties'
+import ImageUploader from '@/components/ImageUploader'
 
 type Row = PropertyListing & { profiles: { username: string | null } | null }
 
@@ -29,7 +30,7 @@ type CreateForm = {
   title_type: string; land_commission_number: string
   bedrooms: string; bathrooms: string; furnished: string; amenities: string[]
   price: string; reserve_price: string; auction_start: string; auction_end: string
-  images: string; video_url: string; contact_person: string; contact_phone: string
+  images: string[]; video_url: string; contact_person: string; contact_phone: string
   is_licensed_auctioneer: boolean
 }
 
@@ -38,11 +39,29 @@ const EMPTY_FORM: CreateForm = {
   region: '', city: '', neighborhood: '', size_plots: '', size_sqft: '', size_sqm: '',
   title_type: '', land_commission_number: '', bedrooms: '', bathrooms: '', furnished: '',
   amenities: [], price: '', reserve_price: '', auction_start: '', auction_end: '',
-  images: '', video_url: '', contact_person: '', contact_phone: '', is_licensed_auctioneer: false,
+  images: [], video_url: '', contact_person: '', contact_phone: '', is_licensed_auctioneer: false,
 }
 
-function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [form, setForm] = useState<CreateForm>(EMPTY_FORM)
+function CreateModal({ onClose, onCreated, editing }: { onClose: () => void; onCreated: () => void; editing?: Row }) {
+  const [form, setForm] = useState<CreateForm>(() => editing ? {
+    listing_type: editing.listing_type,
+    property_type: editing.property_type as CreateForm['property_type'],
+    title: editing.title, description: editing.description ?? '',
+    region: editing.region, city: editing.city, neighborhood: editing.neighborhood ?? '',
+    size_plots: editing.size_plots != null ? String(editing.size_plots) : '',
+    size_sqft: editing.size_sqft != null ? String(editing.size_sqft) : '',
+    size_sqm: editing.size_sqm != null ? String(editing.size_sqm) : '',
+    title_type: editing.title_type ?? '', land_commission_number: editing.land_commission_number ?? '',
+    bedrooms: editing.bedrooms != null ? String(editing.bedrooms) : '',
+    bathrooms: editing.bathrooms != null ? String(editing.bathrooms) : '',
+    furnished: editing.furnished ?? '', amenities: editing.amenities ?? [],
+    price: editing.price != null ? String(editing.price) : '',
+    reserve_price: editing.reserve_price != null ? String(editing.reserve_price) : '',
+    auction_start: '', auction_end: '',
+    images: editing.images ?? [], video_url: editing.video_url ?? '',
+    contact_person: editing.contact_person ?? '', contact_phone: editing.contact_phone ?? '',
+    is_licensed_auctioneer: editing.is_licensed_auctioneer,
+  } : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -65,13 +84,13 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     setSaving(true); setError('')
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { setError('Not authenticated'); setSaving(false); return }
-    const imageUrls = form.images.split('\n').map(s => s.trim()).filter(Boolean)
+    const imageUrls = form.images
     const price = form.listing_type === 'sale' ? Number(form.price) || null : null
     const reserve = form.listing_type === 'auction' ? Number(form.reserve_price) || 0 : null
     const commission = price ? getPropertyCommission(price) : 0.05
 
-    const { data: listing, error: err } = await supabase.from('property_listings').insert({
-      seller_id: session.user.id, listing_type: form.listing_type,
+    const payload = {
+      listing_type: form.listing_type,
       property_type: form.property_type, title: form.title.trim(),
       description: form.description.trim() || null, price, reserve_price: reserve,
       region: form.region, city: form.city.trim(), neighborhood: form.neighborhood.trim() || null,
@@ -85,19 +104,23 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       images: imageUrls.length ? imageUrls : null, video_url: form.video_url.trim() || null,
       contact_person: form.contact_person.trim() || null, contact_phone: form.contact_phone.trim() || null,
       is_licensed_auctioneer: form.is_licensed_auctioneer, commission_rate: commission,
-      status: 'active',
-    }).select('id').single()
-
-    if (err || !listing) { setError('Failed to create listing. Please try again.'); setSaving(false); return }
-
-    if (form.listing_type === 'auction' && reserve && form.auction_start && form.auction_end) {
-      await supabase.from('property_auctions').insert({
-        property_id: listing.id, seller_id: session.user.id,
-        reserve_price: reserve, start_time: form.auction_start, end_time: form.auction_end,
-      })
     }
-    onCreated()
-    onClose()
+
+    if (editing) {
+      const { error: err } = await supabase.from('property_listings').update(payload).eq('id', editing.id)
+      if (err) { setError('Failed to update listing.'); setSaving(false); return }
+    } else {
+      const { data: listing, error: err } = await supabase.from('property_listings')
+        .insert({ ...payload, seller_id: session.user.id, status: 'active' }).select('id').single()
+      if (err || !listing) { setError('Failed to create listing.'); setSaving(false); return }
+      if (form.listing_type === 'auction' && reserve && form.auction_start && form.auction_end) {
+        await supabase.from('property_auctions').insert({
+          property_id: listing.id, seller_id: session.user.id,
+          reserve_price: reserve, start_time: form.auction_start, end_time: form.auction_end,
+        })
+      }
+    }
+    onCreated(); onClose()
   }
 
   const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#C9A84C]/50 bg-white'
@@ -108,7 +131,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4">
-          <h2 className="text-base font-bold text-gray-900">New Property Listing</h2>
+          <h2 className="text-base font-bold text-gray-900">{editing ? 'Edit Property Listing' : 'New Property Listing'}</h2>
           <button onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100"><X className="h-4 w-4" /></button>
         </div>
         <div className="p-5 space-y-5">
@@ -265,8 +288,8 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           )}
 
           <div>
-            <label className={labelCls}>Photos (one URL per line)</label>
-            <textarea value={form.images} onChange={e => set('images', e.target.value)} rows={3} placeholder="https://..." className={`${inputCls} resize-none`} />
+            <label className={labelCls}>Photos</label>
+            <ImageUploader bucket="property-images" value={form.images} onChange={urls => set('images', urls)} accentColor="#C9A84C" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -290,7 +313,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         <div className="sticky bottom-0 border-t border-gray-100 bg-white px-5 py-4 flex gap-3">
           <button onClick={onClose} className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
           <button onClick={handleSubmit} disabled={saving} className="flex-1 rounded-lg bg-[#0F2557] text-white py-2.5 text-sm font-semibold hover:bg-[#1a3570] transition-colors disabled:opacity-50">
-            {saving ? 'Creating…' : 'Create Listing'}
+            {saving ? (editing ? 'Saving…' : 'Creating…') : (editing ? 'Save Changes' : 'Create Listing')}
           </button>
         </div>
       </div>
@@ -316,6 +339,7 @@ export default function AdminPropertiesPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [updating, setUpdating] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [editingListing, setEditingListing] = useState<Row | null>(null)
   const [visible, setVisible] = useState(PAGE_SIZE)
 
   useEffect(() => { load() }, [])
@@ -362,8 +386,12 @@ export default function AdminPropertiesPage() {
 
   return (
     <AdminShell>
-      {showCreate && (
-        <CreateModal onClose={() => setShowCreate(false)} onCreated={load} />
+      {(showCreate || editingListing) && (
+        <CreateModal
+          editing={editingListing ?? undefined}
+          onClose={() => { setShowCreate(false); setEditingListing(null) }}
+          onCreated={load}
+        />
       )}
 
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
@@ -459,6 +487,10 @@ export default function AdminPropertiesPage() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        <button onClick={() => setEditingListing(l)}
+                          className="rounded-lg bg-gray-100 text-gray-600 p-1.5 hover:bg-gray-200 transition-colors" title="Edit">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
                         <button onClick={() => toggleFeatured(l.id, l.featured)} disabled={updating === l.id}
                           className={`rounded-lg p-1.5 transition-colors ${l.featured ? 'bg-[#C9A84C] text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
                           title={l.featured ? 'Remove from featured' : 'Feature'}>

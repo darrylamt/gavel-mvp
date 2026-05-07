@@ -1,11 +1,5 @@
-import Footer from '@/components/layout/Footer'
 import './globals.css'
-import Navbar from '@/components/layout/Navbar'
-import InAppBrowserBanner from '@/components/layout/InAppBrowserBanner'
-import WelcomeTourModal from '@/components/layout/WelcomeTourModal'
-import PhoneNumberPrompt from '@/components/PhoneNumberPrompt'
-import { Suspense } from 'react'
-import ReferralTracker from '@/components/referrals/ReferralTracker'
+import SiteFrame from '@/components/layout/SiteFrame'
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from 'next'
@@ -103,15 +97,9 @@ export default function RootLayout({
               gtag('config', '${googleAnalyticsId}');
             `}
           </Script>
-          <Navbar />
-          <InAppBrowserBanner />
-          <WelcomeTourModal />
-          <PhoneNumberPrompt />
-          <Suspense fallback={null}>
-            <ReferralTracker />
-          </Suspense>
-          {children}
-          <Footer />
+          <SiteFrame>
+            {children}
+          </SiteFrame>
           <Analytics />
           <SpeedInsights />
         </Providers>
