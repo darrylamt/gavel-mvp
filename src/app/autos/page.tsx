@@ -3,6 +3,7 @@ import Link from 'next/link'
 import AutoCard from '@/components/autos/AutoCard'
 import { AUTO_MAKES, VEHICLE_TYPES } from '@/lib/autoUtils'
 import { Car, Truck, Bus, Bike, Cog, Flame } from 'lucide-react'
+import BrandLogoGrid from '@/components/autos/BrandLogoGrid'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,40 +93,7 @@ export default async function AutosHomePage() {
 
       <div className="mx-auto max-w-7xl px-4 md:px-6 py-12 space-y-14">
 
-        {/* Brand logos */}
-        <section>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest text-center mb-8">Brands We Deal With</p>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-3 items-center">
-            {BRAND_CONFIG.map(({ name, slug }) => (
-              <a
-                key={name}
-                href={`/autos/browse?make=${encodeURIComponent(name)}`}
-                title={name}
-                className="group flex flex-col items-center gap-2 py-3 px-2 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                <div className="h-9 w-9 flex items-center justify-center">
-                  <img
-                    src={`https://cdn.simpleicons.org/${slug}`}
-                    alt={name}
-                    className="max-h-9 max-w-9 w-auto h-auto opacity-60 group-hover:opacity-100 transition-opacity"
-                    loading="lazy"
-                    onError={(e) => {
-                      const t = e.currentTarget
-                      t.style.display = 'none'
-                      const parent = t.parentElement
-                      if (parent) {
-                        parent.innerHTML = `<span class="text-xs font-black text-gray-400 group-hover:text-gray-600">${name.slice(0, 2).toUpperCase()}</span>`
-                      }
-                    }}
-                  />
-                </div>
-                <span className="text-[10px] font-semibold text-gray-400 group-hover:text-gray-600 transition-colors text-center leading-tight hidden sm:block">
-                  {name}
-                </span>
-              </a>
-            ))}
-          </div>
-        </section>
+        <BrandLogoGrid brands={BRAND_CONFIG} />
 
         {/* Featured */}
         <section>
