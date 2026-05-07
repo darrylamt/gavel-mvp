@@ -35,13 +35,33 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 
 export default async function AutoDetailPage({ params }: { params: { id: string } }) {
   const db = createServiceRoleClient()
-  const { data: listing } = await db
+  const { data: listing, error: listingError } = await db
     .from('auto_listings')
     .select('*, auto_auctions(*)')
     .eq('id', params.id)
     .maybeSingle()
 
-  if (!listing || listing.status === 'archived') notFound()
+  // Temporary: surface the actual error so we can see what's failing
+  if (listingError) {
+    return (
+      <div className="p-8 text-sm font-mono bg-red-50 text-red-700 rounded m-4">
+        <p className="font-bold mb-2">Query error (id: {params.id})</p>
+        <pre>{JSON.stringify(listingError, null, 2)}</pre>
+      </div>
+    )
+  }
+
+  if (!listing) {
+    return (
+      <div className="p-8 text-sm font-mono bg-yellow-50 text-yellow-700 rounded m-4">
+        <p className="font-bold mb-2">Listing not found (id: {params.id})</p>
+        <p>SUPABASE_SERVICE_ROLE_KEY set: {process.env.SUPABASE_SERVICE_ROLE_KEY ? 'YES' : 'NO'}</p>
+        <p>SUPABASE_URL set: {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'YES' : 'NO'}</p>
+      </div>
+    )
+  }
+
+  if (listing.status === 'archived') notFound()
 
   const { data: profile } = await db
     .from('profiles')
