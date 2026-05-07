@@ -109,8 +109,8 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {images.map((src, i) => (
               <button key={i} onClick={() => setIdx(i)}
-                className={`flex-shrink-0 rounded-xl overflow-hidden transition-all ${i === idx ? 'ring-2 opacity-100' : 'opacity-50 hover:opacity-80'}`}
-                style={{ width: 72, height: 50, ringColor: T.accent }}>
+                className={`flex-shrink-0 rounded-xl overflow-hidden transition-all ${i === idx ? 'ring-2 ring-[#E63946] opacity-100' : 'opacity-50 hover:opacity-80'}`}
+                style={{ width: 72, height: 50 }}>
                 <img src={src} alt="" className="w-full h-full object-cover" />
               </button>
             ))}
