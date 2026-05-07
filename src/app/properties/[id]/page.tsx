@@ -9,7 +9,7 @@ import PropertyDetailClient from './PropertyDetailClient'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     .from('property_listings')
     .select('title, city, region, price, property_type, listing_type')
     .eq('id', params.id)
-    .single()
+    .maybeSingle()
 
   if (!data) return { title: 'Property | Gavel Properties' }
 
@@ -42,9 +42,9 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
     .from('property_listings')
     .select('*, property_auctions(*)')
     .eq('id', params.id)
-    .single()
+    .maybeSingle()
 
-  if (error || !listing || listing.status === 'archived') notFound()
+  if (!listing || listing.status === 'archived') notFound()
 
   const { data: profile } = await supabase
     .from('profiles')
