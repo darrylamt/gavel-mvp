@@ -54,7 +54,7 @@ export default async function PropertyDetailServerPage({ params }: { params: Pro
     <PropertyDetailPage
       listing={{ ...listing, profiles: profile ?? null }}
       auction={auction}
-      similar={similar ?? []}
+      similar={(similar ?? []) as any}
     />
   )
 }

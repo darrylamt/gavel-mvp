@@ -51,7 +51,7 @@ export default async function AutoDetailServerPage({ params }: { params: Promise
     <AutoDetailPage
       listing={{ ...listing, profiles: profile ?? null }}
       auction={auction}
-      similar={similar ?? []}
+      similar={(similar ?? []) as any}
     />
   )
 }
