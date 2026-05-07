@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MapPin, Phone, ChevronLeft, Home, BadgeCheck } from 'lucide-react'
@@ -6,16 +5,12 @@ import type { Metadata } from 'next'
 import type { PropertyListingWithAuction } from '@/types/properties'
 import { formatGhsPrice, PROPERTY_TYPE_LABELS, TITLE_TYPE_LABELS, getPropertyCommission } from '@/lib/propertyUtils'
 import PropertyDetailClient from './PropertyDetailClient'
+import { createServiceRoleClient } from '@/lib/serverSupabase'
 
-function getDb() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const { data } = await getDb()
+  const { data } = await createServiceRoleClient()
     .from('property_listings')
     .select('title, city, region, price, property_type, listing_type')
     .eq('id', params.id)
@@ -40,7 +35,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const db = getDb()
+  const db = createServiceRoleClient()
   const { data: listing } = await db
     .from('property_listings')
     .select('*, property_auctions(*)')

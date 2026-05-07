@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MapPin, ChevronLeft, CheckCircle2, XCircle, Car } from 'lucide-react'
@@ -6,17 +5,12 @@ import type { Metadata } from 'next'
 import type { AutoListingWithAuction } from '@/types/autos'
 import { formatGhsPrice, formatMileage, CONDITION_CONFIG } from '@/lib/autoUtils'
 import AutoDetailClient from './AutoDetailClient'
+import { createServiceRoleClient } from '@/lib/serverSupabase'
 
-// Create client inside functions so env vars are read at request time, not module init
-function getDb() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const { data } = await getDb()
+  const { data } = await createServiceRoleClient()
     .from('auto_listings')
     .select('title, make, model, year, price, city, region, listing_type')
     .eq('id', params.id)
@@ -40,7 +34,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function AutoDetailPage({ params }: { params: { id: string } }) {
-  const db = getDb()
+  const db = createServiceRoleClient()
   const { data: listing } = await db
     .from('auto_listings')
     .select('*, auto_auctions(*)')

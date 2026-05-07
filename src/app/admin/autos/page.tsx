@@ -157,10 +157,17 @@ function CreateModal({ onClose, onCreated, editing }: { onClose: () => void; onC
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Make <span className="text-red-500">*</span></label>
-              <select value={form.make} onChange={e => set('make', e.target.value)} className={inputCls}>
+              <select
+                value={AUTO_MAKES.includes(form.make as typeof AUTO_MAKES[number]) ? form.make : form.make ? 'Other' : ''}
+                onChange={e => set('make', e.target.value === 'Other' ? '' : e.target.value)}
+                className={inputCls}
+              >
                 <option value="">Select</option>
                 {AUTO_MAKES.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
+              {form.make !== '' && !AUTO_MAKES.slice(0, -1).includes(form.make as typeof AUTO_MAKES[number]) && (
+                <input value={form.make} onChange={e => set('make', e.target.value)} placeholder="Enter make name..." className={`${inputCls} mt-1.5`} />
+              )}
             </div>
             <div>
               <label className={labelCls}>Model <span className="text-red-500">*</span></label>
