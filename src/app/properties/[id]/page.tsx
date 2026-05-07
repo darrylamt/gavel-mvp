@@ -7,13 +7,15 @@ import type { PropertyListingWithAuction } from '@/types/properties'
 import { formatGhsPrice, PROPERTY_TYPE_LABELS, TITLE_TYPE_LABELS, getPropertyCommission } from '@/lib/propertyUtils'
 import PropertyDetailClient from './PropertyDetailClient'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getDb() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const { data } = await supabase
+  const { data } = await getDb()
     .from('property_listings')
     .select('title, city, region, price, property_type, listing_type')
     .eq('id', params.id)
@@ -38,7 +40,8 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const { data: listing, error } = await supabase
+  const db = getDb()
+  const { data: listing } = await db
     .from('property_listings')
     .select('*, property_auctions(*)')
     .eq('id', params.id)
@@ -46,7 +49,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
 
   if (!listing || listing.status === 'archived') notFound()
 
-  const { data: profile } = await supabase
+  const { data: profile } = await db
     .from('profiles')
     .select('username, avatar_url')
     .eq('id', listing.seller_id)

@@ -7,14 +7,16 @@ import type { AutoListingWithAuction } from '@/types/autos'
 import { formatGhsPrice, formatMileage, CONDITION_CONFIG } from '@/lib/autoUtils'
 import AutoDetailClient from './AutoDetailClient'
 
-// Service role key on server side so RLS never blocks public listing reads
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Create client inside functions so env vars are read at request time, not module init
+function getDb() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const { data } = await supabase
+  const { data } = await getDb()
     .from('auto_listings')
     .select('title, make, model, year, price, city, region, listing_type')
     .eq('id', params.id)
@@ -38,7 +40,8 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function AutoDetailPage({ params }: { params: { id: string } }) {
-  const { data: listing } = await supabase
+  const db = getDb()
+  const { data: listing } = await db
     .from('auto_listings')
     .select('*, auto_auctions(*)')
     .eq('id', params.id)
@@ -46,8 +49,7 @@ export default async function AutoDetailPage({ params }: { params: { id: string 
 
   if (!listing || listing.status === 'archived') notFound()
 
-  // Fetch profile separately so an RLS block on profiles doesn't 404 the whole page
-  const { data: profile } = await supabase
+  const { data: profile } = await db
     .from('profiles')
     .select('username, avatar_url')
     .eq('id', listing.seller_id)

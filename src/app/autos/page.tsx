@@ -18,18 +18,18 @@ const VEHICLE_TYPE_ICONS: Record<string, React.ElementType> = {
 
 // Brand configs — slug maps to cdn.simpleicons.org/{slug}/color
 const BRAND_CONFIG = [
-  { name: 'Toyota',       slug: 'toyota' },
-  { name: 'Mercedes-Benz',slug: 'mercedesbenz' },
-  { name: 'BMW',          slug: 'bmw' },
-  { name: 'Honda',        slug: 'honda' },
-  { name: 'Hyundai',      slug: 'hyundai' },
-  { name: 'Ford',         slug: 'ford' },
-  { name: 'Nissan',       slug: 'nissan' },
-  { name: 'KIA',          slug: 'kia' },
-  { name: 'Volkswagen',   slug: 'volkswagen' },
-  { name: 'Peugeot',      slug: 'peugeot' },
-  { name: 'Mitsubishi',   slug: 'mitsubishi' },
-  { name: 'Lexus',        slug: 'lexus' },
+  { name: 'Toyota',        slug: 'toyota' },
+  { name: 'Mercedes-Benz', slug: 'mercedes' },
+  { name: 'BMW',           slug: 'bmw' },
+  { name: 'Honda',         slug: 'honda' },
+  { name: 'Hyundai',       slug: 'hyundai' },
+  { name: 'Ford',          slug: 'ford' },
+  { name: 'Nissan',        slug: 'nissan' },
+  { name: 'KIA',           slug: 'kia' },
+  { name: 'Volkswagen',    slug: 'volkswagen' },
+  { name: 'Peugeot',       slug: 'peugeot' },
+  { name: 'Mitsubishi',    slug: 'mitsubishi' },
+  { name: 'Land Rover',    slug: 'landrover' },
 ]
 
 export default async function AutosHomePage() {
