@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import PieChartCard from '@/components/base/PieChartCard'
 import { Plus, Search, X, Eye, Pencil, Trash2, Package } from 'lucide-react'
+import { formatGhs } from '@/lib/formatGhs'
 
 type ShopProduct = {
   id: string
@@ -662,7 +663,7 @@ export default function SellerProductsPage() {
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500">
-                        <span>GHS {Number(product.price).toLocaleString()}</span>
+                        <span>{formatGhs(product.price)}</span>
                         <span
                           className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${
                             product.stock === 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
@@ -703,8 +704,8 @@ export default function SellerProductsPage() {
             </div>
 
             {/* Desktop: Table */}
-            <div className="mt-4 hidden overflow-auto sm:block">
-              <table className="w-full text-left text-sm">
+            <div className="mt-4 hidden overflow-x-auto sm:block">
+              <table className="w-full min-w-[600px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
                     <th className="py-3 pr-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Title</th>
@@ -735,7 +736,7 @@ export default function SellerProductsPage() {
                             <span className="font-medium text-gray-900">{product.title}</span>
                           </div>
                         </td>
-                        <td className="py-3 pr-4 text-gray-700">GHS {Number(product.price).toLocaleString()}</td>
+                        <td className="py-3 pr-4 text-gray-700">{formatGhs(product.price)}</td>
                         <td className="py-3 pr-4">
                           <span
                             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -884,8 +885,8 @@ export default function SellerProductsPage() {
                   <p className="mt-1 text-xs text-gray-400">Listed price adds 10% automatically.</p>
                   {listedPricePreview != null && (
                     <p className="mt-0.5 text-xs font-medium text-gray-600">
-                      You enter: GHS {parsedPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Listed:{' '}
-                      GHS {listedPricePreview.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      You enter: {formatGhs(parsedPrice)} · Listed:{' '}
+                      {formatGhs(listedPricePreview)}
                     </p>
                   )}
                 </div>
@@ -916,7 +917,7 @@ export default function SellerProductsPage() {
                 <div className="space-y-3">
                   {variants.map((variant, index) => (
                     <div key={`${variant.id ?? 'new'}-${index}`} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                      <div className="grid gap-3 md:grid-cols-6">
+                      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-6">
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-600">Color</label>
                           <input
@@ -951,7 +952,7 @@ export default function SellerProductsPage() {
                           />
                           {variantPricePreview[index] != null && (
                             <p className="mt-0.5 text-[11px] text-gray-400">
-                              Listed: GHS {Number(variantPricePreview[index]).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                              Listed: {formatGhs(variantPricePreview[index])}
                             </p>
                           )}
                         </div>

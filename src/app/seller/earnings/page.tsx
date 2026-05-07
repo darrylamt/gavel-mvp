@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import PieChartCard from '@/components/base/PieChartCard'
 import { TrendingUp, ShoppingBag, Gavel, X } from 'lucide-react'
+import { formatGhs } from '@/lib/formatGhs'
 
 type EarningsSummary = {
   productSales: number
@@ -137,10 +138,7 @@ export default function SellerEarningsPage() {
                     Total Earnings
                   </p>
                   <p className="mt-2 text-3xl font-bold text-white">
-                    GH₵{' '}
-                    {Number(summary.totalEarnings ?? 0).toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatGhs(summary.totalEarnings)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-white/20 p-2">
@@ -156,10 +154,7 @@ export default function SellerEarningsPage() {
                     Product Sales
                   </p>
                   <p className="mt-2 text-3xl font-bold text-gray-900">
-                    GH₵{' '}
-                    {Number(summary.productSales ?? 0).toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatGhs(summary.productSales)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-2">
@@ -175,10 +170,7 @@ export default function SellerEarningsPage() {
                     Auction Sales
                   </p>
                   <p className="mt-2 text-3xl font-bold text-gray-900">
-                    GH₵{' '}
-                    {Number(summary.auctionSales ?? 0).toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatGhs(summary.auctionSales)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-2">

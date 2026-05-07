@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Truck, Package, CheckCircle2, X, Search, RefreshCw, Clock, AlertCircle } from 'lucide-react'
+import { formatGhs } from '@/lib/formatGhs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -159,7 +160,7 @@ export default function AdminDeliveriesPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
                   <th className="px-5 py-3">Order</th>
@@ -202,7 +203,7 @@ export default function AdminDeliveriesPage() {
                       )}
                     </td>
                     <td className="px-5 py-3 font-semibold text-gray-900">
-                      GH₵ {Number(r.total_amount).toFixed(2)}
+                      {formatGhs(r.total_amount)}
                     </td>
                     <td className="px-5 py-3 text-xs text-gray-500">
                       {new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}

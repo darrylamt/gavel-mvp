@@ -7,6 +7,7 @@ import AdminShell from '@/components/admin/AdminShell'
 import MiniBarChart from '@/components/admin/MiniBarChart'
 import { DashboardPayload } from '@/components/admin/AdminTypes'
 import { Search, Gavel, Plus, Trash2, Pencil, X } from 'lucide-react'
+import { formatGhs } from '@/lib/formatGhs'
 
 export default function AdminAuctionsPage() {
   const [auctions, setAuctions] = useState<DashboardPayload['auctions']>([])
@@ -177,7 +178,7 @@ export default function AdminAuctionsPage() {
                           <p className="truncate text-sm font-semibold text-gray-900">{auction.title}</p>
                           <p className="mt-0.5 text-xs text-gray-500">{auction.seller_name || '—'}</p>
                           <p className="mt-0.5 text-xs font-medium text-gray-700">
-                            GHS {(auction.current_price ?? 0).toLocaleString()}
+                            {formatGhs(auction.current_price)}
                           </p>
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -212,8 +213,8 @@ export default function AdminAuctionsPage() {
               </div>
 
               {/* Desktop table */}
-              <div className="hidden max-h-[60vh] overflow-auto sm:block">
-                <table className="w-full text-left text-sm">
+              <div className="hidden max-h-[60vh] overflow-x-auto sm:block">
+                <table className="w-full min-w-[600px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 text-xs font-semibold uppercase tracking-wide text-gray-400">
                       <th className="pb-3 pt-1">Title</th>
@@ -238,7 +239,7 @@ export default function AdminAuctionsPage() {
                             <AuctionStatusBadge status={auction.status || 'unknown'} />
                           </td>
                           <td className="py-3 text-gray-700">
-                            GHS {(auction.current_price ?? 0).toLocaleString()}
+                            {formatGhs(auction.current_price)}
                           </td>
                           <td className="py-3 text-right">
                             <div className="inline-flex items-center gap-1.5">
@@ -304,8 +305,8 @@ export default function AdminAuctionsPage() {
             <div className="grid grid-cols-2 gap-3 p-6">
               <DetailItem label="Title" value={selectedAuction.title} />
               <DetailItem label="Status" value={selectedAuction.status || '—'} />
-              <DetailItem label="Current Price" value={`GHS ${(selectedAuction.current_price ?? 0).toLocaleString()}`} />
-              <DetailItem label="Reserve Price" value={selectedAuction.reserve_price != null ? `GHS ${selectedAuction.reserve_price.toLocaleString()}` : '—'} />
+              <DetailItem label="Current Price" value={formatGhs(selectedAuction.current_price)} />
+              <DetailItem label="Reserve Price" value={selectedAuction.reserve_price != null ? formatGhs(selectedAuction.reserve_price) : '—'} />
               <DetailItem label="Source" value={selectedAuction.sale_source === 'seller' ? 'External Seller' : 'Gavel Products'} />
               <DetailItem label="Seller" value={selectedAuction.seller_name || '—'} />
               {selectedAuction.starts_at && (

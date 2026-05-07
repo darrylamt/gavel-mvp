@@ -31,7 +31,7 @@ export const CONDITION_CONFIG = {
 }
 
 export function formatGhsPrice(amount: number): string {
-  return `GHS ${amount.toLocaleString('en-GH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+  return `GHS ${amount.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export function formatMileage(km: number): string {

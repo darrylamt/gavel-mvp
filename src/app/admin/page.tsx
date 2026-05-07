@@ -7,6 +7,7 @@ import MiniBarChart from '@/components/admin/MiniBarChart'
 import { DashboardPayload } from '@/components/admin/AdminTypes'
 import PieChartCard from '@/components/base/PieChartCard'
 import { Users, Gavel, TrendingUp, Store, X, Search, SlidersHorizontal, GitBranch } from 'lucide-react'
+import { formatGhs } from '@/lib/formatGhs'
 
 type ReferralSummary = {
   monthly_paid: number
@@ -408,7 +409,7 @@ export default function AdminPage() {
                         <p className="mt-0.5 text-xs text-gray-500">{purchase.sellerName || 'Seller'} · {purchase.sellerShopName || '—'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">GHS {Number(purchase.orderTotalAmount).toLocaleString()}</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatGhs(purchase.orderTotalAmount)}</p>
                         <button
                           onClick={() => setSelectedPurchase(purchase)}
                           className="mt-1 rounded-lg border border-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-600 hover:bg-white"
@@ -422,8 +423,8 @@ export default function AdminPage() {
               </div>
 
               {/* Desktop table */}
-              <div className="hidden overflow-auto sm:block">
-                <table className="w-full text-left text-sm">
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="w-full min-w-[600px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 text-xs font-medium uppercase tracking-wide text-gray-400">
                       <th className="pb-2 pt-1">Date</th>
@@ -448,7 +449,7 @@ export default function AdminPage() {
                           <p className="text-xs text-gray-400">{purchase.sellerShopName || '—'}</p>
                         </td>
                         <td className="whitespace-nowrap py-2.5 text-right font-semibold text-gray-900">
-                          GHS {Number(purchase.orderTotalAmount).toLocaleString()}
+                          {formatGhs(purchase.orderTotalAmount)}
                         </td>
                         <td className="py-2.5 text-right">
                           <button
@@ -517,7 +518,7 @@ export default function AdminPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-gray-900">{auction.title}</p>
-                        <p className="mt-0.5 text-xs text-gray-500">GHS {(auction.current_price ?? 0).toLocaleString()}</p>
+                        <p className="mt-0.5 text-xs text-gray-500">{formatGhs(auction.current_price)}</p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <StatusBadge status={auction.status || 'unknown'} />
@@ -534,8 +535,8 @@ export default function AdminPage() {
               </div>
 
               {/* Desktop table */}
-              <div className="hidden max-h-80 overflow-auto sm:block">
-                <table className="w-full text-left text-sm">
+              <div className="hidden max-h-80 overflow-x-auto sm:block">
+                <table className="w-full min-w-[600px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 text-xs font-medium uppercase tracking-wide text-gray-400">
                       <th className="pb-2 pt-1">Title</th>
@@ -549,7 +550,7 @@ export default function AdminPage() {
                       <tr key={auction.id} className="hover:bg-gray-50">
                         <td className="py-2.5 font-medium text-gray-900">{auction.title}</td>
                         <td className="py-2.5"><StatusBadge status={auction.status || 'unknown'} /></td>
-                        <td className="py-2.5 text-gray-600">GHS {(auction.current_price ?? 0).toLocaleString()}</td>
+                        <td className="py-2.5 text-gray-600">{formatGhs(auction.current_price)}</td>
                         <td className="py-2.5 text-right">
                           <button
                             onClick={() => setSelectedAuction(auction)}
@@ -613,8 +614,8 @@ export default function AdminPage() {
           <div className="p-5 space-y-6">
             {/* Summary cards */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Paid This Month" value={`GHS ${Number(referralData.summary.monthly_paid).toFixed(2)}`} icon={<GitBranch className="h-5 w-5" />} color="green" />
-              <StatCard label="Total Pending" value={`GHS ${Number(referralData.summary.total_pending).toFixed(2)}`} icon={<GitBranch className="h-5 w-5" />} color="blue" />
+              <StatCard label="Paid This Month" value={formatGhs(referralData.summary.monthly_paid)} icon={<GitBranch className="h-5 w-5" />} color="green" />
+              <StatCard label="Total Pending" value={formatGhs(referralData.summary.total_pending)} icon={<GitBranch className="h-5 w-5" />} color="blue" />
               <StatCard label="Active Referrers" value={String(referralData.summary.active_referrers)} icon={<Users className="h-5 w-5" />} color="violet" />
               <StatCard label="Top Referrer" value={referralData.summary.top_referrer_this_month} icon={<TrendingUp className="h-5 w-5" />} color="orange" />
             </div>
@@ -638,8 +639,8 @@ export default function AdminPage() {
               {referralData.commissions.length === 0 ? (
                 <p className="py-6 text-center text-sm text-gray-400">No commissions found.</p>
               ) : (
-                <div className="max-h-72 overflow-auto">
-                  <table className="w-full text-left text-sm">
+                <div className="max-h-72 overflow-x-auto">
+                  <table className="w-full min-w-[600px] text-left text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 text-xs font-medium uppercase tracking-wide text-gray-400">
                         <th className="pb-2">Referrer</th>
@@ -655,8 +656,8 @@ export default function AdminPage() {
                         <tr key={c.id} className="hover:bg-gray-50">
                           <td className="py-2 font-mono text-xs text-gray-700">{c.referrer_masked}</td>
                           <td className="py-2 font-mono text-xs text-gray-700">{c.referred_masked}</td>
-                          <td className="py-2 text-right text-xs text-gray-600">GHS {Number(c.gross_amount).toFixed(2)}</td>
-                          <td className="py-2 text-right text-xs font-medium text-orange-600">GHS {Number(c.commission_amount).toFixed(2)}</td>
+                          <td className="py-2 text-right text-xs text-gray-600">{formatGhs(c.gross_amount)}</td>
+                          <td className="py-2 text-right text-xs font-medium text-orange-600">{formatGhs(c.commission_amount)}</td>
                           <td className="py-2 text-right">
                             <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
                               c.status === 'paid' ? 'bg-emerald-50 text-emerald-700'
@@ -682,8 +683,8 @@ export default function AdminPage() {
               {referralData.payout_batches.length === 0 ? (
                 <p className="py-4 text-center text-sm text-gray-400">No payout batches yet.</p>
               ) : (
-                <div className="max-h-48 overflow-auto">
-                  <table className="w-full text-left text-sm">
+                <div className="max-h-48 overflow-x-auto">
+                  <table className="w-full min-w-[600px] text-left text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 text-xs font-medium uppercase tracking-wide text-gray-400">
                         <th className="pb-2">Period</th>
@@ -696,7 +697,7 @@ export default function AdminPage() {
                       {referralData.payout_batches.map((p) => (
                         <tr key={p.id} className="hover:bg-gray-50">
                           <td className="py-2 font-medium text-gray-800">{p.period}</td>
-                          <td className="py-2 text-right text-gray-700">GHS {Number(p.amount).toFixed(2)}</td>
+                          <td className="py-2 text-right text-gray-700">{formatGhs(p.amount)}</td>
                           <td className="py-2 text-right">
                             <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
                               p.status === 'paid' ? 'bg-emerald-50 text-emerald-700'
@@ -737,7 +738,7 @@ export default function AdminPage() {
             <DetailItem label="Quantity" value={String(selectedPurchase.quantity)} />
             <DetailItem label="Order ID" value={selectedPurchase.orderId} />
             <DetailItem label="Date" value={selectedPurchase.orderCreatedAt ? new Date(selectedPurchase.orderCreatedAt).toLocaleString() : '—'} />
-            <DetailItem label="Total Amount" value={`GHS ${Number(selectedPurchase.orderTotalAmount).toLocaleString()}`} />
+            <DetailItem label="Total Amount" value={formatGhs(selectedPurchase.orderTotalAmount)} />
             <DetailItem label="Seller" value={selectedPurchase.sellerName || '—'} />
             <DetailItem label="Shop Name" value={selectedPurchase.sellerShopName || '—'} />
             <DetailItem label="Payout Provider" value={selectedPurchase.sellerPayoutProvider || '—'} />
@@ -753,8 +754,8 @@ export default function AdminPage() {
           <div className="grid gap-3 text-sm sm:grid-cols-2">
             <DetailItem label="Title" value={selectedAuction.title} />
             <DetailItem label="Status" value={selectedAuction.status || '—'} />
-            <DetailItem label="Current Price" value={`GHS ${(selectedAuction.current_price ?? 0).toLocaleString()}`} />
-            <DetailItem label="Reserve Price" value={selectedAuction.reserve_price != null ? `GHS ${selectedAuction.reserve_price.toLocaleString()}` : '—'} />
+            <DetailItem label="Current Price" value={formatGhs(selectedAuction.current_price)} />
+            <DetailItem label="Reserve Price" value={selectedAuction.reserve_price != null ? formatGhs(selectedAuction.reserve_price) : '—'} />
             <DetailItem label="Source" value={selectedAuction.sale_source === 'seller' ? 'External Seller' : 'Gavel Products'} />
             <DetailItem label="Seller" value={selectedAuction.seller_name || '—'} />
           </div>

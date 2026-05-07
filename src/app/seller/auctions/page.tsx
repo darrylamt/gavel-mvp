@@ -16,6 +16,7 @@ import {
   Clock,
   DollarSign,
 } from 'lucide-react'
+import { formatGhs } from '@/lib/formatGhs'
 
 type SellerAuction = {
   id: string
@@ -313,7 +314,7 @@ export default function SellerAuctionsPage() {
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <DollarSign className="h-3 w-3" />
-                            GHS {Number(auction.current_price ?? 0).toLocaleString()}
+                            {formatGhs(auction.current_price)}
                           </span>
                           {auction.ends_at && (
                             <span className="flex items-center gap-1">
@@ -373,8 +374,8 @@ export default function SellerAuctionsPage() {
             </div>
 
             {/* Desktop: Table */}
-            <div className="hidden sm:block overflow-auto">
-              <table className="w-full text-left text-sm">
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full min-w-[600px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
                     <th className="py-3 pr-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Title</th>
@@ -401,7 +402,7 @@ export default function SellerAuctionsPage() {
                           </span>
                         </td>
                         <td className="py-3 pr-4 text-gray-700">
-                          GHS {Number(auction.current_price ?? 0).toLocaleString()}
+                          {formatGhs(auction.current_price)}
                         </td>
                         <td className="py-3 text-right">
                           <div className="inline-flex items-center gap-1.5">
@@ -484,7 +485,7 @@ export default function SellerAuctionsPage() {
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Current Price</p>
                   <p className="mt-0.5 text-sm font-semibold text-gray-900">
-                    GHS {Number(detailAuction.current_price ?? 0).toLocaleString()}
+                    {formatGhs(detailAuction.current_price)}
                   </p>
                 </div>
               </div>

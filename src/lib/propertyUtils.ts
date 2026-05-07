@@ -25,7 +25,7 @@ export function getPropertyCommission(price: number): number {
 }
 
 export function formatGhsPrice(amount: number): string {
-  return `GHS ${amount.toLocaleString('en-GH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+  return `GHS ${amount.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export const PROPERTY_AMENITIES = [

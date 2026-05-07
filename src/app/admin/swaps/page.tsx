@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
 import { Smartphone, Search, AlertCircle, ClipboardList, CheckCircle2, CalendarClock, Trophy } from 'lucide-react'
+import { formatGhs } from '@/lib/formatGhs'
 import type { SwapStatus, SwapStats } from '@/types/swap'
 
 type SubmissionRow = {
@@ -237,7 +238,7 @@ export default function AdminSwapsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
-            <table className="w-full text-sm text-gray-700">
+            <table className="w-full min-w-[600px] text-sm text-gray-700">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
                   <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">User</th>
@@ -273,7 +274,7 @@ export default function AdminSwapsPage() {
                       </td>
                       <td className="px-5 py-3.5 capitalize text-gray-600">{row.condition_score || '—'}</td>
                       <td className="px-5 py-3.5 font-medium text-gray-900">
-                        GHS {Number(row.calculated_trade_in_value).toLocaleString()}
+                        {formatGhs(row.calculated_trade_in_value)}
                       </td>
                       <td className="px-5 py-3.5">
                         {upgradeModel ? (

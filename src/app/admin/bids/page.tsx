@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
+import { formatGhs } from '@/lib/formatGhs'
 
 type Bid = {
   id: string
@@ -132,7 +133,7 @@ export default function AdminBidsPage() {
           <div className="rounded-2xl bg-white p-8 text-center text-gray-500">No bids found</div>
         ) : (
           <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-            <table className="w-full">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b bg-gray-50">
                   <th className="px-4 py-3 text-left text-sm font-semibold">Auction</th>
@@ -150,7 +151,7 @@ export default function AdminBidsPage() {
                       <div>{bid.bidder_username || 'Unknown'}</div>
                       <div className="text-xs text-gray-500">{bid.bidder_email || '-'}</div>
                     </td>
-                    <td className="px-4 py-3 text-right text-sm font-semibold">₵{bid.amount}</td>
+                    <td className="px-4 py-3 text-right text-sm font-semibold">{formatGhs(bid.amount)}</td>
                     <td className="px-4 py-3 text-sm">
                       {new Date(bid.created_at).toLocaleString('en-GB', {
                         year: 'numeric',

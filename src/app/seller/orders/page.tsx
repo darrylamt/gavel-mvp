@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import { useTopToast } from '@/components/ui/TopToastProvider'
+import { formatGhs } from '@/lib/formatGhs'
 
 type OrderItem = {
   id: string
@@ -258,7 +259,7 @@ export default function SellerOrdersPage() {
                       {/* Right side: amount + dispatch button + chevron */}
                       <div className="flex flex-shrink-0 items-center gap-2">
                         <p className="hidden font-bold text-gray-900 text-sm sm:block">
-                          GH₵ {Number(order.total_amount).toFixed(2)}
+                          {formatGhs(order.total_amount)}
                         </p>
                         {needsDispatch && (
                           <button
@@ -342,7 +343,7 @@ export default function SellerOrdersPage() {
                                 <p className="text-sm font-medium text-gray-900">{item.title}</p>
                                 <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                               </div>
-                              <p className="text-sm font-bold text-gray-900">GH₵ {Number(item.unit_price).toFixed(2)}</p>
+                              <p className="text-sm font-bold text-gray-900">{formatGhs(item.unit_price)}</p>
                             </div>
                           ))}
                         </div>

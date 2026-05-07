@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
 import { AlertCircle, CheckCircle2, Clock, XCircle, Ban, PlayCircle } from 'lucide-react'
+import { formatGhs } from '@/lib/formatGhs'
 
 type Payout = {
   id: string
@@ -219,7 +220,7 @@ export default function AdminPayoutsManagementPage() {
               {summary.total_pending}
             </p>
             <p className="text-xs text-amber-700">
-              GHS {summary.total_pending_value.toFixed(2)}
+              {formatGhs(summary.total_pending_value)}
             </p>
           </div>
           <div className="rounded-lg border border-red-200 bg-red-50 p-4">
@@ -228,7 +229,7 @@ export default function AdminPayoutsManagementPage() {
               {summary.total_on_hold}
             </p>
             <p className="text-xs text-red-700">
-              GHS {summary.total_on_hold_value.toFixed(2)}
+              {formatGhs(summary.total_on_hold_value)}
             </p>
           </div>
           <div className="rounded-lg border border-green-200 bg-green-50 p-4">
@@ -237,13 +238,13 @@ export default function AdminPayoutsManagementPage() {
               {summary.total_success}
             </p>
             <p className="text-xs text-green-700">
-              GHS {summary.total_success_value.toFixed(2)}
+              {formatGhs(summary.total_success_value)}
             </p>
           </div>
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
             <p className="text-sm font-medium text-blue-900">Commission</p>
             <p className="mt-1 text-2xl font-bold text-blue-900">
-              GHS {summary.total_commission.toFixed(2)}
+              {formatGhs(summary.total_commission)}
             </p>
             <p className="text-xs text-blue-700">From all payouts</p>
           </div>
@@ -279,8 +280,8 @@ export default function AdminPayoutsManagementPage() {
         ) : payouts.length === 0 ? (
           <p className="text-sm text-gray-500">No payouts found</p>
         ) : (
-          <div className="overflow-auto">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px] text-left text-sm">
               <thead className="text-gray-500">
                 <tr>
                   <th className="py-2">Date</th>
@@ -318,12 +319,12 @@ export default function AdminPayoutsManagementPage() {
                         <span className="text-xs">{payout.auction?.title?.slice(0, 20)}</span>
                       )}
                     </td>
-                    <td className="py-3 whitespace-nowrap">GHS {payout.gross_amount.toFixed(2)}</td>
+                    <td className="py-3 whitespace-nowrap">{formatGhs(payout.gross_amount)}</td>
                     <td className="py-3 whitespace-nowrap text-gray-500">
-                      GHS {payout.commission_amount.toFixed(2)}
+                      {formatGhs(payout.commission_amount)}
                     </td>
                     <td className="py-3 whitespace-nowrap font-medium">
-                      GHS {payout.payout_amount.toFixed(2)}
+                      {formatGhs(payout.payout_amount)}
                     </td>
                     <td className="py-3">
                       <div

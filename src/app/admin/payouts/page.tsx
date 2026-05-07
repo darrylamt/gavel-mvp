@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
 import { Search, Wallet, TrendingUp, X, AlertCircle, Package } from 'lucide-react'
+import { formatGhs } from '@/lib/formatGhs'
 
 type PayoutSummary = {
   key: string
@@ -109,7 +110,7 @@ export default function AdminPayoutsPage() {
               <TrendingUp className="h-4 w-4 text-emerald-500" />
             </div>
             <p className="mt-2 text-2xl font-bold text-gray-900">
-              GHS {totalGross.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              {formatGhs(totalGross)}
             </p>
           </div>
         </div>
@@ -166,7 +167,7 @@ export default function AdminPayoutsPage() {
                         <p className="truncate text-sm font-semibold text-gray-900">{row.seller_name}</p>
                         <p className="mt-0.5 text-xs text-gray-500">{row.seller_shop_name}</p>
                         <p className="mt-1 text-sm font-bold text-gray-900">
-                          GHS {Number(row.gross_sales).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          {formatGhs(row.gross_sales)}
                         </p>
                       </div>
                       <button
@@ -181,8 +182,8 @@ export default function AdminPayoutsPage() {
               </div>
 
               {/* Desktop table */}
-              <div className="hidden overflow-auto sm:block">
-                <table className="w-full text-left text-sm">
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="w-full min-w-[600px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 text-xs font-semibold uppercase tracking-wide text-gray-400">
                       <th className="pb-3 pt-1">Seller</th>
@@ -202,7 +203,7 @@ export default function AdminPayoutsPage() {
                         <td className="py-3 text-gray-600">{row.seller_shop_name}</td>
                         <td className="py-3 text-gray-600">{row.items_sold}</td>
                         <td className="py-3 text-right font-semibold text-gray-900">
-                          GHS {Number(row.gross_sales).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          {formatGhs(row.gross_sales)}
                         </td>
                         <td className="py-3 text-right">
                           <button
@@ -255,7 +256,7 @@ export default function AdminPayoutsPage() {
               <DetailItem label="Items Sold" value={String(selectedRow.items_sold)} />
               <DetailItem
                 label="Gross Sales"
-                value={`GHS ${Number(selectedRow.gross_sales).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                value={formatGhs(selectedRow.gross_sales)}
               />
             </div>
           </div>

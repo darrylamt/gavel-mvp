@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import AdminShell from '@/components/admin/AdminShell'
+import { formatGhs } from '@/lib/formatGhs'
 
 type ShopProduct = {
   id: string
@@ -561,8 +562,8 @@ export default function AdminProductsPage() {
         ) : filteredProducts.length === 0 ? (
           <p className="text-sm text-gray-500">No products yet.</p>
         ) : (
-          <div className="max-h-[30rem] overflow-auto">
-            <table className="w-full text-left text-sm">
+          <div className="max-h-[30rem] overflow-x-auto">
+            <table className="w-full min-w-[600px] text-left text-sm">
               <thead className="text-gray-500">
                 <tr>
                   <th className="py-2">Title</th>
@@ -599,13 +600,13 @@ export default function AdminProductsPage() {
                         if (showDiscount && baseline !== null) {
                           return (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500 line-through">GHS {baseline.toLocaleString()}</span>
-                              <span className="font-semibold text-emerald-700">GHS {current.toLocaleString()}</span>
+                              <span className="text-xs text-gray-500 line-through">{formatGhs(baseline)}</span>
+                              <span className="font-semibold text-emerald-700">{formatGhs(current)}</span>
                             </div>
                           )
                         }
 
-                        return <span>GHS {current.toLocaleString()}</span>
+                        return <span>{formatGhs(current)}</span>
                       })()}
                     </td>
                     <td className="py-2">{product.stock}</td>
@@ -722,12 +723,12 @@ export default function AdminProductsPage() {
                     <span>Enter a valid seller price and commission to preview final listing price.</span>
                   ) : isDiscountedFromDefault && computedDefaultListedPrice !== null ? (
                     <span>
-                      Listing price preview: <span className="line-through text-gray-500">GHS {computedDefaultListedPrice.toLocaleString()}</span>{' '}
-                      <span className="font-semibold text-emerald-700">GHS {computedListedPrice.toLocaleString()}</span>
+                      Listing price preview: <span className="line-through text-gray-500">{formatGhs(computedDefaultListedPrice)}</span>{' '}
+                      <span className="font-semibold text-emerald-700">{formatGhs(computedListedPrice)}</span>
                     </span>
                   ) : (
                     <span>
-                      Listing price preview: <span className="font-semibold">GHS {computedListedPrice.toLocaleString()}</span>
+                      Listing price preview: <span className="font-semibold">{formatGhs(computedListedPrice)}</span>
                     </span>
                   )}
                 </div>
