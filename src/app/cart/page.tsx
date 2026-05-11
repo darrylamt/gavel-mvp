@@ -346,7 +346,7 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Delivery options — shown only when estimate succeeds */}
+            {/* Delivery options – shown only when estimate succeeds */}
             {(estimateLoading || deliveryOptions) && (
               <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-3">

@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Phone Swap | Gavel',
   description:
-    'Trade in your old phone and upgrade to something better. Gavel handles everything in-office — transparent pricing, no surprises.',
+    'Trade in your old phone and upgrade to something better. Gavel handles everything in-office – transparent pricing, no surprises.',
 }
 
 // ── Data fetching ──────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ async function InventoryPreview() {
   if (preview.length === 0) {
     return (
       <p className="text-center text-sm text-gray-400 py-8">
-        No upgrade phones currently listed — check back soon.
+        No upgrade phones currently listed – check back soon.
       </p>
     )
   }
@@ -146,7 +146,7 @@ const steps = [
     step: '02',
     title: 'Get a Transparent Offer',
     description:
-      'Our team reviews your submission and sends a firm offer within 24 hours — calculated with a clear deduction formula you can see upfront.',
+      'Our team reviews your submission and sends a firm offer within 24 hours – calculated with a clear deduction formula you can see upfront.',
   },
   {
     icon: CalendarCheck,
@@ -169,7 +169,7 @@ const trustSignals = [
     icon: DollarSign,
     title: 'Transparent Deduction Formula',
     description:
-      'Every deduction is itemised — screen condition, battery health, camera faults, body damage. No hidden costs.',
+      'Every deduction is itemised – screen condition, battery health, camera faults, body damage. No hidden costs.',
   },
   {
     icon: ShieldCheck,
@@ -187,7 +187,7 @@ const trustSignals = [
     icon: Lock,
     title: 'Price Locked for 7 Days',
     description:
-      'Once your offer is approved, the trade-in value is locked for 7 days — giving you time to book without stress.',
+      'Once your offer is approved, the trade-in value is locked for 7 days – giving you time to book without stress.',
   },
 ]
 
@@ -219,7 +219,7 @@ export default function SwapLandingPage() {
 
           <p className="mt-6 max-w-2xl mx-auto text-base sm:text-lg text-gray-300 leading-relaxed">
             Bring your old phone to Gavel. We verify it in person, give you a transparent trade-in value,
-            and let you walk out with an upgrade — all handled by the Gavel team so you never get shortchanged.
+            and let you walk out with an upgrade – all handled by the Gavel team so you never get shortchanged.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">

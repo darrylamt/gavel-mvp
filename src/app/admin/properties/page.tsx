@@ -224,21 +224,21 @@ function CreateModal({ onClose, onCreated, editing }: { onClose: () => void; onC
                 <div>
                   <label className={labelCls}>Bedrooms</label>
                   <select value={form.bedrooms} onChange={e => set('bedrooms', e.target.value)} className={inputCls}>
-                    <option value="">—</option>
+                    <option value="">–</option>
                     {['1', '2', '3', '4', '5+'].map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className={labelCls}>Bathrooms</label>
                   <select value={form.bathrooms} onChange={e => set('bathrooms', e.target.value)} className={inputCls}>
-                    <option value="">—</option>
+                    <option value="">–</option>
                     {['1', '2', '3', '4+'].map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className={labelCls}>Furnished</label>
                   <select value={form.furnished} onChange={e => set('furnished', e.target.value)} className={inputCls}>
-                    <option value="">—</option>
+                    <option value="">–</option>
                     <option value="furnished">Furnished</option>
                     <option value="unfurnished">Unfurnished</option>
                     <option value="semi_furnished">Semi-Furnished</option>

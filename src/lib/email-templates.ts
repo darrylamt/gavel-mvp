@@ -106,7 +106,7 @@ export const emailTemplates = {
     auctionUrl: string
   }) => ({
     subject: `You've been outbid on "${data.auctionTitle}"`,
-    text: `Hi ${data.userName},\n\nSomeone placed a higher bid on "${data.auctionTitle}".\n\nCurrent bid: GHS ${data.currentBid}\n\nPlace a higher bid: ${data.auctionUrl}\n\n— Gavel`,
+    text: `Hi ${data.userName},\n\nSomeone placed a higher bid on "${data.auctionTitle}".\n\nCurrent bid: GHS ${data.currentBid}\n\nPlace a higher bid: ${data.auctionUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('You\'ve been outbid 📢')}
       ${p(`Hi ${data.userName},`)}
@@ -116,7 +116,7 @@ export const emailTemplates = {
         ${value(`GHS ${data.currentBid}`, ORANGE)}
       `)}
       ${btn(data.auctionUrl, 'Place a Higher Bid')}
-      ${p('Act fast — auctions move quickly!', `color:${GRAY};font-size:14px;`)}
+      ${p('Act fast – auctions move quickly!', `color:${GRAY};font-size:14px;`)}
     `),
   }),
 
@@ -127,7 +127,7 @@ export const emailTemplates = {
     auctionUrl: string
   }) => ({
     subject: `🎉 You won "${data.auctionTitle}"!`,
-    text: `Hi ${data.userName},\n\nCongratulations! You won the auction for "${data.auctionTitle}" with a winning bid of GHS ${data.winningBid}.\n\nView auction: ${data.auctionUrl}\n\n— Gavel`,
+    text: `Hi ${data.userName},\n\nCongratulations! You won the auction for "${data.auctionTitle}" with a winning bid of GHS ${data.winningBid}.\n\nView auction: ${data.auctionUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('🎉 You Won!')}
       ${p(`Congratulations, <strong>${data.userName}</strong>!`)}
@@ -149,8 +149,8 @@ export const emailTemplates = {
     winnerPhone?: string
     auctionUrl: string
   }) => ({
-    subject: `Your auction ended — "${data.auctionTitle}"`,
-    text: `Hi ${data.sellerName},\n\nYour auction for "${data.auctionTitle}" has ended.\n\nWinning bid: GHS ${data.winningBid}\nWinner email: ${data.winnerEmail}${data.winnerPhone ? `\nWinner phone: ${data.winnerPhone}` : ''}\n\nView auction: ${data.auctionUrl}\n\n— Gavel`,
+    subject: `Your auction ended – "${data.auctionTitle}"`,
+    text: `Hi ${data.sellerName},\n\nYour auction for "${data.auctionTitle}" has ended.\n\nWinning bid: GHS ${data.winningBid}\nWinner email: ${data.winnerEmail}${data.winnerPhone ? `\nWinner phone: ${data.winnerPhone}` : ''}\n\nView auction: ${data.auctionUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('Your Auction Has Ended')}
       ${p(`Hi ${data.sellerName},`)}
@@ -174,8 +174,8 @@ export const emailTemplates = {
     auctionUrl: string
     bidsCount: number
   }) => ({
-    subject: `New bid on "${data.auctionTitle}" — GHS ${data.bidAmount}`,
-    text: `Hi ${data.sellerName},\n\nSomeone placed a bid of GHS ${data.bidAmount} on "${data.auctionTitle}".\n\nTotal bids: ${data.bidsCount}\n\nView auction: ${data.auctionUrl}\n\n— Gavel`,
+    subject: `New bid on "${data.auctionTitle}" – GHS ${data.bidAmount}`,
+    text: `Hi ${data.sellerName},\n\nSomeone placed a bid of GHS ${data.bidAmount} on "${data.auctionTitle}".\n\nTotal bids: ${data.bidsCount}\n\nView auction: ${data.auctionUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('New Bid Received 🔔')}
       ${p(`Hi ${data.sellerName},`)}
@@ -197,8 +197,8 @@ export const emailTemplates = {
     endsAt: string
     auctionUrl: string
   }) => ({
-    subject: `⏰ Ending soon — "${data.auctionTitle}"`,
-    text: `Hi ${data.userName},\n\nThe auction for "${data.auctionTitle}" is ending soon!\n\nCurrent bid: GHS ${data.currentBid}\nEnds at: ${data.endsAt}\n\nBid now: ${data.auctionUrl}\n\n— Gavel`,
+    subject: `⏰ Ending soon – "${data.auctionTitle}"`,
+    text: `Hi ${data.userName},\n\nThe auction for "${data.auctionTitle}" is ending soon!\n\nCurrent bid: GHS ${data.currentBid}\nEnds at: ${data.endsAt}\n\nBid now: ${data.auctionUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('⏰ Auction Ending Soon!')}
       ${p(`Hi ${data.userName},`)}
@@ -220,8 +220,8 @@ export const emailTemplates = {
     dueDate: string
     auctionUrl: string
   }) => ({
-    subject: `Payment reminder — "${data.auctionTitle}"`,
-    text: `Hi ${data.userName},\n\nThis is a reminder to complete your payment for "${data.auctionTitle}".\n\nAmount due: GHS ${data.winningBid.toFixed(2)}\nDue date: ${data.dueDate}\n\nComplete payment: ${data.auctionUrl}\n\n— Gavel`,
+    subject: `Payment reminder – "${data.auctionTitle}"`,
+    text: `Hi ${data.userName},\n\nThis is a reminder to complete your payment for "${data.auctionTitle}".\n\nAmount due: GHS ${data.winningBid.toFixed(2)}\nDue date: ${data.dueDate}\n\nComplete payment: ${data.auctionUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('Payment Reminder')}
       ${p(`Hi ${data.userName},`)}
@@ -248,8 +248,8 @@ export const emailTemplates = {
     deliveryLocation: string
     estimatedDelivery?: string
   }) => ({
-    subject: `Order confirmed — ${data.orderRef}`,
-    text: `Hi ${data.userName},\n\nYour order has been confirmed!\n\nOrder: ${data.orderRef}\n\nItems:\n${data.items.map(i => `- ${i.name} x${i.quantity} — GHS ${i.price.toFixed(2)}`).join('\n')}\n\nTotal: GHS ${data.total.toFixed(2)}\n\nDelivery to: ${data.deliveryAddress}, ${data.deliveryLocation}${data.estimatedDelivery ? `\nEstimated delivery: ${data.estimatedDelivery}` : ''}\n\nTrack your order at gavelgh.com\n\n— Gavel`,
+    subject: `Order confirmed – ${data.orderRef}`,
+    text: `Hi ${data.userName},\n\nYour order has been confirmed!\n\nOrder: ${data.orderRef}\n\nItems:\n${data.items.map(i => `- ${i.name} x${i.quantity} – GHS ${i.price.toFixed(2)}`).join('\n')}\n\nTotal: GHS ${data.total.toFixed(2)}\n\nDelivery to: ${data.deliveryAddress}, ${data.deliveryLocation}${data.estimatedDelivery ? `\nEstimated delivery: ${data.estimatedDelivery}` : ''}\n\nTrack your order at gavelgh.com\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('Order Confirmed ✓')}
       ${p(`Hi <strong>${data.userName}</strong>, your payment was successful!`)}
@@ -297,8 +297,8 @@ export const emailTemplates = {
     businessName: string
     dashboardUrl: string
   }) => ({
-    subject: `Your seller account is approved — ${data.businessName}`,
-    text: `Hi ${data.userName},\n\nGreat news! Your seller application for "${data.businessName}" has been approved.\n\nYou can now list products and run auctions on Gavel.\n\nGo to your seller dashboard: ${data.dashboardUrl}\n\n— Gavel`,
+    subject: `Your seller account is approved – ${data.businessName}`,
+    text: `Hi ${data.userName},\n\nGreat news! Your seller application for "${data.businessName}" has been approved.\n\nYou can now list products and run auctions on Gavel.\n\nGo to your seller dashboard: ${data.dashboardUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('You\'re Approved to Sell on Gavel ✅')}
       ${p(`Hi <strong>${data.userName}</strong>,`)}
@@ -320,8 +320,8 @@ export const emailTemplates = {
     reason: string
     supportUrl: string
   }) => ({
-    subject: `Seller application update — ${data.businessName}`,
-    text: `Hi ${data.userName},\n\nThank you for applying to sell on Gavel. After reviewing your application for "${data.businessName}", we're unable to approve it at this time.\n\nReason: ${data.reason}\n\nPlease contact support if you have questions: ${data.supportUrl}\n\n— Gavel`,
+    subject: `Seller application update – ${data.businessName}`,
+    text: `Hi ${data.userName},\n\nThank you for applying to sell on Gavel. After reviewing your application for "${data.businessName}", we're unable to approve it at this time.\n\nReason: ${data.reason}\n\nPlease contact support if you have questions: ${data.supportUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('Application Update')}
       ${p(`Hi ${data.userName},`)}
@@ -343,16 +343,16 @@ export const emailTemplates = {
     userName: string
   }) => ({
     subject: `Welcome to Gavel, ${data.userName}!`,
-    text: `Hi ${data.userName},\n\nWelcome to Gavel — Ghana's auction and marketplace platform!\n\nYou can now bid on live auctions, buy products, and earn by referring friends.\n\nStart exploring: https://gavelgh.com/auctions\n\n— Gavel`,
+    text: `Hi ${data.userName},\n\nWelcome to Gavel – Ghana's auction and marketplace platform!\n\nYou can now bid on live auctions, buy products, and earn by referring friends.\n\nStart exploring: https://gavelgh.com/auctions\n\n– Gavel`,
     html: emailWrapper(`
       ${h1(`Welcome to Gavel, ${data.userName}! 🎉`)}
       ${p('You\'ve joined Ghana\'s premier online auction and marketplace.')}
       ${infoBox(`
         <p style="margin:0 0 10px 0;color:${DARK};font-size:15px;font-weight:600;">Here\'s what you can do:</p>
-        <p style="margin:0 0 8px 0;color:#374151;font-size:14px;">🔨 &nbsp;<strong>Bid on live auctions</strong> — get rare finds at great prices</p>
-        <p style="margin:0 0 8px 0;color:#374151;font-size:14px;">🛒 &nbsp;<strong>Shop the marketplace</strong> — buy at fixed prices instantly</p>
-        <p style="margin:0 0 8px 0;color:#374151;font-size:14px;">💰 &nbsp;<strong>Earn with referrals</strong> — share your code, earn 2% forever</p>
-        <p style="margin:0;color:#374151;font-size:14px;">📦 &nbsp;<strong>Become a seller</strong> — list your items to thousands of buyers</p>
+        <p style="margin:0 0 8px 0;color:#374151;font-size:14px;">🔨 &nbsp;<strong>Bid on live auctions</strong> – get rare finds at great prices</p>
+        <p style="margin:0 0 8px 0;color:#374151;font-size:14px;">🛒 &nbsp;<strong>Shop the marketplace</strong> – buy at fixed prices instantly</p>
+        <p style="margin:0 0 8px 0;color:#374151;font-size:14px;">💰 &nbsp;<strong>Earn with referrals</strong> – share your code, earn 2% forever</p>
+        <p style="margin:0;color:#374151;font-size:14px;">📦 &nbsp;<strong>Become a seller</strong> – list your items to thousands of buyers</p>
       `)}
       ${btn('https://gavelgh.com/auctions', 'Start Exploring')}
     `),
@@ -367,11 +367,11 @@ export const emailTemplates = {
     dashboardUrl: string
   }) => ({
     subject: `You earned GHS ${data.commissionGHS.toFixed(2)} in referral commission!`,
-    text: `Hi ${data.referrerName},\n\nGreat news! One of your referrals just made a purchase and you've earned GHS ${data.commissionGHS.toFixed(2)} in commission.\n\nTotal pending earnings: GHS ${data.totalPendingGHS.toFixed(2)}\n\nView your dashboard: ${data.dashboardUrl}\n\n— Gavel`,
+    text: `Hi ${data.referrerName},\n\nGreat news! One of your referrals just made a purchase and you've earned GHS ${data.commissionGHS.toFixed(2)} in commission.\n\nTotal pending earnings: GHS ${data.totalPendingGHS.toFixed(2)}\n\nView your dashboard: ${data.dashboardUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('You Earned a Referral Commission! 💰')}
       ${p(`Hi <strong>${data.referrerName}</strong>,`)}
-      ${p('One of your referrals just made a purchase — here\'s your cut.')}
+      ${p('One of your referrals just made a purchase – here\'s your cut.')}
       ${infoBox(`
         ${label('Commission earned')}
         ${value(`GHS ${data.commissionGHS.toFixed(2)}`, ORANGE)}
@@ -390,7 +390,7 @@ export const emailTemplates = {
     dashboardUrl: string
   }) => ({
     subject: `Your referral payout of GHS ${data.amountGHS.toFixed(2)} has been sent!`,
-    text: `Hi ${data.referrerName},\n\nYour referral payout of GHS ${data.amountGHS.toFixed(2)} for ${data.period} has been sent to your account.\n\nIt should arrive within 1-2 business days.\n\nView your earnings history: ${data.dashboardUrl}\n\n— Gavel`,
+    text: `Hi ${data.referrerName},\n\nYour referral payout of GHS ${data.amountGHS.toFixed(2)} for ${data.period} has been sent to your account.\n\nIt should arrive within 1-2 business days.\n\nView your earnings history: ${data.dashboardUrl}\n\n– Gavel`,
     html: emailWrapper(`
       ${h1('Referral Payout Sent! 🎉')}
       ${p(`Hi <strong>${data.referrerName}</strong>,`)}

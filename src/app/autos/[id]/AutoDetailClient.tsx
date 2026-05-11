@@ -43,7 +43,7 @@ export default function AutoDetailClient({ listing, auction }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(`${listing.year} ${listing.make} ${listing.model} — Gavel Autos\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(`${listing.year} ${listing.make} ${listing.model} – Gavel Autos\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`
 
   return (
     <div className="sticky top-24 space-y-4">

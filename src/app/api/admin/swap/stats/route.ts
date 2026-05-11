@@ -77,7 +77,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 })
   }
 
-  // For appointments_today we query via slot join — fall back to a direct slots query approach
+  // For appointments_today we query via slot join – fall back to a direct slots query approach
   // since Supabase doesn't support filtering on joined columns in .select count directly.
   // Use a two-step approach: get slot ids for today, then count appointments.
   const { data: todaySlots, error: todaySlotsError } = await supabase

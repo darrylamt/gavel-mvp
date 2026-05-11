@@ -243,8 +243,8 @@ export default function AdminPage() {
                   {filteredUsers.slice(0, usersVisible).map((user) => (
                     <div key={user.id} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{user.username || '—'}</p>
-                        <p className="text-xs text-gray-500">{user.phone || '—'}</p>
+                        <p className="text-sm font-medium text-gray-900">{user.username || '–'}</p>
+                        <p className="text-xs text-gray-500">{user.phone || '–'}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <RoleBadge role={user.role || 'user'} />
@@ -273,8 +273,8 @@ export default function AdminPage() {
                     <tbody className="divide-y divide-gray-50">
                       {filteredUsers.slice(0, usersVisible).map((user) => (
                         <tr key={user.id} className="hover:bg-gray-50">
-                          <td className="py-2.5 font-medium text-gray-900">{user.username || '—'}</td>
-                          <td className="py-2.5 text-gray-600">{user.phone || '—'}</td>
+                          <td className="py-2.5 font-medium text-gray-900">{user.username || '–'}</td>
+                          <td className="py-2.5 text-gray-600">{user.phone || '–'}</td>
                           <td className="py-2.5"><RoleBadge role={user.role || 'user'} /></td>
                           <td className="py-2.5 text-right">
                             <button
@@ -406,7 +406,7 @@ export default function AdminPage() {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{purchase.productTitle}</p>
-                        <p className="mt-0.5 text-xs text-gray-500">{purchase.sellerName || 'Seller'} · {purchase.sellerShopName || '—'}</p>
+                        <p className="mt-0.5 text-xs text-gray-500">{purchase.sellerName || 'Seller'} · {purchase.sellerShopName || '–'}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-gray-900">{formatGhs(purchase.orderTotalAmount)}</p>
@@ -438,7 +438,7 @@ export default function AdminPage() {
                     {data.purchases.slice(0, purchasesVisible).map((purchase) => (
                       <tr key={`${purchase.orderId}-${purchase.productTitle}`} className="align-top hover:bg-gray-50">
                         <td className="whitespace-nowrap py-2.5 text-xs text-gray-500">
-                          {purchase.orderCreatedAt ? new Date(purchase.orderCreatedAt).toLocaleDateString() : '—'}
+                          {purchase.orderCreatedAt ? new Date(purchase.orderCreatedAt).toLocaleDateString() : '–'}
                         </td>
                         <td className="py-2.5">
                           <p className="font-medium text-gray-900">{purchase.productTitle}</p>
@@ -446,7 +446,7 @@ export default function AdminPage() {
                         </td>
                         <td className="py-2.5">
                           <p className="text-gray-900">{purchase.sellerName || 'Seller'}</p>
-                          <p className="text-xs text-gray-400">{purchase.sellerShopName || '—'}</p>
+                          <p className="text-xs text-gray-400">{purchase.sellerShopName || '–'}</p>
                         </td>
                         <td className="whitespace-nowrap py-2.5 text-right font-semibold text-gray-900">
                           {formatGhs(purchase.orderTotalAmount)}
@@ -580,8 +580,8 @@ export default function AdminPage() {
       {selectedUser && (
         <Modal title={selectedUser.username || 'User'} onClose={() => setSelectedUser(null)}>
           <div className="grid gap-3 text-sm sm:grid-cols-2">
-            <DetailItem label="Username" value={selectedUser.username || '—'} />
-            <DetailItem label="Phone" value={selectedUser.phone || '—'} />
+            <DetailItem label="Username" value={selectedUser.username || '–'} />
+            <DetailItem label="Phone" value={selectedUser.phone || '–'} />
             <DetailItem label="Token Balance" value={String(selectedUser.token_balance ?? 0)} />
             <DetailItem label="Role" value={selectedUser.role || 'user'} />
           </div>
@@ -737,13 +737,13 @@ export default function AdminPage() {
             <DetailItem label="Product" value={selectedPurchase.productTitle} />
             <DetailItem label="Quantity" value={String(selectedPurchase.quantity)} />
             <DetailItem label="Order ID" value={selectedPurchase.orderId} />
-            <DetailItem label="Date" value={selectedPurchase.orderCreatedAt ? new Date(selectedPurchase.orderCreatedAt).toLocaleString() : '—'} />
+            <DetailItem label="Date" value={selectedPurchase.orderCreatedAt ? new Date(selectedPurchase.orderCreatedAt).toLocaleString() : '–'} />
             <DetailItem label="Total Amount" value={formatGhs(selectedPurchase.orderTotalAmount)} />
-            <DetailItem label="Seller" value={selectedPurchase.sellerName || '—'} />
-            <DetailItem label="Shop Name" value={selectedPurchase.sellerShopName || '—'} />
-            <DetailItem label="Payout Provider" value={selectedPurchase.sellerPayoutProvider || '—'} />
-            <DetailItem label="Account Name" value={selectedPurchase.sellerPayoutAccountName || '—'} />
-            <DetailItem label="Account Number" value={selectedPurchase.sellerPayoutAccountNumber || '—'} />
+            <DetailItem label="Seller" value={selectedPurchase.sellerName || '–'} />
+            <DetailItem label="Shop Name" value={selectedPurchase.sellerShopName || '–'} />
+            <DetailItem label="Payout Provider" value={selectedPurchase.sellerPayoutProvider || '–'} />
+            <DetailItem label="Account Name" value={selectedPurchase.sellerPayoutAccountName || '–'} />
+            <DetailItem label="Account Number" value={selectedPurchase.sellerPayoutAccountNumber || '–'} />
           </div>
         </Modal>
       )}
@@ -753,11 +753,11 @@ export default function AdminPage() {
         <Modal title={selectedAuction.title} onClose={() => setSelectedAuction(null)}>
           <div className="grid gap-3 text-sm sm:grid-cols-2">
             <DetailItem label="Title" value={selectedAuction.title} />
-            <DetailItem label="Status" value={selectedAuction.status || '—'} />
+            <DetailItem label="Status" value={selectedAuction.status || '–'} />
             <DetailItem label="Current Price" value={formatGhs(selectedAuction.current_price)} />
-            <DetailItem label="Reserve Price" value={selectedAuction.reserve_price != null ? formatGhs(selectedAuction.reserve_price) : '—'} />
+            <DetailItem label="Reserve Price" value={selectedAuction.reserve_price != null ? formatGhs(selectedAuction.reserve_price) : '–'} />
             <DetailItem label="Source" value={selectedAuction.sale_source === 'seller' ? 'External Seller' : 'Gavel Products'} />
-            <DetailItem label="Seller" value={selectedAuction.seller_name || '—'} />
+            <DetailItem label="Seller" value={selectedAuction.seller_name || '–'} />
           </div>
         </Modal>
       )}

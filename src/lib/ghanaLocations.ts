@@ -124,7 +124,7 @@ export type Location = {
   value: string;
 };
 
-// Approximate centre-point coordinates for each region — used for Dawurobo /estimates
+// Approximate centre-point coordinates for each region – used for Dawurobo /estimates
 export const REGION_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'Greater Accra':      { lat: 5.6037,  lng: -0.1870 },
   'Ashanti':            { lat: 6.6885,  lng: -1.6244 },

@@ -4,7 +4,7 @@ import { dawuroboRequest, type DawuroboLocation } from '@/lib/dawurobo'
 
 /**
  * GET /api/delivery/locations
- * Proxies Dawurobo GET /locations — keeps the API key server-side.
+ * Proxies Dawurobo GET /locations – keeps the API key server-side.
  */
 export const dynamic = 'force-dynamic'
 

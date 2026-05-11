@@ -1098,7 +1098,7 @@ export default function SellerProductsPage() {
               )}
               {descriptionGeneratedByAi && !aiDescriptionError && (
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-2 text-xs text-blue-600">
-                  AI-generated — please review before publishing
+                  AI-generated – please review before publishing
                 </div>
               )}
               <textarea
@@ -1154,7 +1154,7 @@ export default function SellerProductsPage() {
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Shop</p>
                   <p className="mt-0.5 text-sm text-gray-700">
-                    {shops.find((s) => s.id === detailProduct.shop_id)?.name || '—'}
+                    {shops.find((s) => s.id === detailProduct.shop_id)?.name || '–'}
                   </p>
                 </div>
                 <div>
@@ -1164,7 +1164,7 @@ export default function SellerProductsPage() {
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Created</p>
                   <p className="mt-0.5 text-xs text-gray-700">
-                    {detailProduct.created_at ? new Date(detailProduct.created_at).toLocaleString() : '—'}
+                    {detailProduct.created_at ? new Date(detailProduct.created_at).toLocaleString() : '–'}
                   </p>
                 </div>
                 <div>

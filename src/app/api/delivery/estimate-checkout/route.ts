@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ options: [] })
     }
 
-    // Resolve dropoff coordinates from region > city — drives the Haversine estimate.
+    // Resolve dropoff coordinates from region > city – drives the Haversine estimate.
     // Pickup coordinates are optional per Dawurobo docs; ORS will resolve from the address.
     const dropoffCoords = getCoordinatesForLocation(dropoff_region || dropoff_city || '')
 

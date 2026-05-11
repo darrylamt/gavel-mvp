@@ -81,7 +81,7 @@ export default function BidList({ bids, currentUserId }: Props) {
         <h2 className="text-sm font-bold text-gray-900 mb-4">Bid History</h2>
         <div className="flex flex-col items-center py-8 text-gray-400">
           <Trophy className="h-10 w-10 mb-2 opacity-30" />
-          <p className="text-sm">No bids yet — be the first!</p>
+          <p className="text-sm">No bids yet – be the first!</p>
         </div>
       </section>
     )

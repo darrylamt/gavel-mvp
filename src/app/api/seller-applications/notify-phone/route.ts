@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     // Send confirmation SMS via the queue (uses phoneOverride so no profile phone needed)
     await queueArkeselNotification({
       userId,
-      message: `Hi! You're signed up for SMS updates on your Gavel seller application${business_name ? ` for "${business_name}"` : ''}. We'll text you as soon as we've reviewed it. — Gavel Team`,
+      message: `Hi! You're signed up for SMS updates on your Gavel seller application${business_name ? ` for "${business_name}"` : ''}. We'll text you as soon as we've reviewed it. – Gavel Team`,
       category: 'transactional',
       dedupeKey: `seller-notify-phone:${userId}:${phone.trim()}`,
       phoneOverride: phone.trim(),

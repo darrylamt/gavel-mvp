@@ -29,7 +29,7 @@ export default function LoginPage() {
         return
       }
 
-      // Hard redirect — guarantees navigation completes
+      // Hard redirect – guarantees navigation completes
       window.location.href = '/profile'
     } catch {
       setError('Sign in failed. Please try again.')

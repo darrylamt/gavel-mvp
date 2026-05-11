@@ -125,7 +125,7 @@ function PhoneVerificationPanel({
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-gray-900">Verify your phone to unlock earnings</h3>
           <p className="mt-0.5 text-sm text-gray-600">
-            Your referral link is shareable now — commissions will be released once you verify.
+            Your referral link is shareable now – commissions will be released once you verify.
           </p>
 
           {error && (
@@ -292,7 +292,7 @@ export default function ReferralsPage() {
   )
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
-  const shareText = `Shop and bid on Gavel Ghana — Ghana's top auction marketplace! Use my link: ${data.referral_link}`
+  const shareText = `Shop and bid on Gavel Ghana – Ghana's top auction marketplace! Use my link: ${data.referral_link}`
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`
   const twitterUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(data.referral_link)}`
@@ -303,7 +303,7 @@ export default function ReferralsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Earn with Gavel</h1>
         <p className="mt-2 text-gray-600">
-          Share your link. Earn <strong>2%</strong> of every purchase or sale* your referrals make — forever.
+          Share your link. Earn <strong>2%</strong> of every purchase or sale* your referrals make – forever.
         </p>
       </div>
 
@@ -320,7 +320,7 @@ export default function ReferralsPage() {
       {data.is_verified && (
         <div className="mb-6 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
           <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0" />
-          <span className="text-sm font-medium text-emerald-800">Phone verified — you're earning commissions</span>
+          <span className="text-sm font-medium text-emerald-800">Phone verified – you're earning commissions</span>
         </div>
       )}
 

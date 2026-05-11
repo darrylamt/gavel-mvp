@@ -163,7 +163,7 @@ export default function AdminReferralsPage() {
             />
             <StatCard
               label="Top Referrer"
-              value={data.summary.top_referrer_this_month || '—'}
+              value={data.summary.top_referrer_this_month || '–'}
               icon={<TrendingUp className="h-5 w-5" />}
               color="orange"
             />

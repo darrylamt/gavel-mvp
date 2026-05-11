@@ -259,7 +259,7 @@ export default function AdminSwapsPage() {
                   return (
                     <tr key={row.id} className="transition-colors hover:bg-orange-50/30">
                       <td className="px-5 py-3.5">
-                        <p className="font-medium text-gray-900">{row.user_name || '—'}</p>
+                        <p className="font-medium text-gray-900">{row.user_name || '–'}</p>
                         {row.user_email && <p className="text-xs text-gray-400">{row.user_email}</p>}
                       </td>
                       <td className="px-5 py-3.5">
@@ -269,10 +269,10 @@ export default function AdminSwapsPage() {
                             <p className="text-xs text-gray-400">{row.storage} · {row.color}</p>
                           </>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-gray-400">–</span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 capitalize text-gray-600">{row.condition_score || '—'}</td>
+                      <td className="px-5 py-3.5 capitalize text-gray-600">{row.condition_score || '–'}</td>
                       <td className="px-5 py-3.5 font-medium text-gray-900">
                         {formatGhs(row.calculated_trade_in_value)}
                       </td>
@@ -283,7 +283,7 @@ export default function AdminSwapsPage() {
                             <p className="text-xs text-gray-400">{upgrade?.storage} · {upgrade?.color}</p>
                           </>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-gray-400">–</span>
                         )}
                       </td>
                       <td className="px-5 py-3.5">

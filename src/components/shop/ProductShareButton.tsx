@@ -15,14 +15,14 @@ export default function ProductShareButton({ title, price, imageUrl, url, shopNa
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const shareText = `${title} — ${price}\nShop on Gavel Ghana 🛒`
+  const shareText = `${title} – ${price}\nShop on Gavel Ghana 🛒`
 
   const handleShare = async () => {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({ title: `${title} – Gavel Ghana`, text: shareText, url })
       } catch {
-        // cancelled or unsupported — fall through to modal
+        // cancelled or unsupported – fall through to modal
         setOpen(true)
       }
       return

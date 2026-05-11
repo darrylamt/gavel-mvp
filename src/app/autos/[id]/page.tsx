@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     .maybeSingle()
 
   if (!data) return { title: 'Vehicle | Gavel Autos' }
-  const priceStr = data.price ? ` — ${formatGhsPrice(data.price)}` : ''
+  const priceStr = data.price ? ` – ${formatGhsPrice(data.price)}` : ''
   if (data.listing_type === 'auction') {
     return { title: `${data.year} ${data.make} ${data.model} auction | Gavel Autos`, description: `${data.title} in ${data.city ?? data.region}${priceStr}` }
   }

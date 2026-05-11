@@ -11,7 +11,7 @@ const supabase = createClient(
 
 /**
  * GET /api/referrals/leaderboard?tab=monthly|all-time
- * Public endpoint — returns top 20 referrers.
+ * Public endpoint – returns top 20 referrers.
  * Respects leaderboard_display setting for name vs. anonymous masking.
  */
 export async function GET(req: Request) {

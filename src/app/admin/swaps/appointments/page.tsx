@@ -248,7 +248,7 @@ export default function AdminSwapAppointmentsPage() {
                         {/* Time pill */}
                         <div className="shrink-0 rounded-xl bg-orange-50 px-3 py-2 text-center">
                           <p className="text-lg font-bold text-orange-600">
-                            {appt.slot_datetime ? formatTime(appt.slot_datetime) : '—'}
+                            {appt.slot_datetime ? formatTime(appt.slot_datetime) : '–'}
                           </p>
                         </div>
 
@@ -264,7 +264,7 @@ export default function AdminSwapAppointmentsPage() {
                             <span>
                               Trading in:{' '}
                               <span className="font-medium text-gray-800">
-                                {appt.trade_in_model || '—'}
+                                {appt.trade_in_model || '–'}
                                 {appt.trade_in_storage ? ` ${appt.trade_in_storage}` : ''}
                               </span>
                             </span>

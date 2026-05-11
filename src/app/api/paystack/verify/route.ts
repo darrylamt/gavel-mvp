@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
   const { metadata, amount: paystackAmount, currency } = json.data
 
-  // 2️⃣ HARD CHECK — token purchases ONLY
+  // 2️⃣ HARD CHECK – token purchases ONLY
   if (metadata?.type !== 'token_purchase') {
     return NextResponse.json(
       { error: 'Invalid transaction type' },

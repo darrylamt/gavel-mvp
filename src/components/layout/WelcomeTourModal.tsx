@@ -19,7 +19,7 @@ const slides: Slide[] = [
     accent: 'from-orange-400 to-amber-400',
     iconBg: 'bg-orange-50',
     title: 'Welcome to Gavel',
-    body: "Ghana's marketplace for live auctions and instant shop purchases. Bid on unique items or buy directly — all secured on-platform.",
+    body: "Ghana's marketplace for live auctions and instant shop purchases. Bid on unique items or buy directly – all secured on-platform.",
   },
   {
     Icon: Coins,
@@ -40,7 +40,7 @@ const slides: Slide[] = [
     accent: 'from-purple-400 to-violet-400',
     iconBg: 'bg-purple-50',
     title: 'Anti-Snipe Protection',
-    body: 'Bids placed in the final 30 seconds extend the auction by 30 seconds — so last-second sniping never steals a win unfairly.',
+    body: 'Bids placed in the final 30 seconds extend the auction by 30 seconds – so last-second sniping never steals a win unfairly.',
   },
 ]
 

@@ -179,11 +179,11 @@ export default function AdminDeliveriesPage() {
                       <span className="font-mono text-xs text-gray-700">#{r.id.slice(0, 8).toUpperCase()}</span>
                     </td>
                     <td className="px-5 py-3">
-                      <p className="font-medium text-gray-900">{r.buyer_full_name || '—'}</p>
-                      <p className="text-xs text-gray-400">{r.buyer_phone || r.buyer_email || '—'}</p>
+                      <p className="font-medium text-gray-900">{r.buyer_full_name || '–'}</p>
+                      <p className="text-xs text-gray-400">{r.buyer_phone || r.buyer_email || '–'}</p>
                     </td>
                     <td className="px-5 py-3">
-                      <p className="text-gray-700 max-w-[180px] truncate">{r.delivery_address || '—'}</p>
+                      <p className="text-gray-700 max-w-[180px] truncate">{r.delivery_address || '–'}</p>
                       {r.delivery_city && <p className="text-xs text-gray-400">{r.delivery_city}</p>}
                     </td>
                     <td className="px-5 py-3">

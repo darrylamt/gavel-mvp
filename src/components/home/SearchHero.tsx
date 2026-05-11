@@ -129,11 +129,11 @@ export default function SearchHero() {
         )}
 
         <h1 className={styles.heading}>
-          Ghana&apos;s Marketplace —&nbsp;
+          Ghana&apos;s Marketplace –&nbsp;
           <span className={styles.highlight}>Bid, Buy &amp; Win.</span>
         </h1>
         <p className={styles.subheading}>
-          Live auctions and instant purchases. Just describe what you need — our AI will find it.
+          Live auctions and instant purchases. Just describe what you need – our AI will find it.
         </p>
 
         <div ref={containerRef} className={styles.searchWrap}>
@@ -207,7 +207,7 @@ export default function SearchHero() {
                   </>
                 ) : (
                   <div className={styles.noResultsWrap}>
-                    <p className={styles.noResults}>No results found — try different words</p>
+                    <p className={styles.noResults}>No results found – try different words</p>
                     <Link href="/auctions" className={styles.noResultsLink} onClick={() => setShowDropdown(false)}>
                       Browse all auctions →
                     </Link>
@@ -217,7 +217,7 @@ export default function SearchHero() {
             )}
           </form>
 
-          <p className={styles.aiHint}>✦ AI-powered — describe what you need in plain English</p>
+          <p className={styles.aiHint}>✦ AI-powered – describe what you need in plain English</p>
         </div>
 
         <div className={styles.quickCategories}>

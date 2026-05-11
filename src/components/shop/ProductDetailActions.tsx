@@ -153,7 +153,7 @@ export default function ProductDetailActions({
           >
             {variants.map((option) => (
               <option key={option.id} value={option.id}>
-                {formatVariantLabel(option)} — GH₵ {formatGhsAmount(Number(option.price))} ({option.stock} in stock)
+                {formatVariantLabel(option)} – GH₵ {formatGhsAmount(Number(option.price))} ({option.stock} in stock)
               </option>
             ))}
           </select>

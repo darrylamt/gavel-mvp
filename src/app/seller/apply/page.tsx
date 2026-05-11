@@ -269,7 +269,7 @@ export default function SellerApplyPage() {
           <form className="mt-5 grid gap-4" onSubmit={submit}>
             {showNewForm && (
               <div className="flex items-center justify-between rounded-lg border border-orange-100 bg-orange-50 px-3 py-2">
-                <p className="text-xs font-medium text-orange-700">New application — previous records are kept.</p>
+                <p className="text-xs font-medium text-orange-700">New application – previous records are kept.</p>
                 <button type="button" onClick={() => setShowNewForm(false)} className="text-xs text-orange-500 hover:text-orange-700 font-semibold">Cancel</button>
               </div>
             )}

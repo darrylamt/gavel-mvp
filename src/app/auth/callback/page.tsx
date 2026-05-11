@@ -71,7 +71,7 @@ export default function AuthCallbackPage() {
 
                 if (gavelRef) {
                   const referralCode = decodeURIComponent(gavelRef)
-                  // Clear cookie immediately — no need to keep it after use
+                  // Clear cookie immediately – no need to keep it after use
                   document.cookie = 'gavel_ref=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax'
                   fetch('/api/referrals/link', {
                     method: 'POST',

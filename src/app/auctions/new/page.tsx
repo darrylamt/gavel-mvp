@@ -447,7 +447,7 @@ export default function NewAuction() {
                 <div className="text-sm text-red-600 bg-red-50 p-2 rounded">Couldn't generate description. Please write one manually.</div>
               )}
               {descriptionGeneratedByAi && !aiDescriptionError && (
-                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">AI-generated — please review before publishing</div>
+                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">AI-generated – please review before publishing</div>
               )}
               <textarea
                 value={description}

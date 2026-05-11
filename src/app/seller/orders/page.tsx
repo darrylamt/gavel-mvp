@@ -389,7 +389,7 @@ export default function SellerOrdersPage() {
                   value={specialInstructions}
                   onChange={(e) => setSpecialInstructions(e.target.value)}
                   rows={3}
-                  placeholder="e.g. Fragile — handle with care, call before pickup…"
+                  placeholder="e.g. Fragile – handle with care, call before pickup…"
                   className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
                   disabled={dispatching}
                 />

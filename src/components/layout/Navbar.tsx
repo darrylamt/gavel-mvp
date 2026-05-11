@@ -148,7 +148,7 @@ export default function Navbar() {
               <Image src={navLogo} alt="Gavel" className="h-7 w-auto" priority />
             </Link>
 
-            {/* Desktop nav links — centered */}
+            {/* Desktop nav links – centered */}
             <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
               {/* Auctions dropdown */}
               <div className="relative group">
@@ -174,13 +174,6 @@ export default function Navbar() {
                 Shop
               </Link>
 
-              <Link href="/properties" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                Properties
-              </Link>
-
-              <Link href="/autos" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                Autos
-              </Link>
 
               <Link href="/shop/sellers" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
                 Sellers
@@ -205,7 +198,7 @@ export default function Navbar() {
             {/* Right side actions */}
             <div className="flex items-center gap-1.5 ml-auto md:ml-0">
 
-              {/* Token balance — desktop */}
+              {/* Token balance – desktop */}
               {!loading && user && (
                 <Link href="/tokens" className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors">
                   <span className="text-sm leading-none">🪙</span>
@@ -213,7 +206,7 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {/* Starred — desktop */}
+              {/* Starred – desktop */}
               <Link
                 href="/starred"
                 className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
@@ -244,7 +237,7 @@ export default function Navbar() {
               {/* Notifications */}
               <NotificationsDropdown />
 
-              {/* Sell on Gavel — desktop */}
+              {/* Sell on Gavel – desktop */}
               {!loading && canBecomeSeller && (
                 <Link
                   href="/seller/apply"
@@ -374,8 +367,7 @@ export default function Navbar() {
             {[
               { href: '/auctions', label: 'Auctions' },
               { href: '/shop', label: 'Buy Now' },
-              { href: '/properties', label: 'Properties' },
-              { href: '/autos', label: 'Autos' },
+
               { href: '/shop/sellers', label: 'Shops' },
               { href: '/auctions/winners', label: 'Recent Winners' },
               { href: '/tokens', label: 'Tokens' },

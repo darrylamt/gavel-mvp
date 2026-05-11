@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     )
   }
 
-  // Fetch the submission — must belong to user and be approved
+  // Fetch the submission – must belong to user and be approved
   const { data: submission, error: submissionError } = await supabase
     .from('swap_submissions')
     .select('id, user_id, status, offer_expires_at, desired_inventory_id, calculated_trade_in_value, deposit_amount')
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     )
   }
 
-  // Fetch the slot — must exist and not be booked
+  // Fetch the slot – must exist and not be booked
   const { data: slot, error: slotError } = await supabase
     .from('swap_available_slots')
     .select('*')
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
 
   if (slotUpdateError) {
     console.error('Failed to mark slot as booked:', slotUpdateError)
-    // Non-fatal — appointment was created; log and continue
+    // Non-fatal – appointment was created; log and continue
   }
 
   // Update submission status to appointment_booked
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
 
   if (statusUpdateError) {
     console.error('Failed to update submission status:', statusUpdateError)
-    // Non-fatal — appointment was created; log and continue
+    // Non-fatal – appointment was created; log and continue
   }
 
   // Calculate remaining balance

@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     const startOfDay = `${date}T00:00:00.000Z`
     const endOfDay = `${date}T23:59:59.999Z`
 
-    // Filter via slot — done post-fetch since nested filter isn't straightforward
+    // Filter via slot – done post-fetch since nested filter isn't straightforward
     const { data: slots, error: slotsError } = await supabase
       .from('swap_available_slots')
       .select('id')

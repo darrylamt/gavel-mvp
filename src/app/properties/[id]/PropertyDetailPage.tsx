@@ -163,7 +163,7 @@ export default function PropertyDetailPage({ listing, auction, similar }: Props)
   const [bid, setBid] = useState('')
   const isAuction = listing.listing_type === 'auction'
   const images = listing.images ?? []
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(`${listing.title} — Gavel Properties\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(`${listing.title} – Gavel Properties\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`
   const commission = listing.price ? getPropertyCommission(listing.price) : 0.05
 
   const sizeStr = [

@@ -20,9 +20,9 @@ type EditValues = {
 
 const CONDITION_OPTIONS: { value: SwapInventoryItem['condition']; label: string }[] = [
   { value: 'new', label: 'New' },
-  { value: 'used_excellent', label: 'Used — Excellent' },
-  { value: 'used_good', label: 'Used — Good' },
-  { value: 'used_fair', label: 'Used — Fair' },
+  { value: 'used_excellent', label: 'Used – Excellent' },
+  { value: 'used_good', label: 'Used – Good' },
+  { value: 'used_fair', label: 'Used – Fair' },
 ]
 
 export default function PartnerInventoryPage() {

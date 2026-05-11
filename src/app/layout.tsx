@@ -68,7 +68,7 @@ export default function RootLayout({
               name: 'Gavel Ghana',
               url: siteUrl,
               logo: organizationLogoUrl,
-              description: 'Ghana\'s trusted online auction platform — bid on electronics, fashion, and more.',
+              description: 'Ghana\'s trusted online auction platform – bid on electronics, fashion, and more.',
               foundingDate: '2024',
               areaServed: 'GH',
               contactPoint: {

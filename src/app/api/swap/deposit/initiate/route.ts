@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     )
   }
 
-  // Fetch the submission — must belong to user and be pending_deposit
+  // Fetch the submission – must belong to user and be pending_deposit
   const { data: submission, error: submissionError } = await supabase
     .from('swap_submissions')
     .select('id, user_id, status')
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     )
   }
 
-  // Initiate Paystack transaction — GHS 100 = 10000 pesewas
+  // Initiate Paystack transaction – GHS 100 = 10000 pesewas
   const paystackRes = await fetch(
     'https://api.paystack.co/transaction/initialize',
     {

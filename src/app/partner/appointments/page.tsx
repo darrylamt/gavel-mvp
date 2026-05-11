@@ -247,7 +247,7 @@ export default function PartnerAppointmentsPage() {
                         {/* Time pill */}
                         <div className="shrink-0 rounded-xl bg-blue-50 px-3 py-2 text-center">
                           <p className="text-lg font-bold text-blue-600">
-                            {appt.slot_datetime ? formatTime(appt.slot_datetime) : '—'}
+                            {appt.slot_datetime ? formatTime(appt.slot_datetime) : '–'}
                           </p>
                         </div>
 
@@ -266,7 +266,7 @@ export default function PartnerAppointmentsPage() {
                             <span>
                               Trading in:{' '}
                               <span className="font-medium text-gray-800">
-                                {appt.trade_in_model || '—'}
+                                {appt.trade_in_model || '–'}
                                 {appt.trade_in_storage ? ` ${appt.trade_in_storage}` : ''}
                               </span>
                             </span>
@@ -281,7 +281,7 @@ export default function PartnerAppointmentsPage() {
                             )}
                           </div>
 
-                          {/* Balance — prominent */}
+                          {/* Balance – prominent */}
                           {appt.remaining_balance !== undefined && (
                             <div className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2">
                               <Wallet className="h-4 w-4 text-blue-500" />

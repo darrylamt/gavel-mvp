@@ -71,7 +71,7 @@ export async function GET(req: Request) {
       .gte('triggered_at', start)
       .lt('triggered_at', end)
 
-    let topReferrerName = '—'
+    let topReferrerName = '–'
     if (topMonthly && topMonthly.length > 0) {
       const totals = new Map<string, number>()
       for (const r of topMonthly) {
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
       const topId = Array.from(totals.entries()).sort((a, b) => b[1] - a[1])[0]?.[0]
       if (topId) {
         const { data: authUser } = await supabase.auth.admin.getUserById(topId)
-        topReferrerName = maskBidderEmail(authUser?.user?.email) ?? '—'
+        topReferrerName = maskBidderEmail(authUser?.user?.email) ?? '–'
       }
     }
 

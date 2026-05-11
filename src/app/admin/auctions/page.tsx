@@ -176,7 +176,7 @@ export default function AdminAuctionsPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-gray-900">{auction.title}</p>
-                          <p className="mt-0.5 text-xs text-gray-500">{auction.seller_name || '—'}</p>
+                          <p className="mt-0.5 text-xs text-gray-500">{auction.seller_name || '–'}</p>
                           <p className="mt-0.5 text-xs font-medium text-gray-700">
                             {formatGhs(auction.current_price)}
                           </p>
@@ -304,11 +304,11 @@ export default function AdminAuctionsPage() {
 
             <div className="grid grid-cols-2 gap-3 p-6">
               <DetailItem label="Title" value={selectedAuction.title} />
-              <DetailItem label="Status" value={selectedAuction.status || '—'} />
+              <DetailItem label="Status" value={selectedAuction.status || '–'} />
               <DetailItem label="Current Price" value={formatGhs(selectedAuction.current_price)} />
-              <DetailItem label="Reserve Price" value={selectedAuction.reserve_price != null ? formatGhs(selectedAuction.reserve_price) : '—'} />
+              <DetailItem label="Reserve Price" value={selectedAuction.reserve_price != null ? formatGhs(selectedAuction.reserve_price) : '–'} />
               <DetailItem label="Source" value={selectedAuction.sale_source === 'seller' ? 'External Seller' : 'Gavel Products'} />
-              <DetailItem label="Seller" value={selectedAuction.seller_name || '—'} />
+              <DetailItem label="Seller" value={selectedAuction.seller_name || '–'} />
               {selectedAuction.starts_at && (
                 <DetailItem label="Starts At" value={new Date(selectedAuction.starts_at).toLocaleString()} />
               )}

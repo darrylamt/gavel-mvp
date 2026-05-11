@@ -181,7 +181,7 @@ function PendingDepositView({
               <span className="font-semibold text-gray-900">
                 {submission.swap_phone_models
                   ? `${submission.swap_phone_models.brand} ${submission.swap_phone_models.model}`
-                  : '—'}
+                  : '–'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -903,7 +903,7 @@ export default function SwapDetailPage({
           </div>
         )}
 
-        {/* Deduction breakdown — shown for all statuses that have data */}
+        {/* Deduction breakdown – shown for all statuses that have data */}
         {hasDeductions && (
           <DeductionBreakdown
             baseValue={baseValue}

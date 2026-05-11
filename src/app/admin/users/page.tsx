@@ -215,7 +215,7 @@ export default function AdminUsersPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-gray-900">{user.email}</p>
-                      <p className="mt-0.5 text-xs text-gray-500">{user.full_name || user.username || '—'}</p>
+                      <p className="mt-0.5 text-xs text-gray-500">{user.full_name || user.username || '–'}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <RoleBadge role={user.role || 'user'} />
                         <StatusBadge banned={!!user.banned_at} />
@@ -253,7 +253,7 @@ export default function AdminUsersPage() {
                           {user.full_name && <p className="text-xs text-gray-400">{user.full_name}</p>}
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-gray-600">{user.username || '—'}</td>
+                      <td className="px-5 py-3.5 text-gray-600">{user.username || '–'}</td>
                       <td className="px-5 py-3.5"><RoleBadge role={user.role || 'user'} /></td>
                       <td className="px-5 py-3.5"><StatusBadge banned={!!user.banned_at} /></td>
                       <td className="px-5 py-3.5 text-right">
@@ -308,8 +308,8 @@ export default function AdminUsersPage() {
 
             <div className="grid grid-cols-2 gap-3 p-5">
               <InfoItem label="Email" value={selectedUser.email} />
-              <InfoItem label="Username" value={selectedUser.username || '—'} />
-              <InfoItem label="Full Name" value={selectedUser.full_name || '—'} />
+              <InfoItem label="Username" value={selectedUser.username || '–'} />
+              <InfoItem label="Full Name" value={selectedUser.full_name || '–'} />
               <InfoItem label="Role" value={selectedUser.role || 'user'} />
               <InfoItem label="Status" value={selectedUser.banned_at ? 'Banned' : 'Active'} />
               <InfoItem label="Joined" value={new Date(selectedUser.created_at).toLocaleString()} />

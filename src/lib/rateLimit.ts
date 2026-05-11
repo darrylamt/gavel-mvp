@@ -16,7 +16,7 @@ export type RateLimitResult =
 /**
  * Simple in-process sliding-window rate limiter.
  *
- * Not shared across serverless instances — each cold-start gets a fresh store.
+ * Not shared across serverless instances – each cold-start gets a fresh store.
  * Good for burst protection on a single instance; for strict multi-instance
  * enforcement, swap the store for an Upstash Redis client.
  *

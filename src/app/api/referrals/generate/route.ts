@@ -11,7 +11,7 @@ const supabase = createClient(
 /**
  * POST /api/referrals/generate
  * Ensures the authenticated user has a referral record, creating one if needed.
- * Safe to call on every visit to /referrals — idempotent.
+ * Safe to call on every visit to /referrals – idempotent.
  */
 export async function POST(req: Request) {
   try {

@@ -384,7 +384,7 @@ export async function POST(req: Request) {
         }
       }
 
-      // Referral commission — triggered once per order (on the buyer's gross spend, minus delivery fee)
+      // Referral commission – triggered once per order (on the buyer's gross spend, minus delivery fee)
       const itemsSubtotal = (metadata.items ?? []).reduce(
         (sum, item) => sum + Number(item.unit_price) * Number(item.quantity),
         0

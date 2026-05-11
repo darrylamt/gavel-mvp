@@ -222,7 +222,7 @@ export default function AdminSwapSlotsPage() {
           </div>
         ) : slots.length === 0 ? (
           <div className="flex min-h-[20vh] items-center justify-center rounded-2xl border border-gray-100 bg-white shadow-sm">
-            <p className="text-sm text-gray-400">No appointment slots yet — add one above</p>
+            <p className="text-sm text-gray-400">No appointment slots yet – add one above</p>
           </div>
         ) : (
           sortedDates.map((dateKey) => {

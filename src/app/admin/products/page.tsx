@@ -611,7 +611,7 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="py-2">{product.stock}</td>
                     <td className="py-2">{product.category}</td>
-                    <td className="py-2">{shops.find((shop) => shop.id === product.shop_id)?.name || '—'}</td>
+                    <td className="py-2">{shops.find((shop) => shop.id === product.shop_id)?.name || '–'}</td>
                     <td className="py-2 capitalize">{product.status.replace('_', ' ')}</td>
                     <td className="py-2 text-right">
                       <div className="inline-flex items-center gap-2">
@@ -853,7 +853,7 @@ export default function AdminProductsPage() {
                 <div className="text-sm text-red-600 bg-red-50 p-2 rounded">Couldn't generate description. Please write one manually.</div>
               )}
               {descriptionGeneratedByAi && !aiDescriptionError && (
-                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">AI-generated — please review before publishing</div>
+                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">AI-generated – please review before publishing</div>
               )}
               <textarea
                 value={description}

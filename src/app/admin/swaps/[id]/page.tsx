@@ -303,7 +303,7 @@ export default function AdminSwapDetailPage() {
                 </p>
                 {submission.arrival_recalculated && (
                   <p className="mt-1 text-xs text-blue-600">
-                    Arrival recalculated — new value: GHS {Number(submission.arrival_new_value).toLocaleString()}
+                    Arrival recalculated – new value: GHS {Number(submission.arrival_new_value).toLocaleString()}
                     {submission.arrival_decision && ` · Decision: ${submission.arrival_decision}`}
                   </p>
                 )}
@@ -343,8 +343,8 @@ export default function AdminSwapDetailPage() {
               <div className="rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm">
                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">Phone Details</h2>
                 <dl className="grid grid-cols-2 gap-2">
-                  <DetailItem label="Brand" value={phoneModel?.brand ?? '—'} />
-                  <DetailItem label="Model" value={phoneModel?.model ?? '—'} />
+                  <DetailItem label="Brand" value={phoneModel?.brand ?? '–'} />
+                  <DetailItem label="Model" value={phoneModel?.model ?? '–'} />
                   <DetailItem label="Storage" value={submission.storage} />
                   <DetailItem label="Color" value={submission.color} />
                   <DetailItem label="Battery Health" value={`${submission.battery_health}%`} />
@@ -352,7 +352,7 @@ export default function AdminSwapDetailPage() {
                   <DetailItem label="Screen Condition" value={submission.screen_condition.replace(/_/g, ' ')} />
                   <DetailItem label="Screen Replaced" value={submission.screen_replaced ? 'Yes' : 'No'} />
                   {submission.back_glass_condition !== null && (
-                    <DetailItem label="Back Glass" value={submission.back_glass_condition?.replace(/_/g, ' ') ?? '—'} />
+                    <DetailItem label="Back Glass" value={submission.back_glass_condition?.replace(/_/g, ' ') ?? '–'} />
                   )}
                   {submission.back_glass_replaced !== null && (
                     <DetailItem label="Back Glass Replaced" value={submission.back_glass_replaced ? 'Yes' : 'No'} />
@@ -383,8 +383,8 @@ export default function AdminSwapDetailPage() {
                   <div className="rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm">
                     <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">Desired Upgrade</h2>
                     <dl className="grid grid-cols-2 gap-2">
-                      <DetailItem label="Brand" value={upgradeModel?.brand ?? '—'} />
-                      <DetailItem label="Model" value={upgradeModel?.model ?? '—'} />
+                      <DetailItem label="Brand" value={upgradeModel?.brand ?? '–'} />
+                      <DetailItem label="Model" value={upgradeModel?.model ?? '–'} />
                       <DetailItem label="Storage" value={upgradeItem.storage} />
                       <DetailItem label="Color" value={upgradeItem.color} />
                       <DetailItem label="Condition" value={upgradeItem.condition.replace(/_/g, ' ')} />

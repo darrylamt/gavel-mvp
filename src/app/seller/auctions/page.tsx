@@ -495,7 +495,7 @@ export default function SellerAuctionsPage() {
                     <Clock className="h-3 w-3" /> Starts
                   </p>
                   <p className="mt-0.5 text-xs text-gray-700">
-                    {detailAuction.starts_at ? new Date(detailAuction.starts_at).toLocaleString() : '—'}
+                    {detailAuction.starts_at ? new Date(detailAuction.starts_at).toLocaleString() : '–'}
                   </p>
                 </div>
                 <div>
@@ -503,7 +503,7 @@ export default function SellerAuctionsPage() {
                     <CalendarDays className="h-3 w-3" /> Ends
                   </p>
                   <p className="mt-0.5 text-xs text-gray-700">
-                    {detailAuction.ends_at ? new Date(detailAuction.ends_at).toLocaleString() : '—'}
+                    {detailAuction.ends_at ? new Date(detailAuction.ends_at).toLocaleString() : '–'}
                   </p>
                 </div>
                 <div>
@@ -511,7 +511,7 @@ export default function SellerAuctionsPage() {
                     <CalendarDays className="h-3 w-3" /> Created
                   </p>
                   <p className="mt-0.5 text-xs text-gray-700">
-                    {detailAuction.created_at ? new Date(detailAuction.created_at).toLocaleString() : '—'}
+                    {detailAuction.created_at ? new Date(detailAuction.created_at).toLocaleString() : '–'}
                   </p>
                 </div>
               </div>

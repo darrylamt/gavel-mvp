@@ -363,7 +363,7 @@ export default function PartnerModelsPage() {
                 addCamera(f.rear_cameras, camInput, (c) => setF({ ...f, rear_cameras: c }), setCamInput)
               }
             }}
-            placeholder="e.g. Telephoto — press Enter to add"
+            placeholder="e.g. Telephoto – press Enter to add"
             className="flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
           <button

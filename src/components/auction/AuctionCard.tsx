@@ -116,7 +116,7 @@ export default function AuctionCard({
     >
       {/* ── Image ── */}
       <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
-        {/* Status badge — top left */}
+        {/* Status badge – top left */}
         <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5">
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none ${
@@ -143,7 +143,7 @@ export default function AuctionCard({
           )}
         </div>
 
-        {/* Heart — top right */}
+        {/* Heart – top right */}
         {!isEnded && (
           <button
             type="button"
@@ -171,7 +171,7 @@ export default function AuctionCard({
           <div className="h-full flex items-center justify-center text-gray-300 text-xs">No image</div>
         )}
 
-        {/* Image count — bottom right */}
+        {/* Image count – bottom right */}
         {galleryImages.length > 1 && (
           <span className="absolute right-2 bottom-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
             {galleryImages.length} imgs
@@ -208,7 +208,7 @@ export default function AuctionCard({
           </div>
         )}
 
-        {/* Bidder/watcher counts — hidden on compact mobile */}
+        {/* Bidder/watcher counts – hidden on compact mobile */}
         {!isEnded && (
           <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 ${compactMobile ? 'hidden sm:flex' : 'flex'}`}>
             {typeof bidderCount === 'number' && isLive && (
@@ -224,7 +224,7 @@ export default function AuctionCard({
           </div>
         )}
 
-        {/* Increment info — desktop only */}
+        {/* Increment info – desktop only */}
         {(minIncrement != null || maxIncrement != null) && (
           <div className={`flex flex-wrap gap-3 text-xs text-gray-400 mt-2 ${compactMobile ? 'hidden sm:flex' : 'flex'}`}>
             {minIncrement != null && (

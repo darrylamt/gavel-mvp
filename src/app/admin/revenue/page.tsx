@@ -149,7 +149,7 @@ export default function AdminRevenuePage() {
         </div>
       ) : (
         <>
-          {/* Hero cards — highlight cards first */}
+          {/* Hero cards – highlight cards first */}
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
             <HeroMetricCard
               label="Total Website Revenue"

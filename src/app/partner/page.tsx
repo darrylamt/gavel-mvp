@@ -148,7 +148,7 @@ export default function PartnerDashboardPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Partner Portal</h1>
               <p className="text-sm text-gray-500">
-                {userName ? `Welcome back, ${userName}` : 'Welcome back'} — manage your swap inventory and appointments
+                {userName ? `Welcome back, ${userName}` : 'Welcome back'} – manage your swap inventory and appointments
               </p>
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function PartnerDashboardPage() {
               </span>
             </div>
             <p className="mt-3 text-3xl font-bold text-gray-900">
-              {stats?.pending_review != null ? String(stats.pending_review) : '—'}
+              {stats?.pending_review != null ? String(stats.pending_review) : '–'}
             </p>
             <p className="mt-1 text-xs text-gray-400">Submissions awaiting review</p>
           </div>
@@ -201,7 +201,7 @@ export default function PartnerDashboardPage() {
               </span>
             </div>
             <p className="mt-3 text-3xl font-bold text-gray-900">
-              {inventoryCount != null ? String(inventoryCount) : '—'}
+              {inventoryCount != null ? String(inventoryCount) : '–'}
             </p>
             <p className="mt-1 text-xs text-gray-400">Active phone listings</p>
           </div>
@@ -232,7 +232,7 @@ export default function PartnerDashboardPage() {
                   {/* Time */}
                   <div className="shrink-0 rounded-xl bg-blue-50 px-3 py-2 text-center min-w-[60px]">
                     <p className="text-base font-bold text-blue-600">
-                      {appt.slot_datetime ? formatTime(appt.slot_datetime) : '—'}
+                      {appt.slot_datetime ? formatTime(appt.slot_datetime) : '–'}
                     </p>
                   </div>
 
@@ -245,7 +245,7 @@ export default function PartnerDashboardPage() {
                       <span>
                         Trade-in:{' '}
                         <span className="font-medium text-gray-800">
-                          {appt.trade_in_model || '—'}
+                          {appt.trade_in_model || '–'}
                           {appt.trade_in_storage ? ` ${appt.trade_in_storage}` : ''}
                         </span>
                       </span>

@@ -906,7 +906,7 @@ export default function SwapSubmitPage() {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {formData.battery_health}% — {
+                {formData.battery_health}% – {
                   formData.battery_health >= 80 ? 'Excellent' :
                     formData.battery_health >= 60 ? 'Acceptable' : 'Too low'
                 }
@@ -1192,7 +1192,7 @@ export default function SwapSubmitPage() {
                                   </span>
                                 </div>
                                 <p className="text-sm font-semibold text-gray-900">
-                                  {model?.brand} {model?.model} — {s.item.storage} {s.item.color}
+                                  {model?.brand} {model?.model} – {s.item.storage} {s.item.color}
                                 </p>
                                 <p className="text-xs text-gray-500 capitalize mt-0.5">
                                   {s.item.condition.replace('_', ' ')}
@@ -1288,7 +1288,7 @@ export default function SwapSubmitPage() {
                 )}
                 <div className="border-t border-white/20 pt-2 flex justify-between text-base font-bold">
                   <span>Remaining balance</span>
-                  <span>GHS {remaining?.toLocaleString() ?? '—'}</span>
+                  <span>GHS {remaining?.toLocaleString() ?? '–'}</span>
                 </div>
               </div>
             </div>

@@ -101,7 +101,7 @@ export default function BuyTokensPage() {
         </h1>
         <p className="text-sm sm:text-base text-gray-500 leading-relaxed">
           Tokens are your bidding currency on Gavel. Place bids, compete in auctions,
-          and win items — your tokens are refunded if you don&apos;t win.
+          and win items – your tokens are refunded if you don&apos;t win.
         </p>
 
         {/* Trust badges */}

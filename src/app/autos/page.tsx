@@ -16,7 +16,7 @@ const VEHICLE_TYPE_ICONS: Record<string, React.ElementType> = {
   car: Car, suv: Car, truck: Truck, bus: Bus, motorbike: Bike, heavy_equipment: Cog,
 }
 
-// Brand configs — slug maps to cdn.simpleicons.org/{slug}/color
+// Brand configs – slug maps to cdn.simpleicons.org/{slug}/color
 const BRAND_CONFIG = [
   { name: 'Toyota',        slug: 'toyota' },
   { name: 'Mercedes-Benz', slug: 'mercedes' },

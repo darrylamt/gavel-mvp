@@ -138,7 +138,7 @@ export default async function HomePage() {
         <HeroShowcaseCarousel />
       </div>
 
-      {/* Ending Soon — highest urgency, shown first */}
+      {/* Ending Soon – highest urgency, shown first */}
       {endingSoon && endingSoon.length > 0 && (
         <section className="mb-12">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -189,7 +189,7 @@ export default async function HomePage() {
 
         {(!auctions || auctions.length === 0) && (
           <div className="rounded-2xl border border-dashed border-gray-200 p-10 text-center">
-            <p className="text-gray-400 text-sm">No auctions available yet — check back soon.</p>
+            <p className="text-gray-400 text-sm">No auctions available yet – check back soon.</p>
           </div>
         )}
 
@@ -289,37 +289,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Verticals Banner */}
-      <section className="mb-12">
-        <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gradient-to-br from-gray-900 to-gray-800 p-6 sm:p-8">
-          <p className="text-white/60 text-sm font-medium mb-1">Explore our specialist platforms</p>
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-5">Looking for property or vehicles?</h2>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <a
-              href="/properties"
-              className="flex items-center gap-3 rounded-xl bg-[#0F2557] border border-[#C9A84C]/30 px-5 py-4 hover:bg-[#1a3570] transition-colors group"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#C9A84C]/20 flex-shrink-0"><Home className="h-5 w-5 text-[#C9A84C]" /></div>
-              <div>
-                <p className="font-bold text-white text-sm">Gavel Properties</p>
-                <p className="text-white/60 text-xs">Land, homes &amp; commercial</p>
-              </div>
-              <ChevronRight className="ml-auto h-4 w-4 text-[#C9A84C] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-            </a>
-            <a
-              href="/autos"
-              className="flex items-center gap-3 rounded-xl bg-[#1A1A2E] border border-[#E63946]/30 px-5 py-4 hover:bg-[#252540] transition-colors group"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E63946]/20 flex-shrink-0"><Car className="h-5 w-5 text-[#E63946]" /></div>
-              <div>
-                <p className="font-bold text-white text-sm">Gavel Autos</p>
-                <p className="text-white/60 text-xs">Cars, SUVs, trucks &amp; more</p>
-              </div>
-              <ChevronRight className="ml-auto h-4 w-4 text-[#E63946] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-            </a>
-          </div>
-        </div>
-      </section>
 
       {/* Popular Categories */}
       <section className="mb-4">

@@ -101,7 +101,7 @@ export default function ShopCatalogClient({ products, initialCategory }: Props) 
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-      {/* Page header — generic when browsing all, themed when a category is selected */}
+      {/* Page header – generic when browsing all, themed when a category is selected */}
       {isFiltered ? (
         <div
           className="relative overflow-hidden rounded-2xl shadow-sm p-5 sm:p-6 mb-5 transition-all duration-300"

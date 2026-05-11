@@ -191,7 +191,7 @@ export default function AutoDetailPage({ listing, auction, similar }: Props) {
   const isAuction = listing.listing_type === 'auction'
   const images = listing.images ?? []
   const conditionCfg = CONDITION_CONFIG[listing.condition]
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(`${listing.year} ${listing.make} ${listing.model} — Gavel Autos\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(`${listing.year} ${listing.make} ${listing.model} – Gavel Autos\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`
 
   // Quick specs
   const quickSpecs = [

@@ -41,7 +41,7 @@ export default function Footer() {
               <Image src={navLogo} alt="Gavel" className="h-9 w-auto brightness-0 invert" />
             </Link>
             <p className="mt-5 text-sm leading-relaxed text-gray-400 max-w-xs">
-              Ghana&apos;s modern auction and marketplace platform — powered by live bidding, tokens, and seamless payments.
+              Ghana&apos;s modern auction and marketplace platform – powered by live bidding, tokens, and seamless payments.
             </p>
             <div className="mt-6 flex items-center gap-2">
               <a

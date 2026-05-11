@@ -787,7 +787,7 @@ export default function AuctionDetailPage() {
                     </div>
                   )}
 
-                  {/* Bid input — desktop */}
+                  {/* Bid input – desktop */}
                   {!hasEnded && !isScheduled && (
                     <div className="space-y-3 hidden lg:block">
                       <div>
@@ -896,9 +896,9 @@ export default function AuctionDetailPage() {
               <div className="bg-[#14181f] border border-[#232830] rounded-2xl overflow-hidden">
                 <div className="grid grid-cols-3">
                   {[
-                    { l: 'Watching', v: watcherCount || '—' },
-                    { l: 'Bidders', v: bidderCount || '—' },
-                    { l: 'Bids', v: bids.length || '—' },
+                    { l: 'Watching', v: watcherCount || '–' },
+                    { l: 'Bidders', v: bidderCount || '–' },
+                    { l: 'Bids', v: bids.length || '–' },
                   ].map((s, i, a) => (
                     <div key={i} className={`px-4 py-4 ${i < a.length - 1 ? 'border-r border-[#232830]' : ''}`}>
                       <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] mb-1">{s.l}</p>
@@ -915,7 +915,7 @@ export default function AuctionDetailPage() {
             {[
               { title: 'Bidder verification', desc: 'All bidders pass identity checks. Suspicious activity is flagged in real time.' },
               { title: 'Binding bids', desc: 'Every bid is contractual. Backing out forfeits a 5% deposit.' },
-              { title: 'Soft-close — 5 min', desc: 'Bids in the final 5 min extend the auction — no last-second sniping.' },
+              { title: 'Soft-close – 5 min', desc: 'Bids in the final 5 min extend the auction – no last-second sniping.' },
               { title: 'Dispute resolution', desc: 'Funds held in escrow. 7-day window to resolve post-sale disputes.' },
             ].map(({ title, desc }) => (
               <div key={title}>

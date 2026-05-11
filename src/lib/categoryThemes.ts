@@ -1,5 +1,5 @@
 export type CategoryTheme = {
-  /** CSS gradient string for the hero — used inline where Tailwind can't handle dynamic values */
+  /** CSS gradient string for the hero – used inline where Tailwind can't handle dynamic values */
   heroGradient: string
   /** Tailwind class for the hero text color */
   heroTextColor: string
@@ -7,7 +7,7 @@ export type CategoryTheme = {
   accentHex: string
   /** Short punchy hero tagline shown in the category header banner */
   tagline: string
-  /** Mood label — internal descriptor for design reference */
+  /** Mood label – internal descriptor for design reference */
   mood: string
 }
 

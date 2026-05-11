@@ -218,14 +218,14 @@ function CreateModal({ onClose, onCreated, editing }: { onClose: () => void; onC
             <div>
               <label className={labelCls}>Engine Size</label>
               <select value={form.engine_size} onChange={e => set('engine_size', e.target.value)} className={inputCls}>
-                <option value="">—</option>
+                <option value="">–</option>
                 {ENGINE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
               <label className={labelCls}>Drive Type</label>
               <select value={form.drive_type} onChange={e => set('drive_type', e.target.value)} className={inputCls}>
-                <option value="">—</option>
+                <option value="">–</option>
                 {['2wd', '4wd', 'awd'].map(d => <option key={d} value={d}>{d.toUpperCase()}</option>)}
               </select>
             </div>

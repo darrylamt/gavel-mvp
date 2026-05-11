@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   // Welcome SMS to the new user
   await queueAccountCreatedNotification(user.id)
 
-  // Alert admin of new signup — fire and forget
+  // Alert admin of new signup – fire and forget
   const email = user.email ?? 'unknown'
   const createdAt = new Date().toLocaleString('en-GH', {
     timeZone: 'Africa/Accra',

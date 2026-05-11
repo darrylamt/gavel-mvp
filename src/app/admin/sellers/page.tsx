@@ -378,7 +378,7 @@ export default function AdminSellersPage() {
                 <InfoItem label="Status" value={selected.status} />
                 <InfoItem
                   label="Rejection Reason"
-                  value={selected.rejection_reason || '—'}
+                  value={selected.rejection_reason || '–'}
                 />
               </div>
 

@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       .maybeSingle()
 
     if (!updateResult && !updateErr) {
-      // No existing record — generate a referral code via RPC then insert
+      // No existing record – generate a referral code via RPC then insert
       const { data: newCode } = await supabase.rpc('generate_referral_code')
       await supabase
         .from('referrals')
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
         })
     }
 
-    // Send OTP via Arkesel directly (real-time security flow — skip queue)
+    // Send OTP via Arkesel directly (real-time security flow – skip queue)
     const result = await sendArkeselSMS({
       toPhone: normalizedPhone,
       message: `Your Gavel verification code is: ${otp}. Valid for ${OTP_TTL_MINUTES} minutes. Do not share this code.`,

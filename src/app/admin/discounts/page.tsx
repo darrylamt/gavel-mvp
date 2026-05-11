@@ -260,7 +260,7 @@ export default function AdminDiscountsPage() {
           </div>
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
             <span className="block text-xs uppercase tracking-wide text-emerald-700">Global Discount</span>
-            <span className="font-semibold">{globalDiscountPercent !== null ? `${globalDiscountPercent}%` : '—'}</span>
+            <span className="font-semibold">{globalDiscountPercent !== null ? `${globalDiscountPercent}%` : '–'}</span>
           </div>
         </div>
 

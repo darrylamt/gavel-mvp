@@ -56,7 +56,7 @@ export type ReferralPayoutRow = {
 
 /**
  * Ensure a referral record exists for the user, creating one if needed.
- * Safe to call multiple times — returns existing record if already present.
+ * Safe to call multiple times – returns existing record if already present.
  */
 export async function ensureReferralRecord(
   supabase: SupabaseClient,
@@ -91,7 +91,7 @@ export async function ensureReferralRecord(
 
 /**
  * Link a new user to a referrer by referral code.
- * Called once at signup. Idempotent — skips if already linked.
+ * Called once at signup. Idempotent – skips if already linked.
  */
 export async function linkReferral(
   supabase: SupabaseClient,
@@ -123,7 +123,7 @@ export async function linkReferral(
     .eq('user_id', newUserId)
     .maybeSingle<{ referred_by: string | null }>()
 
-  // Already linked — don't overwrite (first referrer wins)
+  // Already linked – don't overwrite (first referrer wins)
   if (existingRow?.referred_by) return { linked: false, reason: 'already_linked' }
 
   // Update the new user's referrals record with referred_by (only if not already set)
@@ -155,7 +155,7 @@ export async function linkReferral(
 
 /**
  * Process a referral commission for a completed transaction.
- * Safe to call multiple times — deduplicates by order_id or auction_id.
+ * Safe to call multiple times – deduplicates by order_id or auction_id.
  */
 export async function processReferralCommission(
   supabase: SupabaseClient,
@@ -216,7 +216,7 @@ export async function processReferralCommission(
     .maybeSingle<{ is_verified: boolean }>()
 
   if (!referrerReferral?.is_verified) {
-    // Commission queued — will vest when referrer verifies (set status pending, not cancelled)
+    // Commission queued – will vest when referrer verifies (set status pending, not cancelled)
     // Still create the record so it's visible and can be released later
   }
 

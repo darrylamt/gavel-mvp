@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     .maybeSingle()
 
   if (!data) return { title: 'Property | Gavel Properties' }
-  const priceStr = data.price ? ` — ${formatGhsPrice(data.price)}` : ''
+  const priceStr = data.price ? ` – ${formatGhsPrice(data.price)}` : ''
   const typeStr = PROPERTY_TYPE_LABELS[data.property_type] ?? data.property_type
   if (data.listing_type === 'auction') {
     return { title: `${data.title} in ${data.city}, ${data.region} | Gavel Properties`, description: `${typeStr} auction in ${data.city}, ${data.region}${priceStr}` }

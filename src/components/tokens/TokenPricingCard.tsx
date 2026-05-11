@@ -52,7 +52,7 @@ const TokenPricingCard: React.FC<TokenPricingCardProps> = ({
           )}
         </div>
 
-        {/* Token count — big */}
+        {/* Token count – big */}
         <div className="mb-1">
           <div className="flex items-end gap-2">
             <span className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-none">{tokens}</span>
