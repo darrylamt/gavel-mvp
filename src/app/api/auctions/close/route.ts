@@ -5,7 +5,6 @@ import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 import { queueAuctionClosedNotifications } from '@/lib/arkesel/events'
 import { sendNotificationEmail } from '@/lib/resend-service'
 
-
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -14,6 +13,8 @@ if (!supabaseUrl || !serviceRoleKey) {
 }
 
 const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+const BID_TOKEN_COST = 1
 
 function normalizeAuctionId(raw: unknown) {
   if (typeof raw !== 'string') return ''
@@ -33,6 +34,75 @@ export async function POST(req: Request) {
   try {
     const resolution = await resolveAuctionPaymentCandidate(supabase, auction_id)
 
+    // ── 1. Guard: bail early if auction hasn't ended yet ──────────────────────
+    if (resolution.reason === 'auction_not_ended') {
+      return NextResponse.json({ error: 'Auction not ended yet' }, { status: 400 })
+    }
+
+    if (resolution.reason === 'already_paid') {
+      return NextResponse.json({ success: true, paid: true })
+    }
+
+    // ── 2. Idempotency: only refund once per auction ───────────────────────────
+    const refundKey = `refund:auction:${auction_id}`
+    const { data: existingRefunds } = await supabase
+      .from('token_transactions')
+      .select('id')
+      .eq('type', 'refund')
+      .eq('reference', refundKey)
+      .limit(1)
+
+    const alreadyRefunded = existingRefunds && existingRefunds.length > 0
+
+    if (!alreadyRefunded) {
+      // ── 3. Refund tokens to all losing bidders ─────────────────────────────
+      const { data: allBids } = await supabase
+        .from('bids')
+        .select('id, user_id')
+        .eq('auction_id', auction_id)
+
+      if (allBids && allBids.length > 0) {
+        const winningUserId = resolution.activeCandidate?.userId ?? null
+
+        // Count bids per user
+        const bidCountByUser = new Map<string, number>()
+        for (const bid of allBids) {
+          bidCountByUser.set(bid.user_id, (bidCountByUser.get(bid.user_id) ?? 0) + 1)
+        }
+
+        // Refund all losing bidders
+        const refundPromises = Array.from(bidCountByUser.entries()).map(async ([userId, bidCount]) => {
+          // Winner keeps their tokens spent; only losers are refunded
+          if (userId === winningUserId) return
+
+          const refundAmount = bidCount * BID_TOKEN_COST
+
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('token_balance')
+            .eq('id', userId)
+            .single()
+
+          if (!profile) return
+
+          await supabase
+            .from('profiles')
+            .update({ token_balance: (profile.token_balance ?? 0) + refundAmount })
+            .eq('id', userId)
+
+          await supabase.from('token_transactions').insert({
+            user_id: userId,
+            amount: refundAmount,
+            type: 'refund',
+            reference: refundKey,
+          })
+        })
+
+        await Promise.allSettled(refundPromises)
+      }
+    }
+
+    // ── 4. Send notifications (only once — idempotent via Arkesel dedup) ─────
     const { data: auctionMeta } = await supabase
       .from('auctions')
       .select('id, title, created_by')
@@ -49,13 +119,10 @@ export async function POST(req: Request) {
         reserveMet: !!resolution.activeCandidate,
       })
 
-      // Send email notifications
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
-      const auctionUrl = `${siteUrl}/auctions/${auction_id}`
+      if (resolution.activeCandidate?.userId) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
+        const auctionUrl = `${siteUrl}/auctions/${auction_id}`
 
-      // If auction has a winner, send emails
-      if (resolution.activeCandidate && resolution.activeCandidate.userId) {
-        // Email to winner
         const { data: { user: winnerAuth } } = await supabase.auth.admin.getUserById(resolution.activeCandidate.userId)
         const { data: winnerProfile } = await supabase
           .from('profiles')
@@ -69,96 +136,29 @@ export async function POST(req: Request) {
             auctionTitle: auctionMeta.title || 'Auction',
             winningBid: resolution.activeCandidate.amount,
             auctionUrl,
-          })
-        }
+          }).catch(() => {}) // fire-and-forget
 
-        // Email to seller
-        if (auctionMeta.created_by) {
-          const { data: { user: sellerAuth } } = await supabase.auth.admin.getUserById(auctionMeta.created_by)
-          const { data: sellerProfile } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', auctionMeta.created_by)
-            .single()
+          if (auctionMeta.created_by) {
+            const { data: { user: sellerAuth } } = await supabase.auth.admin.getUserById(auctionMeta.created_by)
+            const { data: sellerProfile } = await supabase
+              .from('profiles')
+              .select('username')
+              .eq('id', auctionMeta.created_by)
+              .single()
 
-          if (sellerAuth?.email) {
-            await sendNotificationEmail(sellerAuth.email, 'auctionEnded', {
-              sellerName: sellerProfile?.username || sellerAuth.email.split('@')[0] || 'there',
-              auctionTitle: auctionMeta.title || 'Auction',
-              winningBid: resolution.activeCandidate.amount,
-              winnerEmail: winnerAuth?.email || 'N/A',
-              winnerPhone: winnerProfile?.phone || undefined,
-              auctionUrl,
-            })
+            if (sellerAuth?.email) {
+              await sendNotificationEmail(sellerAuth.email, 'auctionEnded', {
+                sellerName: sellerProfile?.username || sellerAuth.email.split('@')[0] || 'there',
+                auctionTitle: auctionMeta.title || 'Auction',
+                winningBid: resolution.activeCandidate.amount,
+                winnerEmail: winnerAuth.email || 'N/A',
+                winnerPhone: winnerProfile?.phone || undefined,
+                auctionUrl,
+              }).catch(() => {})
+            }
           }
         }
       }
-    }
-
-    // REFUND TOKENS TO LOSING BIDDERS
-    // Get all bids for this auction
-    const { data: allBids } = await supabase
-      .from('bids')
-      .select('id, user_id')
-      .eq('auction_id', auction_id)
-
-    if (allBids && allBids.length > 0) {
-      const winningUserId = resolution.activeCandidate?.userId
-      const BID_TOKEN_COST = 1
-
-      // Group bids by user to count how many bids each user made
-      const bidCountByUser = new Map<string, number>()
-      for (const bid of allBids) {
-        const count = bidCountByUser.get(bid.user_id) || 0
-        bidCountByUser.set(bid.user_id, count + 1)
-      }
-
-      // Refund tokens to all losing bidders
-      const refundPromises = Array.from(bidCountByUser.entries()).map(async ([userId, bidCount]) => {
-        // Skip the winner - they don't get a refund
-        if (userId === winningUserId) {
-          return
-        }
-
-        // Refund tokens for all their bids
-        const refundAmount = bidCount * BID_TOKEN_COST
-
-        // Get current balance
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('token_balance')
-          .eq('id', userId)
-          .single()
-
-        if (profile) {
-          // Add refunded tokens back
-          await supabase
-            .from('profiles')
-            .update({
-              token_balance: (profile.token_balance || 0) + refundAmount,
-            })
-            .eq('id', userId)
-
-          // Log the refund transaction
-          await supabase.from('token_transactions').insert({
-            user_id: userId,
-            amount: refundAmount,
-            type: 'refund',
-            reference: `refund:auction:${auction_id}`,
-          })
-        }
-      })
-
-      // Wait for all refunds to complete
-      await Promise.allSettled(refundPromises)
-    }
-
-    if (resolution.reason === 'auction_not_ended') {
-      return NextResponse.json({ error: 'Auction not ended yet' }, { status: 400 })
-    }
-
-    if (resolution.reason === 'already_paid') {
-      return NextResponse.json({ success: true, paid: true })
     }
 
     return NextResponse.json({
@@ -167,9 +167,10 @@ export async function POST(req: Request) {
       winningBidId: resolution.activeCandidate?.bidId ?? null,
       paymentDueAt: resolution.paymentDueAt,
       winnerRank: resolution.activeCandidate?.rank ?? null,
+      refundsIssued: !alreadyRefunded,
     })
   } catch (error) {
-    console.error('Failed to close auction:', error)
+    console.error('[auctions/close] error:', error)
     const message = error instanceof Error ? error.message : 'Failed to close auction'
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'development' ? message : 'Failed to close auction' },

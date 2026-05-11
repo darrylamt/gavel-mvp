@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/auctions/settle-ended",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/payouts/auto-release?secret=gavel-payout-release-2026-abc123xyz",
       "schedule": "0 8 * * *"
     },
