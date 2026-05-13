@@ -44,6 +44,8 @@ type AuctionRecord = {
   images: unknown[] | null
   is_private?: boolean
   anonymous_bidding_enabled?: boolean | null
+  buy_now_price?: number | null
+  shop_product_id?: string | null
 }
 
 type BidRecord = {
@@ -84,6 +86,8 @@ export default function AuctionDetailPage() {
   const [watcherCount, setWatcherCount] = useState(0)
   const [descriptionExpanded, setDescriptionExpanded] = useState(false)
   const [cdParts, setCdParts] = useState({ d: 0, h: 0, m: 0, s: 0 })
+  const [isBuyingNow, setIsBuyingNow] = useState(false)
+  const [buyNowError, setBuyNowError] = useState<string | null>(null)
 
   const now = Date.now()
 
@@ -147,7 +151,7 @@ export default function AuctionDetailPage() {
     if (!auctionId) return
 
     const selectFields =
-      'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at, is_private, anonymous_bidding_enabled'
+      'id, title, description, current_price, min_increment, max_increment, reserve_price, sale_source, seller_name, seller_phone, ends_at, status, paid, winning_bid_id, image_url, images, starts_at, is_private, anonymous_bidding_enabled, buy_now_price, shop_product_id'
 
     let auctionData: AuctionRecord | null = null
 
@@ -454,6 +458,28 @@ export default function AuctionDetailPage() {
     }
   }
 
+  const handleBuyNow = async () => {
+    if (!userId) { setBuyNowError('You must be logged in to buy now'); return }
+    if (!auction?.buy_now_price) return
+    setIsBuyingNow(true)
+    setBuyNowError(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/auctions/buy-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ auction_id: auction.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setBuyNowError(data.error || 'Failed to process purchase'); return }
+      router.push(data.payPath)
+    } catch {
+      setBuyNowError('Something went wrong. Please try again.')
+    } finally {
+      setIsBuyingNow(false)
+    }
+  }
+
   const bidderCount = useMemo(() => {
     const userIds = new Set(bids.map((bid) => bid.user_id).filter(Boolean))
     return userIds.size
@@ -722,6 +748,32 @@ export default function AuctionDetailPage() {
 
             {/* Right: Sticky auction panel */}
             <div className="lg:sticky lg:top-24 lg:self-start space-y-4">
+
+              {/* Buy Now card — only shown while scheduled */}
+              {isScheduled && auction.buy_now_price && !hasEnded && (
+                <div className="bg-[#14181f] border border-[#C9A84C]/40 rounded-2xl p-5 shadow-[0_0_0_1px_rgba(201,168,76,0.15)]">
+                  <p className="font-mono text-[10px] tracking-widest uppercase text-[#C9A84C] mb-1">Buy Now</p>
+                  <p className="text-2xl font-bold text-[#f4f1ea] mb-1">
+                    GHS {auction.buy_now_price.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-[#6b6960] mb-4">
+                    Skip the auction – buy immediately at this price. Available until auction starts.
+                  </p>
+                  {buyNowError && <p className="text-xs text-red-400 mb-3">{buyNowError}</p>}
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={isBuyingNow || !userId}
+                    className="w-full rounded-xl bg-[#C9A84C] text-[#0a0c10] font-bold py-3 text-sm hover:brightness-105 transition-all disabled:opacity-50"
+                  >
+                    {isBuyingNow ? 'Processing…' : 'Buy Now'}
+                  </button>
+                  {!userId && (
+                    <p className="text-center text-xs text-[#6b6960] mt-2">
+                      <Link href="/login" className="text-orange-400 hover:text-orange-300">Log in</Link> to buy now
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Main ticker card */}
               <div className={`bg-[#14181f] border rounded-2xl overflow-hidden transition-all ${isEnding ? 'border-orange-500 shadow-[0_0_0_1px_rgba(249,115,22,0.5),0_20px_60px_-20px_rgba(249,115,22,0.2)]' : 'border-[#232830]'}`}>

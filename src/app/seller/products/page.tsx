@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import PieChartCard from '@/components/base/PieChartCard'
-import { Plus, Search, X, Eye, Pencil, Trash2, Package } from 'lucide-react'
+import { Plus, Search, X, Eye, Pencil, Trash2, Package, TrendingUp } from 'lucide-react'
 import { formatGhs } from '@/lib/formatGhs'
+import { useRouter } from 'next/navigation'
 
 type ShopProduct = {
   id: string
@@ -13,7 +14,7 @@ type ShopProduct = {
   price: number
   seller_base_price: number | null
   stock: number
-  status: 'draft' | 'active' | 'sold_out' | 'archived'
+  status: 'draft' | 'active' | 'in_auction' | 'sold_out' | 'archived'
   category: string
   requires_cargo: boolean
   image_url: string | null
@@ -76,12 +77,14 @@ function createEmptyVariant(): ProductVariantDraft {
 
 const STATUS_BADGE: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
+  in_auction: 'bg-orange-100 text-orange-700',
   draft: 'bg-gray-100 text-gray-600',
   sold_out: 'bg-red-100 text-red-700',
   archived: 'bg-yellow-100 text-yellow-700',
 }
 
 export default function SellerProductsPage() {
+  const router = useRouter()
   const [products, setProducts] = useState<ShopProduct[]>([])
   const [shops, setShops] = useState<ShopOption[]>([])
   const [categories, setCategories] = useState<ShopCategoryOption[]>([])
@@ -688,6 +691,15 @@ export default function SellerProductsPage() {
                           <Pencil className="h-3 w-3" />
                           Edit
                         </button>
+                        {product.status === 'active' && (
+                          <button
+                            onClick={() => router.push(`/auctions/new?product_id=${product.id}`)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 hover:bg-orange-100"
+                          >
+                            <TrendingUp className="h-3 w-3" />
+                            Auction
+                          </button>
+                        )}
                         <button
                           onClick={() => deleteProduct(product)}
                           disabled={deletingId === product.id}
@@ -772,6 +784,15 @@ export default function SellerProductsPage() {
                               <Pencil className="h-3.5 w-3.5" />
                               Edit
                             </button>
+                            {product.status === 'active' && (
+                              <button
+                                onClick={() => router.push(`/auctions/new?product_id=${product.id}`)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-medium text-orange-700 hover:bg-orange-100"
+                              >
+                                <TrendingUp className="h-3.5 w-3.5" />
+                                Start Auction
+                              </button>
+                            )}
                             <button
                               onClick={() => deleteProduct(product)}
                               disabled={deletingId === product.id}

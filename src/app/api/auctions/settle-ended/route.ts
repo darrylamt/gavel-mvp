@@ -157,6 +157,22 @@ export async function GET(req: Request) {
         refundCount++
       }
 
+      // Restore linked shop product if no winner
+      if (refundCount > 0 || allBids.length === 0) {
+        const { data: auctionLink } = await supabase
+          .from('auctions')
+          .select('shop_product_id, winning_bid_id')
+          .eq('id', auction.id)
+          .single()
+
+        if (auctionLink?.shop_product_id && !auctionLink.winning_bid_id) {
+          await supabase
+            .from('shop_products')
+            .update({ status: 'active' })
+            .eq('id', auctionLink.shop_product_id)
+        }
+      }
+
       results.push({ id: auction.id, result: `refunded_${refundCount}_users` })
     } catch (err) {
       console.error(`[settle-ended] failed for auction ${auction.id}:`, err)

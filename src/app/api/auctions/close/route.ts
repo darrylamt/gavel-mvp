@@ -102,7 +102,23 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── 4. Send notifications (only once — idempotent via Arkesel dedup) ─────
+    // ── 4. Restore linked shop product if no winner ───────────────────────────
+    if (!resolution.activeCandidate) {
+      const { data: auctionLink } = await supabase
+        .from('auctions')
+        .select('shop_product_id')
+        .eq('id', auction_id)
+        .maybeSingle()
+
+      if (auctionLink?.shop_product_id) {
+        await supabase
+          .from('shop_products')
+          .update({ status: 'active' })
+          .eq('id', auctionLink.shop_product_id)
+      }
+    }
+
+    // ── 5. Send notifications (only once — idempotent via Arkesel dedup) ─────
     const { data: auctionMeta } = await supabase
       .from('auctions')
       .select('id, title, created_by')

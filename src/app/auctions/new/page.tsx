@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Input } from '@/components/base/input/input'
 import { FileUpload, getReadableFileSize } from '@/components/base/file-upload/file-upload'
 import { type SaleSource } from '@/lib/auctionMeta'
@@ -22,14 +22,17 @@ type UploadedFileItem = {
 
 export default function NewAuction() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const linkedProductId = searchParams.get('product_id')
 
   const [accessLoading, setAccessLoading] = useState(true)
   const [isSeller, setIsSeller] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
-  
+
   /* Form state */
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [buyNowPrice, setBuyNowPrice] = useState('')
   const [saleSource, setSaleSource] = useState<SaleSource>('gavel')
   const [sellerDisplayName, setSellerDisplayName] = useState('')
   const [sellerContactPhone, setSellerContactPhone] = useState('')
@@ -92,6 +95,23 @@ export default function NewAuction() {
 
     checkAccess()
   }, [router])
+
+  // Pre-fill from linked product if product_id is in URL
+  useEffect(() => {
+    if (!linkedProductId) return
+    const prefill = async () => {
+      const { data: product } = await supabase
+        .from('shop_products')
+        .select('id, title, description, price, image_url, image_urls')
+        .eq('id', linkedProductId)
+        .maybeSingle()
+      if (!product) return
+      setTitle(product.title)
+      if (product.description) setDescription(product.description)
+      if (product.price) setBuyNowPrice(String(product.price))
+    }
+    prefill()
+  }, [linkedProductId])
 
   const handleDropFiles = (files: FileList) => {
     const newFiles = Array.from(files).map((f) => ({
@@ -232,6 +252,8 @@ export default function NewAuction() {
         access_code: isPrivate ? accessCode : null,
         anonymous_bidding_enabled: isPrivate ? anonymousBiddingEnabled : true,
         requires_cargo: requiresCargo,
+        buy_now_price: buyNowPrice ? Number(buyNowPrice) : null,
+        shop_product_id: linkedProductId ?? null,
       }
 
       console.log('Creating auction:', payload)
@@ -247,6 +269,14 @@ export default function NewAuction() {
 
       const auction = data[0]
       console.log('Auction created:', auction.id)
+
+      /* Mark linked product as in_auction so it's hidden from the shop */
+      if (linkedProductId) {
+        await supabase
+          .from('shop_products')
+          .update({ status: 'in_auction' })
+          .eq('id', linkedProductId)
+      }
 
       /* Upload images */
       const uploadedUrls: string[] = []
@@ -352,6 +382,11 @@ export default function NewAuction() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Create New Auction</h1>
         <p className="text-gray-600">List your item for auction</p>
+        {linkedProductId && (
+          <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+            <span className="font-semibold">Pre-filled from your product.</span> Review the details below and set your auction timing.
+          </div>
+        )}
       </div>
 
       {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">{error}</div>}
@@ -489,6 +524,20 @@ export default function NewAuction() {
               disabled={saleSource === 'seller'}
             />
           </div>
+        </div>
+
+        {/* Buy Now */}
+        <div>
+          <h2 className="text-lg font-semibold mb-1">Buy Now Price <span className="text-sm font-normal text-gray-400">(optional)</span></h2>
+          <p className="text-sm text-gray-500 mb-4">If set, buyers can purchase immediately at this price before the auction starts. If the auction ends unsold, the item is automatically relisted in the shop at this price.</p>
+          <Input
+            label="Buy Now Price (GHS)"
+            type="number"
+            placeholder="Leave empty to disable Buy Now"
+            value={buyNowPrice}
+            onChange={(e) => setBuyNowPrice(e.target.value)}
+            tooltip="Buyers can skip the auction and pay this price immediately while the auction is scheduled."
+          />
         </div>
 
         {/* Bidding Rules */}
