@@ -160,17 +160,6 @@ export default function ProductDetailActions({
         </div>
       )}
 
-      {/* Discount banner */}
-      {priceBreakdown.hasDiscount && priceBreakdown.previousPrice !== null && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm">
-          <p className="text-gray-400 line-through text-xs">GH₵ {formatGhsAmount(priceBreakdown.previousPrice)}</p>
-          <p className="text-base font-bold text-gray-900">GH₵ {formatGhsAmount(priceBreakdown.currentPrice)}</p>
-          <p className="text-xs font-semibold text-emerald-700 mt-0.5">
-            You save GH₵ {formatGhsAmount(priceBreakdown.discountAmount)} ({priceBreakdown.discountPercent}% off)
-          </p>
-        </div>
-      )}
-
       {/* Quantity + actions row */}
       <div className="flex items-center gap-2">
         {/* Quantity stepper */}
