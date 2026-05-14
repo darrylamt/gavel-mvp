@@ -46,6 +46,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Order is not in paid status' }, { status: 400 })
     }
 
+    // Pick-up orders don't need a Dawurobo delivery order
+    if ((order as Record<string, unknown>).delivery_priority === 'pickup') {
+      return NextResponse.json({ skipped: true, reason: 'pickup_order' })
+    }
+
     if (order.dawurobo_order_id) {
       return NextResponse.json({ error: 'Delivery already dispatched for this order' }, { status: 409 })
     }

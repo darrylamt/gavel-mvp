@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { Trash2, ShoppingCart, Tag, ChevronRight, Truck, PackageOpen, Package, Loader2 } from 'lucide-react'
+import { Trash2, ShoppingCart, Tag, ChevronRight, Truck, PackageOpen, Package, Loader2, MapPin } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { supabase } from '@/lib/supabaseClient'
 import { useTopToast } from '@/components/ui/TopToastProvider'
@@ -12,7 +12,16 @@ const PRIORITY_ICONS = {
   economy: Package,
   standard: Truck,
   cargo: PackageOpen,
+  pickup: MapPin,
 } as const
+
+const PICKUP_OPTION = {
+  priority: 'pickup' as const,
+  label: 'Pick Up',
+  description: 'Collect from seller location',
+  duration_label: 'Self-arranged',
+  price: 0,
+}
 
 export default function CartPage() {
   const { items, subtotal, removeFromCart, clearCart, incrementItem, decrementItem } = useCart()
@@ -121,7 +130,9 @@ export default function CartPage() {
     scheduleEstimate(address, val)
   }
 
-  const selectOption = (option: DeliveryOption) => {
+  const isPickup = selectedPriority === 'pickup'
+
+  const selectOption = (option: { priority: string; price: number }) => {
     setSelectedPriority(option.priority)
     setDeliveryFee(option.price)
   }
@@ -130,8 +141,11 @@ export default function CartPage() {
     if (items.length === 0 || isCheckingOut) return
     setCheckoutError(null)
 
-    if (!fullName.trim() || !phone.trim() || !address.trim() || !city.trim()) {
-      setCheckoutError('Please complete your delivery details before checkout.')
+    const requiresAddress = selectedPriority !== 'pickup'
+    if (!fullName.trim() || !phone.trim() || (requiresAddress && (!address.trim() || !city.trim()))) {
+      setCheckoutError(requiresAddress
+        ? 'Please complete your delivery details before checkout.'
+        : 'Please enter your name and phone number before checkout.')
       return
     }
 
@@ -346,54 +360,67 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Delivery options – shown only when estimate succeeds */}
-            {(estimateLoading || deliveryOptions) && (
-              <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Truck className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <h2 className="text-sm font-bold text-gray-900">Delivery Option</h2>
-                </div>
+            {/* Delivery options */}
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Truck className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <h2 className="text-sm font-bold text-gray-900">Delivery Option</h2>
+              </div>
 
-                {estimateLoading ? (
+              <div className="space-y-2">
+                {/* Estimate-based options (shown after address is entered) */}
+                {estimateLoading && (
                   <div className="flex items-center gap-2 py-2">
                     <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                    <span className="text-xs text-gray-500">Calculating delivery fee…</span>
+                    <span className="text-xs text-gray-500">Calculating delivery fees…</span>
                   </div>
-                ) : deliveryOptions ? (
-                  <div className="space-y-2">
-                    {deliveryOptions.map((option) => {
-                      const Icon = PRIORITY_ICONS[option.priority]
-                      const selected = selectedPriority === option.priority
-                      return (
-                        <button
-                          key={option.priority}
-                          type="button"
-                          onClick={() => selectOption(option)}
-                          className={`w-full flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all ${
-                            selected
-                              ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-orange-100' : 'bg-gray-100'}`}>
-                            <Icon className={`h-4 w-4 ${selected ? 'text-orange-600' : 'text-gray-500'}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold ${selected ? 'text-orange-900' : 'text-gray-900'}`}>
-                              {option.label}
-                            </p>
-                            <p className="text-xs text-gray-500">{option.description} · {option.duration_label}</p>
-                          </div>
-                          <p className={`text-sm font-bold flex-shrink-0 ${selected ? 'text-orange-700' : 'text-gray-700'}`}>
-                            GH₵ {option.price.toLocaleString()}
-                          </p>
-                        </button>
-                      )
-                    })}
-                  </div>
-                ) : null}
+                )}
+                {!estimateLoading && deliveryOptions && deliveryOptions.map((option) => {
+                  const Icon = PRIORITY_ICONS[option.priority as keyof typeof PRIORITY_ICONS] ?? Truck
+                  const selected = selectedPriority === option.priority
+                  return (
+                    <button key={option.priority} type="button" onClick={() => selectOption(option)}
+                      className={`w-full flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all ${selected ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}>
+                      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                        <Icon className={`h-4 w-4 ${selected ? 'text-orange-600' : 'text-gray-500'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold ${selected ? 'text-orange-900' : 'text-gray-900'}`}>{option.label}</p>
+                        <p className="text-xs text-gray-500">{option.description} · {option.duration_label}</p>
+                      </div>
+                      <p className={`text-sm font-bold flex-shrink-0 ${selected ? 'text-orange-700' : 'text-gray-700'}`}>
+                        GH₵ {option.price.toLocaleString()}
+                      </p>
+                    </button>
+                  )
+                })}
+
+                {/* Pick Up – always available */}
+                {(() => {
+                  const selected = isPickup
+                  return (
+                    <button type="button" onClick={() => selectOption(PICKUP_OPTION)}
+                      className={`w-full flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all ${selected ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-100' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}>
+                      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                        <MapPin className={`h-4 w-4 ${selected ? 'text-orange-600' : 'text-gray-500'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold ${selected ? 'text-orange-900' : 'text-gray-900'}`}>Pick Up</p>
+                        <p className="text-xs text-gray-500">Collect from seller location · Self-arranged</p>
+                      </div>
+                      <p className={`text-sm font-bold flex-shrink-0 ${selected ? 'text-orange-700' : 'text-gray-700'}`}>
+                        Free
+                      </p>
+                    </button>
+                  )
+                })()}
+
+                {/* Hint when no estimate yet and delivery not chosen */}
+                {!deliveryOptions && !estimateLoading && !isPickup && (
+                  <p className="text-xs text-gray-400 pt-1">Enter your address above to see delivery prices, or choose Pick Up.</p>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Discount code */}
             <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 sm:p-5">
@@ -437,15 +464,15 @@ export default function CartPage() {
                     <span className="font-semibold text-green-700">− GH₵ {discountAmount.toLocaleString()}</span>
                   </div>
                 )}
-                {deliveryFee > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500">
-                      Delivery
-                      {deliveryOptions && <span className="ml-1 text-gray-400 text-xs capitalize">({selectedPriority})</span>}
-                    </span>
-                    <span className="font-semibold text-gray-900">GH₵ {deliveryFee.toLocaleString()}</span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">
+                    {isPickup ? 'Pick Up' : 'Delivery'}
+                    {!isPickup && selectedPriority && <span className="ml-1 text-gray-400 text-xs capitalize">({selectedPriority})</span>}
+                  </span>
+                  <span className={`font-semibold ${isPickup ? 'text-emerald-600' : 'text-gray-900'}`}>
+                    {isPickup ? 'Free' : `GH₵ ${deliveryFee.toLocaleString()}`}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-4 border-t border-gray-100 pt-3 flex items-center justify-between">
