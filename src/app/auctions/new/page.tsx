@@ -33,6 +33,7 @@ export default function NewAuction() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [buyNowPrice, setBuyNowPrice] = useState('')
+  const [prefillImageUrls, setPrefillImageUrls] = useState<string[]>([])
   const [saleSource, setSaleSource] = useState<SaleSource>('gavel')
   const [sellerDisplayName, setSellerDisplayName] = useState('')
   const [sellerContactPhone, setSellerContactPhone] = useState('')
@@ -109,6 +110,13 @@ export default function NewAuction() {
       setTitle(product.title)
       if (product.description) setDescription(product.description)
       if (product.price) setBuyNowPrice(String(product.price))
+      // Pre-fill images from the product
+      const imgs = product.image_urls?.length
+        ? product.image_urls
+        : product.image_url
+        ? [product.image_url]
+        : []
+      if (imgs.length) setPrefillImageUrls(imgs)
     }
     prefill()
   }, [linkedProductId])
@@ -303,11 +311,12 @@ export default function NewAuction() {
         console.log('Image uploaded:', data.url)
       }
 
-      /* Update auction with images */
-      if (uploadedUrls.length > 0) {
+      /* Update auction with images — merge prefilled product URLs + newly uploaded */
+      const allImageUrls = [...prefillImageUrls, ...uploadedUrls]
+      if (allImageUrls.length > 0) {
         const { error: updateErr } = await supabase
           .from('auctions')
-          .update({ image_url: uploadedUrls[0], images: uploadedUrls })
+          .update({ image_url: allImageUrls[0], images: allImageUrls })
           .eq('id', auction.id)
           .select('id')
 
@@ -439,6 +448,33 @@ export default function NewAuction() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
               <p className="text-sm text-gray-500 mb-3">Upload at least one image. The AI will use the first image to generate a description.</p>
+
+              {/* Prefilled images from linked product */}
+              {prefillImageUrls.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-semibold text-orange-600 mb-2">
+                    {prefillImageUrls.length} image{prefillImageUrls.length !== 1 ? 's' : ''} pre-filled from your product
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    {prefillImageUrls.map((url, i) => (
+                      <div key={url} className="relative group">
+                        <img src={url} alt={`Product image ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border border-gray-200" />
+                        {i === 0 && (
+                          <span className="absolute bottom-1 left-1 rounded text-[9px] font-bold bg-orange-500 text-white px-1">Main</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setPrefillImageUrls(prev => prev.filter((_, idx) => idx !== i))}
+                          className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">You can upload additional images below, or remove any you don&apos;t need.</p>
+                </div>
+              )}
               <FileUpload.Root>
                 <FileUpload.DropZone
                   maxSize={10 * 1024 * 1024}
