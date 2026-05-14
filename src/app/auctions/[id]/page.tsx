@@ -826,7 +826,6 @@ export default function AuctionDetailPage() {
                   <span className="font-mono text-[11px] tracking-widest uppercase text-gray-900 dark:text-[#f4f1ea]">
                     {hasEnded ? 'Auction closed' : isEnding ? 'Closing soon' : isScheduled ? 'Starting soon' : 'Live auction'}
                   </span>
-                  <span className="ml-auto font-mono text-[11px] text-gray-400 dark:text-[#6b6960]">LOT {lotId}</span>
                 </div>
 
                 <div className="p-5">
@@ -856,9 +855,14 @@ export default function AuctionDetailPage() {
                         <p className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960]">
                           {countdownPhase === 'starts' ? 'Starts in' : 'Closes in'}
                         </p>
-                        {auction.ends_at && (
+                        {countdownPhase === 'starts' && auction.starts_at && (
                           <p className="font-mono text-[10px] text-gray-400 dark:text-[#6b6960]">
-                            {new Date(auction.ends_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            Starts {new Date(auction.starts_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                          </p>
+                        )}
+                        {countdownPhase !== 'starts' && auction.ends_at && (
+                          <p className="font-mono text-[10px] text-gray-400 dark:text-[#6b6960]">
+                            Ends {new Date(auction.ends_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                           </p>
                         )}
                       </div>
@@ -923,18 +927,6 @@ export default function AuctionDetailPage() {
                     paymentDueAt={auction.auction_payment_due_at} onPay={payNow} />
 
                   {/* Fees row */}
-                  {!hasEnded && (
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-[#232830] space-y-1.5">
-                      <div className="flex justify-between text-xs text-gray-400 dark:text-[#6b6960]">
-                        <span>Buyer's premium</span>
-                        <span className="font-mono">5.0%</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-400 dark:text-[#6b6960]">
-                        <span>Est. total at current bid</span>
-                        <span className="font-mono text-gray-600 dark:text-[#b8b3a8]">GHS {(liveCurrentPrice * 1.05).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
