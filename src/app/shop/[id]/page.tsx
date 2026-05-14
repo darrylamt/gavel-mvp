@@ -25,6 +25,7 @@ type ShopInfo = {
   id: string
   name: string
   owner_id: string
+  logo_url?: string | null
 }
 
 type RelatedProduct = {
@@ -157,7 +158,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
   if (product.shop_id) {
     const { data: shopData } = await supabase
       .from('shops')
-      .select('id, name, owner_id')
+      .select('id, name, owner_id, logo_url')
       .eq('id', product.shop_id)
       .maybeSingle()
 
@@ -458,8 +459,11 @@ export default async function ShopProductDetailPage({ params }: Props) {
               </div>
               {shop && (
                 <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
-                    <Store className="h-3.5 w-3.5 text-gray-500" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                    {shop.logo_url
+                      ? <img src={shop.logo_url} alt={shop.name} className="h-full w-full object-cover" />
+                      : <Store className="h-3.5 w-3.5 text-gray-500" />
+                    }
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Shop</p>

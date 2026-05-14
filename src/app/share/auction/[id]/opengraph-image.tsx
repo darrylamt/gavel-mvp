@@ -1,20 +1,13 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@supabase/supabase-js'
+import { normalizeAuctionImageUrls } from '@/lib/auctionImages'
 
 export const runtime = 'edge'
-export const alt = 'Gavel Auction Share Card'
+export const alt = 'Gavel Auction'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-type AuctionRecord = {
-  id: string
-  title: string
-  current_price: number
-}
-
-type Props = {
-  params: Promise<{ id: string }>
-}
+type Props = { params: Promise<{ id: string }> }
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,44 +19,108 @@ export default async function Image({ params }: Props) {
 
   const { data } = await supabase
     .from('auctions')
-    .select('id, title, current_price')
+    .select('id, title, current_price, description, image_url, images')
     .eq('id', id)
     .single()
 
-  const auction = (data as AuctionRecord | null) ?? null
+  const title = data?.title || 'Auction on Gavel'
+  const price = data?.current_price ?? 0
+  const images = normalizeAuctionImageUrls(data?.images, data?.image_url ?? null)
+  const photo = images[0] ?? null
 
-  const title = auction?.title || 'Auction on Gavel'
-  const price = auction?.current_price ?? 0
+  // Short description — first sentence only
+  const rawDesc = (data?.description ?? '').replace(/\*+/g, '').replace(/\n+/g, ' ').trim()
+  const shortDesc = rawDesc.length > 100 ? rawDesc.slice(0, 97) + '…' : rawDesc
 
   return new ImageResponse(
     (
       <div
         style={{
-          width: '1200px',
-          height: '630px',
+          width: 1200,
+          height: 630,
+          display: 'flex',
+          fontFamily: 'sans-serif',
+          background: '#0f172a',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Product photo — left side */}
+        {photo && (
+          <div style={{ width: 630, height: 630, flexShrink: 0, position: 'relative', display: 'flex' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+            {/* Dark gradient over image for visual merge */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(to right, transparent 60%, #0f172a 100%)',
+            }} />
+          </div>
+        )}
+
+        {/* Right panel (or full-width if no image) */}
+        <div style={{
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          background: 'linear-gradient(135deg, #0f172a, #111827)',
-          color: 'white',
-          padding: '56px',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        <div style={{ fontSize: 42, fontWeight: 700, lineHeight: 1.2, maxWidth: 980 }}>{title}</div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 22, opacity: 0.8 }}>Current bid</div>
-            <div style={{ fontSize: 56, fontWeight: 800 }}>GH₵ {price.toLocaleString()}</div>
+          padding: photo ? '52px 52px 52px 32px' : '52px 56px',
+        }}>
+          {/* Top: Logo + badge */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#f97316', letterSpacing: '-1px' }}>
+              Gavel
+            </div>
+            <div style={{
+              background: '#f97316',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 700,
+              padding: '5px 14px',
+              borderRadius: 99,
+              letterSpacing: '0.05em',
+            }}>
+              LIVE AUCTION
+            </div>
           </div>
 
-          <div style={{ fontSize: 38, fontWeight: 700 }}>Gavel</div>
+          {/* Middle: Title + desc */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{
+              fontSize: photo ? 32 : 42,
+              fontWeight: 700,
+              color: '#f1f5f9',
+              lineHeight: 1.2,
+              letterSpacing: '-0.5px',
+            }}>
+              {title}
+            </div>
+            {shortDesc && (
+              <div style={{ fontSize: 16, color: '#94a3b8', lineHeight: 1.5 }}>
+                {shortDesc}
+              </div>
+            )}
+          </div>
+
+          {/* Bottom: Price */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Current bid
+            </div>
+            <div style={{ fontSize: 44, fontWeight: 800, color: '#f97316', letterSpacing: '-1px' }}>
+              GHS {price.toLocaleString()}
+            </div>
+            <div style={{ fontSize: 14, color: '#475569', marginTop: 4 }}>
+              gavelgh.com
+            </div>
+          </div>
         </div>
       </div>
     ),
-    {
-      ...size,
-    }
+    { ...size }
   )
 }

@@ -50,7 +50,10 @@
       "Bash(xargs sed -i \"s/\\\\—/–/g\")",
       "Bash(npx --no-install tsc --noEmit)",
       "Bash(npx next *)",
-      "Bash(gh run *)"
+      "Bash(gh run *)",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const fs=require\\('fs'\\);let c=fs.readFileSync\\('src/app/auctions/[id]/page.tsx','utf8'\\);[['bg-[#0a0c10]','bg-white dark:bg-[#0a0c10]'],['text-[#f4f1ea]','text-gray-900 dark:text-[#f4f1ea]'],['text-[#b8b3a8]','text-gray-600 dark:text-[#b8b3a8]'],['text-[#6b6960]','text-gray-400 dark:text-[#6b6960]'],['bg-[#14181f]','bg-white dark:bg-[#14181f]'],['bg-[#11141a]','bg-gray-50 dark:bg-[#11141a]'],['border-[#232830]','border-gray-200 dark:border-[#232830]'],['placeholder:text-[#6b6960]','placeholder:text-gray-400 dark:placeholder:text-[#6b6960]']].forEach\\(\\([o,n]\\)=>{let p=c;while\\(c.includes\\(o\\)\\)c=c.replace\\(o,n\\);}\\);fs.writeFileSync\\('src/app/auctions/[id]/page.tsx',c\\);console.log\\('ok'\\);\")"
     ]
   }
 }

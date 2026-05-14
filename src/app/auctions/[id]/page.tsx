@@ -96,6 +96,7 @@ export default function AuctionDetailPage() {
   const [isSubmittingOffer, setIsSubmittingOffer] = useState(false)
   const [offerError, setOfferError] = useState<string | null>(null)
   const [offerSuccess, setOfferSuccess] = useState(false)
+  const [sellerLogoUrl, setSellerLogoUrl] = useState<string | null>(null)
 
   const now = Date.now()
 
@@ -154,6 +155,16 @@ export default function AuctionDetailPage() {
       setUserId(data.user?.id ?? null)
     })
   }, [])
+
+  useEffect(() => {
+    if (!auction?.seller_shop_id) return
+    supabasePublic
+      .from('shops')
+      .select('logo_url')
+      .eq('id', auction.seller_shop_id)
+      .maybeSingle()
+      .then(({ data }) => { if (data?.logo_url) setSellerLogoUrl(data.logo_url) })
+  }, [auction?.seller_shop_id])
 
   const loadAuction = useCallback(async () => {
     if (!auctionId) return
@@ -694,11 +705,11 @@ export default function AuctionDetailPage() {
 
       {/* Mobile sticky bid bar */}
       {showMobileBidBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-[#232830] bg-[#14181f]/97 backdrop-blur-sm px-4 py-3">
+        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-gray-200 dark:border-[#232830] bg-white dark:bg-[#14181f]/97 backdrop-blur-sm px-4 py-3">
           <div className="flex items-center gap-2 mb-2">
-            <span className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960]">Current bid</span>
-            <span className="text-sm font-black text-[#f4f1ea] tabular-nums">GHS {liveCurrentPrice.toLocaleString()}</span>
-            <span className="ml-auto text-[10px] font-mono text-[#6b6960]">{bidderCount} bidder{bidderCount !== 1 ? 's' : ''}</span>
+            <span className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960]">Current bid</span>
+            <span className="text-sm font-black text-gray-900 dark:text-[#f4f1ea] tabular-nums">GHS {liveCurrentPrice.toLocaleString()}</span>
+            <span className="ml-auto text-[10px] font-mono text-gray-400 dark:text-[#6b6960]">{bidderCount} bidder{bidderCount !== 1 ? 's' : ''}</span>
           </div>
           <BidForm hasEnded={false} bidAmount={bidAmount} isPlacingBid={isPlacingBid} error={bidError} isLoggedIn
             currentPrice={liveCurrentPrice} minIncrement={auction.min_increment} maxIncrement={auction.max_increment}
@@ -707,16 +718,16 @@ export default function AuctionDetailPage() {
         </div>
       )}
 
-      <div className={`bg-[#0a0c10] text-[#f4f1ea] min-h-screen ${showMobileBidBar ? 'pb-32 lg:pb-0' : ''}`}>
+      <div className={`bg-white dark:bg-[#0a0c10] text-gray-900 dark:text-[#f4f1ea] min-h-screen ${showMobileBidBar ? 'pb-32 lg:pb-0' : ''}`}>
         <div className="mx-auto max-w-7xl px-4 md:px-6 py-6">
 
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-xs text-[#6b6960] mb-6">
-            <Link href="/" className="hover:text-[#f4f1ea] transition-colors">Home</Link>
+          <nav className="flex items-center gap-2 text-xs text-gray-400 dark:text-[#6b6960] mb-6">
+            <Link href="/" className="hover:text-gray-900 dark:text-[#f4f1ea] transition-colors">Home</Link>
             <span>›</span>
-            <Link href="/auctions" className="hover:text-[#f4f1ea] transition-colors">Auctions</Link>
+            <Link href="/auctions" className="hover:text-gray-900 dark:text-[#f4f1ea] transition-colors">Auctions</Link>
             <span>›</span>
-            <span className="text-[#b8b3a8] truncate max-w-[200px]">{auction.title}</span>
+            <span className="text-gray-600 dark:text-[#b8b3a8] truncate max-w-[200px]">{auction.title}</span>
           </nav>
 
           {/* Hero grid */}
@@ -724,15 +735,15 @@ export default function AuctionDetailPage() {
 
             {/* Left: Gallery + title block */}
             <div className="space-y-5">
-              <div className="rounded-2xl overflow-hidden bg-[#11141a]">
+              <div className="rounded-2xl overflow-hidden bg-gray-50 dark:bg-[#11141a]">
                 <ImageGallery images={fallbackImages} />
               </div>
 
               {/* Title block */}
               <div>
-                <p className="font-mono text-[11px] tracking-widest uppercase text-[#6b6960] mb-2">LOT {lotId}</p>
+                <p className="font-mono text-[11px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960] mb-2">LOT {lotId}</p>
                 <div className="flex items-start justify-between gap-4">
-                  <h1 className="text-2xl md:text-3xl font-bold text-[#f4f1ea] leading-tight">{auction.title}</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-[#f4f1ea] leading-tight">{auction.title}</h1>
                   <ShareAuctionButton auctionId={auction.id} />
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3">
@@ -743,7 +754,7 @@ export default function AuctionDetailPage() {
                     </span>
                   )}
                   {isScheduled && <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-400">Scheduled</span>}
-                  {hasEnded && <span className="rounded-full border border-[#232830] bg-[#11141a] px-2.5 py-0.5 text-[11px] font-semibold text-[#6b6960]">Ended</span>}
+                  {hasEnded && <span className="rounded-full border border-gray-200 dark:border-[#232830] bg-gray-50 dark:bg-[#11141a] px-2.5 py-0.5 text-[11px] font-semibold text-gray-400 dark:text-[#6b6960]">Ended</span>}
                   {reserveMet && !hasEnded && <span className="rounded-full border border-green-600/40 bg-green-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-green-400">Reserve met</span>}
                   {!reserveMet && !hasEnded && bids.length > 0 && <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-400">Reserve not met</span>}
                 </div>
@@ -762,8 +773,8 @@ export default function AuctionDetailPage() {
               {/* Description */}
               {formattedDescription && (
                 <div>
-                  <h2 className="text-sm font-bold text-[#f4f1ea] mb-3">Description</h2>
-                  <p className="text-sm text-[#b8b3a8] leading-relaxed whitespace-pre-line"
+                  <h2 className="text-sm font-bold text-gray-900 dark:text-[#f4f1ea] mb-3">Description</h2>
+                  <p className="text-sm text-gray-600 dark:text-[#b8b3a8] leading-relaxed whitespace-pre-line"
                     style={!descriptionExpanded && shouldShowReadMore ? { display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : undefined}>
                     {formattedDescription}
                   </p>
@@ -782,12 +793,12 @@ export default function AuctionDetailPage() {
 
               {/* Buy Now card — only shown while scheduled */}
               {isScheduled && auction.buy_now_price && !hasEnded && (
-                <div className="bg-[#14181f] border border-[#C9A84C]/40 rounded-2xl p-5 shadow-[0_0_0_1px_rgba(201,168,76,0.15)]">
+                <div className="bg-white dark:bg-[#14181f] border border-[#C9A84C]/40 rounded-2xl p-5 shadow-[0_0_0_1px_rgba(201,168,76,0.15)]">
                   <p className="font-mono text-[10px] tracking-widest uppercase text-[#C9A84C] mb-1">Buy Now</p>
-                  <p className="text-2xl font-bold text-[#f4f1ea] mb-1">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-[#f4f1ea] mb-1">
                     GHS {auction.buy_now_price.toLocaleString()}
                   </p>
-                  <p className="text-xs text-[#6b6960] mb-4">
+                  <p className="text-xs text-gray-400 dark:text-[#6b6960] mb-4">
                     Skip the auction – buy immediately at this price. Available until auction starts.
                   </p>
                   {buyNowError && <p className="text-xs text-red-400 mb-3">{buyNowError}</p>}
@@ -799,7 +810,7 @@ export default function AuctionDetailPage() {
                     {isBuyingNow ? 'Processing…' : 'Buy Now'}
                   </button>
                   {!userId && (
-                    <p className="text-center text-xs text-[#6b6960] mt-2">
+                    <p className="text-center text-xs text-gray-400 dark:text-[#6b6960] mt-2">
                       <Link href="/login" className="text-orange-400 hover:text-orange-300">Log in</Link> to buy now
                     </p>
                   )}
@@ -807,21 +818,21 @@ export default function AuctionDetailPage() {
               )}
 
               {/* Main ticker card */}
-              <div className={`bg-[#14181f] border rounded-2xl overflow-hidden transition-all ${isEnding ? 'border-orange-500 shadow-[0_0_0_1px_rgba(249,115,22,0.5),0_20px_60px_-20px_rgba(249,115,22,0.2)]' : 'border-[#232830]'}`}>
+              <div className={`bg-white dark:bg-[#14181f] border rounded-2xl overflow-hidden transition-all ${isEnding ? 'border-orange-500 shadow-[0_0_0_1px_rgba(249,115,22,0.5),0_20px_60px_-20px_rgba(249,115,22,0.2)]' : 'border-gray-200 dark:border-[#232830]'}`}>
 
                 {/* Status strip */}
-                <div className={`flex items-center gap-2.5 px-4 py-3 border-b border-[#232830] ${isEnding ? 'bg-orange-500/10' : 'bg-[#11141a]'}`}>
+                <div className={`flex items-center gap-2.5 px-4 py-3 border-b border-gray-200 dark:border-[#232830] ${isEnding ? 'bg-orange-500/10' : 'bg-gray-50 dark:bg-[#11141a]'}`}>
                   <span className={`h-2 w-2 rounded-full flex-shrink-0 ${hasEnded ? 'bg-[#6b6960]' : 'bg-orange-500 animate-pulse'}`} />
-                  <span className="font-mono text-[11px] tracking-widest uppercase text-[#f4f1ea]">
+                  <span className="font-mono text-[11px] tracking-widest uppercase text-gray-900 dark:text-[#f4f1ea]">
                     {hasEnded ? 'Auction closed' : isEnding ? 'Closing soon' : isScheduled ? 'Starting soon' : 'Live auction'}
                   </span>
-                  <span className="ml-auto font-mono text-[11px] text-[#6b6960]">LOT {lotId}</span>
+                  <span className="ml-auto font-mono text-[11px] text-gray-400 dark:text-[#6b6960]">LOT {lotId}</span>
                 </div>
 
                 <div className="p-5">
                   {/* Current bid */}
                   <div className="flex items-end justify-between mb-2">
-                    <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960]">
+                    <p className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960]">
                       {hasEnded ? 'Final price' : 'Current bid'}
                     </p>
                     {reserveMet
@@ -834,19 +845,19 @@ export default function AuctionDetailPage() {
                   <p className="text-3xl font-bold text-orange-400 mb-1 tabular-nums">
                     GHS {liveCurrentPrice.toLocaleString()}
                   </p>
-                  <p className="text-xs text-[#6b6960] mb-5">
+                  <p className="text-xs text-gray-400 dark:text-[#6b6960] mb-5">
                     {bids.length} bid{bids.length !== 1 ? 's' : ''} · {watcherCount > 0 ? `${watcherCount} watching` : `${bidderCount} bidder${bidderCount !== 1 ? 's' : ''}`}
                   </p>
 
                   {/* Countdown */}
                   {!hasEnded && (auction.starts_at || auction.ends_at) && (
-                    <div className={`rounded-xl border border-[#232830] p-4 mb-5 ${isUrgent ? 'bg-orange-500/8 border-orange-500/30' : 'bg-[#11141a]'}`}>
+                    <div className={`rounded-xl border border-gray-200 dark:border-[#232830] p-4 mb-5 ${isUrgent ? 'bg-orange-500/8 border-orange-500/30' : 'bg-gray-50 dark:bg-[#11141a]'}`}>
                       <div className="flex items-center justify-between mb-3">
-                        <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960]">
+                        <p className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960]">
                           {countdownPhase === 'starts' ? 'Starts in' : 'Closes in'}
                         </p>
                         {auction.ends_at && (
-                          <p className="font-mono text-[10px] text-[#6b6960]">
+                          <p className="font-mono text-[10px] text-gray-400 dark:text-[#6b6960]">
                             {new Date(auction.ends_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                           </p>
                         )}
@@ -859,10 +870,10 @@ export default function AuctionDetailPage() {
                           { v: cdParts.s, l: 'sec' },
                         ].map((u, i) => (
                           <div key={i} className="flex items-baseline gap-1">
-                            <span className={`font-mono font-medium tabular-nums text-[28px] leading-none ${isUrgent ? 'text-orange-400' : 'text-[#f4f1ea]'}`}>
+                            <span className={`font-mono font-medium tabular-nums text-[28px] leading-none ${isUrgent ? 'text-orange-400' : 'text-gray-900 dark:text-[#f4f1ea]'}`}>
                               {String(u.v).padStart(2, '0')}
                             </span>
-                            <span className="font-mono text-[9px] tracking-widest uppercase text-[#6b6960]">{u.l}</span>
+                            <span className="font-mono text-[9px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960]">{u.l}</span>
                             {i < 3 && <span className="text-[#232830] ml-1">·</span>}
                           </div>
                         ))}
@@ -874,13 +885,13 @@ export default function AuctionDetailPage() {
                   {!hasEnded && !isScheduled && (
                     <div className="space-y-3 hidden lg:block">
                       <div>
-                        <label className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] block mb-2">Place your bid</label>
+                        <label className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960] block mb-2">Place your bid</label>
                         <div className="flex gap-2">
-                          <div className="flex flex-1 items-center bg-[#11141a] border border-[#232830] rounded-xl px-3 focus-within:border-orange-500/50 transition-colors">
-                            <span className="text-[#6b6960] text-sm mr-1">GHS</span>
+                          <div className="flex flex-1 items-center bg-gray-50 dark:bg-[#11141a] border border-gray-200 dark:border-[#232830] rounded-xl px-3 focus-within:border-orange-500/50 transition-colors">
+                            <span className="text-gray-400 dark:text-[#6b6960] text-sm mr-1">GHS</span>
                             <input type="number" value={bidAmount} onChange={e => setBidAmount(e.target.value)}
                               placeholder={String(liveCurrentPrice + increment)}
-                              className="flex-1 bg-transparent font-mono text-sm text-[#f4f1ea] py-2.5 outline-none tabular-nums"
+                              className="flex-1 bg-transparent font-mono text-sm text-gray-900 dark:text-[#f4f1ea] py-2.5 outline-none tabular-nums"
                             />
                           </div>
                           <button onClick={placeBid} disabled={isPlacingBid || !bidAmount || Number(bidAmount) <= liveCurrentPrice}
@@ -892,14 +903,14 @@ export default function AuctionDetailPage() {
                         <div className="flex gap-1.5 mt-2">
                           {quickBids.map(b => (
                             <button key={b} onClick={() => setBidAmount(String(liveCurrentPrice + b))}
-                              className="flex-1 rounded-lg bg-[#11141a] border border-[#232830] py-1.5 text-[11px] font-mono text-[#b8b3a8] hover:border-orange-500/40 hover:text-orange-400 transition-colors">
+                              className="flex-1 rounded-lg bg-gray-50 dark:bg-[#11141a] border border-gray-200 dark:border-[#232830] py-1.5 text-[11px] font-mono text-gray-600 dark:text-[#b8b3a8] hover:border-orange-500/40 hover:text-orange-400 transition-colors">
                               +{b >= 1000 ? `${b / 1000}k` : b}
                             </button>
                           ))}
                         </div>
                         {bidError && <p className="mt-2 text-xs text-red-400">{bidError}</p>}
                         {!userId && (
-                          <p className="mt-2 text-xs text-[#6b6960]">
+                          <p className="mt-2 text-xs text-gray-400 dark:text-[#6b6960]">
                             <Link href="/login" className="text-orange-400 hover:text-orange-300">Log in</Link> to place a bid
                           </p>
                         )}
@@ -913,14 +924,14 @@ export default function AuctionDetailPage() {
 
                   {/* Fees row */}
                   {!hasEnded && (
-                    <div className="mt-4 pt-4 border-t border-[#232830] space-y-1.5">
-                      <div className="flex justify-between text-xs text-[#6b6960]">
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-[#232830] space-y-1.5">
+                      <div className="flex justify-between text-xs text-gray-400 dark:text-[#6b6960]">
                         <span>Buyer's premium</span>
                         <span className="font-mono">5.0%</span>
                       </div>
-                      <div className="flex justify-between text-xs text-[#6b6960]">
+                      <div className="flex justify-between text-xs text-gray-400 dark:text-[#6b6960]">
                         <span>Est. total at current bid</span>
-                        <span className="font-mono text-[#b8b3a8]">GHS {(liveCurrentPrice * 1.05).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                        <span className="font-mono text-gray-600 dark:text-[#b8b3a8]">GHS {(liveCurrentPrice * 1.05).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                       </div>
                     </div>
                   )}
@@ -928,19 +939,27 @@ export default function AuctionDetailPage() {
               </div>
 
               {/* Seller card */}
-              <div className="bg-[#14181f] border border-[#232830] rounded-2xl p-4">
-                <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] mb-3">Seller</p>
+              <div className="bg-white dark:bg-[#14181f] border border-gray-200 dark:border-[#232830] rounded-2xl p-4">
+                <p className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960] mb-3">Seller</p>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white font-bold flex-shrink-0">
-                    {(sellerDisplayName || 'G').charAt(0).toUpperCase()}
-                  </div>
+                  {sellerLogoUrl ? (
+                    <img
+                      src={sellerLogoUrl}
+                      alt={sellerDisplayName}
+                      className="h-10 w-10 rounded-xl object-cover flex-shrink-0 border border-gray-200 dark:border-[#232830]"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white font-bold flex-shrink-0">
+                      {(sellerDisplayName || 'G').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div>
-                    <p className="text-sm font-semibold text-[#f4f1ea]">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-[#f4f1ea]">
                       {saleSource === 'seller' && auction.seller_shop_id
                         ? <Link href={`/shop/seller/${auction.seller_shop_id}`} className="text-orange-400 hover:text-orange-300">{sellerDisplayName}</Link>
                         : sellerDisplayName}
                     </p>
-                    <p className="text-xs text-[#6b6960]">{saleSource === 'seller' ? 'Verified seller' : 'Gavel Products'}</p>
+                    <p className="text-xs text-gray-400 dark:text-[#6b6960]">{saleSource === 'seller' ? 'Verified seller' : 'Gavel Products'}</p>
                   </div>
                 </div>
                 {!hasEnded && userId && userId !== auction.seller_id && (
@@ -952,7 +971,7 @@ export default function AuctionDetailPage() {
                   </button>
                 )}
                 {!hasEnded && !userId && (
-                  <Link href="/login" className="block text-center w-full rounded-xl border border-[#232830] py-2.5 text-xs font-medium text-[#b8b3a8] hover:border-orange-500/30 transition-colors">
+                  <Link href="/login" className="block text-center w-full rounded-xl border border-gray-200 dark:border-[#232830] py-2.5 text-xs font-medium text-gray-600 dark:text-[#b8b3a8] hover:border-orange-500/30 transition-colors">
                     Log in to make an offer
                   </Link>
                 )}
@@ -960,11 +979,11 @@ export default function AuctionDetailPage() {
 
               {/* Ends info */}
               {auction.ends_at && (
-                <div className="bg-[#14181f] border border-[#232830] rounded-2xl px-4 py-3 flex items-center gap-3">
-                  <Clock className="h-4 w-4 text-[#6b6960] flex-shrink-0" />
+                <div className="bg-white dark:bg-[#14181f] border border-gray-200 dark:border-[#232830] rounded-2xl px-4 py-3 flex items-center gap-3">
+                  <Clock className="h-4 w-4 text-gray-400 dark:text-[#6b6960] flex-shrink-0" />
                   <div>
-                    <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960]">Closes</p>
-                    <p className="text-sm font-medium text-[#f4f1ea]">{new Date(auction.ends_at).toLocaleString()}</p>
+                    <p className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960]">Closes</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-[#f4f1ea]">{new Date(auction.ends_at).toLocaleString()}</p>
                   </div>
                 </div>
               )}
@@ -974,23 +993,23 @@ export default function AuctionDetailPage() {
           {/* Bid history + Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-8 mb-10">
             <div>
-              <h2 className="text-sm font-bold text-[#f4f1ea] mb-1">Bid history</h2>
-              <p className="text-xs text-[#6b6960] mb-4">Live · all bids are binding and recorded.</p>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-[#f4f1ea] mb-1">Bid history</h2>
+              <p className="text-xs text-gray-400 dark:text-[#6b6960] mb-4">Live · all bids are binding and recorded.</p>
               <BidList bids={bids} currentUserId={userId} />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-[#f4f1ea] mb-1">Activity</h2>
-              <p className="text-xs text-[#6b6960] mb-4">Watchers, bidders and engagement.</p>
-              <div className="bg-[#14181f] border border-[#232830] rounded-2xl overflow-hidden">
+              <h2 className="text-sm font-bold text-gray-900 dark:text-[#f4f1ea] mb-1">Activity</h2>
+              <p className="text-xs text-gray-400 dark:text-[#6b6960] mb-4">Watchers, bidders and engagement.</p>
+              <div className="bg-white dark:bg-[#14181f] border border-gray-200 dark:border-[#232830] rounded-2xl overflow-hidden">
                 <div className="grid grid-cols-3">
                   {[
                     { l: 'Watching', v: watcherCount || '–' },
                     { l: 'Bidders', v: bidderCount || '–' },
                     { l: 'Bids', v: bids.length || '–' },
                   ].map((s, i, a) => (
-                    <div key={i} className={`px-4 py-4 ${i < a.length - 1 ? 'border-r border-[#232830]' : ''}`}>
-                      <p className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] mb-1">{s.l}</p>
-                      <p className="font-mono text-xl text-[#f4f1ea]">{s.v}</p>
+                    <div key={i} className={`px-4 py-4 ${i < a.length - 1 ? 'border-r border-gray-200 dark:border-[#232830]' : ''}`}>
+                      <p className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960] mb-1">{s.l}</p>
+                      <p className="font-mono text-xl text-gray-900 dark:text-[#f4f1ea]">{s.v}</p>
                     </div>
                   ))}
                 </div>
@@ -999,7 +1018,7 @@ export default function AuctionDetailPage() {
           </div>
 
           {/* Trust footer */}
-          <div className="bg-[#14181f] border border-[#232830] rounded-2xl p-6 grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="bg-white dark:bg-[#14181f] border border-gray-200 dark:border-[#232830] rounded-2xl p-6 grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             {[
               { title: 'Bidder verification', desc: 'All bidders pass identity checks. Suspicious activity is flagged in real time.' },
               { title: 'Binding bids', desc: 'Every bid is contractual. Backing out forfeits a 5% deposit.' },
@@ -1007,8 +1026,8 @@ export default function AuctionDetailPage() {
               { title: 'Dispute resolution', desc: 'Funds held in escrow. 7-day window to resolve post-sale disputes.' },
             ].map(({ title, desc }) => (
               <div key={title}>
-                <p className="text-sm font-semibold text-[#f4f1ea] mb-1.5">{title}</p>
-                <p className="text-xs text-[#6b6960] leading-relaxed">{desc}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-[#f4f1ea] mb-1.5">{title}</p>
+                <p className="text-xs text-gray-400 dark:text-[#6b6960] leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
@@ -1020,12 +1039,12 @@ export default function AuctionDetailPage() {
       {showOfferModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { setShowOfferModal(false); setOfferSuccess(false); setOfferError(null) }}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <div className="relative w-full max-w-sm bg-[#14181f] border border-[#232830] rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#14181f] border border-gray-200 dark:border-[#232830] rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#232830]">
-              <p className="text-sm font-bold text-[#f4f1ea]">Make an Offer</p>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-[#232830]">
+              <p className="text-sm font-bold text-gray-900 dark:text-[#f4f1ea]">Make an Offer</p>
               <button onClick={() => { setShowOfferModal(false); setOfferSuccess(false); setOfferError(null) }}
-                className="rounded-full p-1.5 hover:bg-[#232830] text-[#6b6960] hover:text-[#f4f1ea] transition-colors">
+                className="rounded-full p-1.5 hover:bg-[#232830] text-gray-400 dark:text-[#6b6960] hover:text-gray-900 dark:text-[#f4f1ea] transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1034,8 +1053,8 @@ export default function AuctionDetailPage() {
               {offerSuccess ? (
                 <div className="text-center py-4">
                   <div className="text-3xl mb-3">✓</div>
-                  <p className="font-semibold text-[#f4f1ea] mb-1">Offer sent!</p>
-                  <p className="text-sm text-[#6b6960]">The seller will be notified. You&apos;ll receive an SMS if they accept.</p>
+                  <p className="font-semibold text-gray-900 dark:text-[#f4f1ea] mb-1">Offer sent!</p>
+                  <p className="text-sm text-gray-400 dark:text-[#6b6960]">The seller will be notified. You&apos;ll receive an SMS if they accept.</p>
                   <button onClick={() => { setShowOfferModal(false); setOfferSuccess(false) }}
                     className="mt-4 w-full rounded-xl bg-orange-500 text-white py-2.5 text-sm font-semibold hover:bg-orange-600 transition-colors">
                     Done
@@ -1043,33 +1062,33 @@ export default function AuctionDetailPage() {
                 </div>
               ) : (
                 <>
-                  <p className="text-xs text-[#6b6960] mb-4">
-                    Your offer on <span className="text-[#b8b3a8]">{auction!.title}</span>. The seller will be notified and can accept or decline.
+                  <p className="text-xs text-gray-400 dark:text-[#6b6960] mb-4">
+                    Your offer on <span className="text-gray-600 dark:text-[#b8b3a8]">{auction!.title}</span>. The seller will be notified and can accept or decline.
                   </p>
 
                   <div className="mb-4">
-                    <label className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] block mb-2">Offer amount (GHS)</label>
-                    <div className="flex items-center bg-[#11141a] border border-[#232830] rounded-xl px-3 focus-within:border-orange-500/50 transition-colors">
-                      <span className="text-[#6b6960] text-sm mr-1">GHS</span>
+                    <label className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960] block mb-2">Offer amount (GHS)</label>
+                    <div className="flex items-center bg-gray-50 dark:bg-[#11141a] border border-gray-200 dark:border-[#232830] rounded-xl px-3 focus-within:border-orange-500/50 transition-colors">
+                      <span className="text-gray-400 dark:text-[#6b6960] text-sm mr-1">GHS</span>
                       <input
                         type="number"
                         value={offerAmount}
                         onChange={e => setOfferAmount(e.target.value)}
                         placeholder={String(liveCurrentPrice)}
-                        className="flex-1 bg-transparent font-mono text-sm text-[#f4f1ea] py-3 outline-none"
+                        className="flex-1 bg-transparent font-mono text-sm text-gray-900 dark:text-[#f4f1ea] py-3 outline-none"
                         autoFocus
                       />
                     </div>
                   </div>
 
                   <div className="mb-4">
-                    <label className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] block mb-2">Message (optional)</label>
+                    <label className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960] block mb-2">Message (optional)</label>
                     <textarea
                       value={offerMessage}
                       onChange={e => setOfferMessage(e.target.value)}
                       placeholder="e.g. I can pay immediately..."
                       rows={2}
-                      className="w-full bg-[#11141a] border border-[#232830] rounded-xl px-3 py-2.5 text-sm text-[#f4f1ea] outline-none focus:border-orange-500/50 resize-none transition-colors placeholder:text-[#6b6960]"
+                      className="w-full bg-gray-50 dark:bg-[#11141a] border border-gray-200 dark:border-[#232830] rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-[#f4f1ea] outline-none focus:border-orange-500/50 resize-none transition-colors placeholder:text-gray-400 dark:text-[#6b6960]"
                     />
                   </div>
 

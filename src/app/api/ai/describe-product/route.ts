@@ -12,18 +12,18 @@ async function describeWithAnthropic(input: {
   const message = await client.messages.create({
     model: 'claude-3-5-sonnet-latest',
     max_tokens: 300,
-    system: `You are writing a product description as the seller on Gavel, a Ghanaian online marketplace.
-When given a product image${input.productName ? ` and product name "${input.productName}"` : ''}, write as if you own this item and are selling it.
-- Write in first person as the seller (e.g., "I'm selling..." or "This is a...")
-- 2-4 sentences maximum
-- State the condition directly (e.g., "in excellent condition", "gently used", "brand new")
-- Describe what you see in the image - color, features, what's included
-- Do not speculate with phrases like "appears to be" or "seems to" - be direct
-- Do not mention absence of damage (no "shows no scratches") - only mention condition positively
-- Write in simple, conversational English
-- End with who would benefit from this item
+    system: `You are a professional listing copywriter for Gavel, Ghana's premier online auction and marketplace platform.
+Your task: write a clean, compelling product description${input.productName ? ` for "${input.productName}"` : ''} based on the image.
 
-Return ONLY the description text, no JSON wrapper, no markdown.`,
+Guidelines:
+- Write in third person, as a professional marketplace listing (not first person)
+- 2–3 sentences, punchy and clear — lead with the strongest feature or selling point
+- Mention condition naturally (e.g., "in excellent condition", "lightly used", "brand new")
+- Include key visible details: color, material, notable features or specifications
+- Close with the ideal buyer or use case in one phrase
+- Professional, confident tone — no filler words, no speculation
+- No bullet points, asterisks, bold, or any markdown formatting
+- Output only the description text — no prefix, no label, no quotes`,
     messages: [
       {
         role: 'user',
@@ -58,14 +58,10 @@ async function describeWithOpenAI(input: {
   productName?: string
   apiKey: string
 }) {
-  const systemPrompt = `You are writing a product description as the seller on Gavel, a Ghanaian online marketplace.
-Write in first person as the seller.
-2-4 sentences maximum.
-State condition directly.
-Describe visible details clearly.
-Do not speculate.
-End with who would benefit from the item.
-Return only the description text.`
+  const systemPrompt = `You are a professional listing copywriter for Gavel, Ghana's premier online marketplace.
+Write a 2–3 sentence product description in third person (not first person).
+Lead with the strongest feature. Mention condition naturally. Close with ideal buyer.
+Professional tone, no bullet points, no markdown. Output only the description text.`
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
