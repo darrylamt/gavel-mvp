@@ -366,8 +366,15 @@ export default function AuctionDetailPage() {
       const endsAtMs = endsAt ? new Date(endsAt).getTime() : null
 
       if (startsAtMs != null && nowMs < startsAtMs) {
+        const diff = startsAtMs - nowMs
         setCountdownPhase('starts')
-        setTimeLeft(formatDuration(startsAtMs - nowMs))
+        setTimeLeft(formatDuration(diff))
+        setCdParts({
+          d: Math.floor(diff / 86400000),
+          h: Math.floor((diff % 86400000) / 3600000),
+          m: Math.floor((diff % 3600000) / 60000),
+          s: Math.floor((diff % 60000) / 1000),
+        })
         return
       }
 
