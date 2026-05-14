@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Clock, Store, ChevronDown, ChevronUp } from 'lucide-react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { supabasePublic } from '@/lib/supabasePublicClient'
@@ -60,6 +60,7 @@ type BidRecord = {
 
 export default function AuctionDetailPage() {
   const { notify } = useTopToast()
+  const router = useRouter()
   const params = useParams<{ id?: string | string[] }>()
   const auctionId = useMemo(() => {
     const rawId = params?.id
