@@ -1017,20 +1017,6 @@ export default function AuctionDetailPage() {
             </div>
           </div>
 
-          {/* Trust footer */}
-          <div className="bg-white dark:bg-[#14181f] border border-gray-200 dark:border-[#232830] rounded-2xl p-6 grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {[
-              { title: 'Bidder verification', desc: 'All bidders pass identity checks. Suspicious activity is flagged in real time.' },
-              { title: 'Binding bids', desc: 'Every bid is contractual. Backing out forfeits a 5% deposit.' },
-              { title: 'Soft-close – 5 min', desc: 'Bids in the final 5 min extend the auction – no last-second sniping.' },
-              { title: 'Dispute resolution', desc: 'Funds held in escrow. 7-day window to resolve post-sale disputes.' },
-            ].map(({ title, desc }) => (
-              <div key={title}>
-                <p className="text-sm font-semibold text-gray-900 dark:text-[#f4f1ea] mb-1.5">{title}</p>
-                <p className="text-xs text-gray-400 dark:text-[#6b6960] leading-relaxed">{desc}</p>
-              </div>
-            ))}
-          </div>
 
         </div>
       </div>
