@@ -15,8 +15,22 @@ import {
   CalendarDays,
   Clock,
   DollarSign,
+  MessageSquare,
+  Check,
 } from 'lucide-react'
 import { formatGhs } from '@/lib/formatGhs'
+
+type AuctionOffer = {
+  id: string
+  auction_id: string
+  buyer_id: string
+  amount: number
+  message: string | null
+  status: 'pending' | 'accepted' | 'rejected'
+  created_at: string
+  auction_title?: string
+  buyer_username?: string
+}
 
 type SellerAuction = {
   id: string
@@ -51,6 +65,8 @@ export default function SellerAuctionsPage() {
   const [bucket, setBucket] = useState<AuctionBucket>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [detailAuction, setDetailAuction] = useState<SellerAuction | null>(null)
+  const [offers, setOffers] = useState<AuctionOffer[]>([])
+  const [respondingOffer, setRespondingOffer] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -81,6 +97,29 @@ export default function SellerAuctionsPage() {
       }
 
       setAuctions((data as SellerAuction[] | null) ?? [])
+
+      // Load pending offers for this seller
+      const { data: offerRows } = await supabase
+        .from('auction_offers')
+        .select('id, auction_id, buyer_id, amount, message, status, created_at')
+        .eq('seller_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+
+      if (offerRows && offerRows.length > 0) {
+        // Enrich with auction titles and buyer usernames
+        const enriched = await Promise.all(offerRows.map(async (o: AuctionOffer) => {
+          const [{ data: auc }, { data: buyer }] = await Promise.all([
+            supabase.from('auctions').select('title').eq('id', o.auction_id).single(),
+            supabase.from('profiles').select('username').eq('id', o.buyer_id).single(),
+          ])
+          return { ...o, auction_title: auc?.title ?? 'Auction', buyer_username: buyer?.username ?? 'Buyer' }
+        }))
+        setOffers(enriched)
+      } else {
+        setOffers([])
+      }
+
       setLoading(false)
     }
 
@@ -179,8 +218,64 @@ export default function SellerAuctionsPage() {
     { key: 'delivered', label: 'Delivered' },
   ]
 
+  const respondToOffer = async (offerId: string, action: 'accept' | 'reject') => {
+    setRespondingOffer(offerId)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/auctions/offers/${offerId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ action }),
+      })
+      if (res.ok) setOffers(prev => prev.filter(o => o.id !== offerId))
+    } finally {
+      setRespondingOffer(null)
+    }
+  }
+
   return (
     <div className="space-y-4">
+      {/* Pending offers */}
+      {offers.length > 0 && (
+        <section className="rounded-2xl border border-orange-200 bg-orange-50 p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <MessageSquare className="h-4 w-4 text-orange-600 flex-shrink-0" />
+            <h2 className="text-sm font-bold text-orange-900">Pending Offers ({offers.length})</h2>
+          </div>
+          <div className="space-y-3">
+            {offers.map(offer => (
+              <div key={offer.id} className="rounded-xl bg-white border border-orange-100 p-4 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{offer.auction_title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    <span className="font-medium text-orange-700">GHS {offer.amount.toLocaleString()}</span>
+                    {' '}from <span className="font-medium">{offer.buyer_username}</span>
+                    {' '}· {new Date(offer.created_at).toLocaleDateString()}
+                  </p>
+                  {offer.message && <p className="text-xs text-gray-400 mt-1 italic">&ldquo;{offer.message}&rdquo;</p>}
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => respondToOffer(offer.id, 'accept')}
+                    disabled={respondingOffer === offer.id}
+                    className="flex items-center gap-1 rounded-lg bg-emerald-500 text-white px-3 py-1.5 text-xs font-semibold hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                  >
+                    <Check className="h-3 w-3" /> Accept
+                  </button>
+                  <button
+                    onClick={() => respondToOffer(offer.id, 'reject')}
+                    disabled={respondingOffer === offer.id}
+                    className="flex items-center gap-1 rounded-lg border border-gray-200 text-gray-600 px-3 py-1.5 text-xs font-semibold hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  >
+                    <X className="h-3 w-3" /> Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Header */}
       <section className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
         <div className="flex items-start justify-between gap-3">

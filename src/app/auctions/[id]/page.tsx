@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { Clock, Store, ChevronDown, ChevronUp } from 'lucide-react'
+import { Clock, Store, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { supabase, getSessionHeaders } from '@/lib/supabaseClient'
 import { supabasePublic } from '@/lib/supabasePublicClient'
 import { useTopToast } from '@/components/ui/TopToastProvider'
@@ -89,6 +89,12 @@ export default function AuctionDetailPage() {
   const [cdParts, setCdParts] = useState({ d: 0, h: 0, m: 0, s: 0 })
   const [isBuyingNow, setIsBuyingNow] = useState(false)
   const [buyNowError, setBuyNowError] = useState<string | null>(null)
+  const [showOfferModal, setShowOfferModal] = useState(false)
+  const [offerAmount, setOfferAmount] = useState('')
+  const [offerMessage, setOfferMessage] = useState('')
+  const [isSubmittingOffer, setIsSubmittingOffer] = useState(false)
+  const [offerError, setOfferError] = useState<string | null>(null)
+  const [offerSuccess, setOfferSuccess] = useState(false)
 
   const now = Date.now()
 
@@ -481,6 +487,24 @@ export default function AuctionDetailPage() {
     }
   }
 
+  const handleSubmitOffer = async () => {
+    if (!offerAmount || Number(offerAmount) <= 0) { setOfferError('Please enter a valid offer amount'); return }
+    setIsSubmittingOffer(true); setOfferError(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/auctions/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ auction_id: auction!.id, amount: Number(offerAmount), message: offerMessage }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setOfferError(data.error || 'Failed to submit offer'); return }
+      setOfferSuccess(true)
+      setOfferAmount(''); setOfferMessage('')
+    } catch { setOfferError('Something went wrong. Please try again.') }
+    finally { setIsSubmittingOffer(false) }
+  }
+
   const bidderCount = useMemo(() => {
     const userIds = new Set(bids.map((bid) => bid.user_id).filter(Boolean))
     return userIds.size
@@ -714,8 +738,6 @@ export default function AuctionDetailPage() {
                   {hasEnded && <span className="rounded-full border border-[#232830] bg-[#11141a] px-2.5 py-0.5 text-[11px] font-semibold text-[#6b6960]">Ended</span>}
                   {reserveMet && !hasEnded && <span className="rounded-full border border-green-600/40 bg-green-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-green-400">Reserve met</span>}
                   {!reserveMet && !hasEnded && bids.length > 0 && <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-400">Reserve not met</span>}
-                  <span className="rounded-full border border-[#232830] px-2.5 py-0.5 text-[11px] font-semibold text-[#b8b3a8]">Escrow protected</span>
-                  <span className="rounded-full border border-[#232830] px-2.5 py-0.5 text-[11px] font-semibold text-[#b8b3a8]">7-day return</span>
                 </div>
               </div>
 
@@ -913,14 +935,19 @@ export default function AuctionDetailPage() {
                     <p className="text-xs text-[#6b6960]">{saleSource === 'seller' ? 'Verified seller' : 'Gavel Products'}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button className="flex-1 rounded-xl border border-[#232830] py-2 text-xs font-medium text-[#b8b3a8] hover:border-orange-500/30 transition-colors">Ask question</button>
-                  {auction.seller_phone && (
-                    <a href={`tel:${auction.seller_phone}`} className="flex-1 text-center rounded-xl border border-[#232830] py-2 text-xs font-medium text-[#b8b3a8] hover:border-orange-500/30 transition-colors">
-                      Call
-                    </a>
-                  )}
-                </div>
+                {!hasEnded && userId && userId !== auction.seller_id && (
+                  <button
+                    onClick={() => setShowOfferModal(true)}
+                    className="w-full rounded-xl border border-orange-500/40 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-400 hover:bg-orange-500/20 transition-colors"
+                  >
+                    Make an Offer
+                  </button>
+                )}
+                {!hasEnded && !userId && (
+                  <Link href="/login" className="block text-center w-full rounded-xl border border-[#232830] py-2.5 text-xs font-medium text-[#b8b3a8] hover:border-orange-500/30 transition-colors">
+                    Log in to make an offer
+                  </Link>
+                )}
               </div>
 
               {/* Ends info */}
@@ -980,6 +1007,79 @@ export default function AuctionDetailPage() {
 
         </div>
       </div>
+
+      {/* Make an Offer modal */}
+      {showOfferModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { setShowOfferModal(false); setOfferSuccess(false); setOfferError(null) }}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm bg-[#14181f] border border-[#232830] rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#232830]">
+              <p className="text-sm font-bold text-[#f4f1ea]">Make an Offer</p>
+              <button onClick={() => { setShowOfferModal(false); setOfferSuccess(false); setOfferError(null) }}
+                className="rounded-full p-1.5 hover:bg-[#232830] text-[#6b6960] hover:text-[#f4f1ea] transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-5">
+              {offerSuccess ? (
+                <div className="text-center py-4">
+                  <div className="text-3xl mb-3">✓</div>
+                  <p className="font-semibold text-[#f4f1ea] mb-1">Offer sent!</p>
+                  <p className="text-sm text-[#6b6960]">The seller will be notified. You&apos;ll receive an SMS if they accept.</p>
+                  <button onClick={() => { setShowOfferModal(false); setOfferSuccess(false) }}
+                    className="mt-4 w-full rounded-xl bg-orange-500 text-white py-2.5 text-sm font-semibold hover:bg-orange-600 transition-colors">
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-[#6b6960] mb-4">
+                    Your offer on <span className="text-[#b8b3a8]">{auction!.title}</span>. The seller will be notified and can accept or decline.
+                  </p>
+
+                  <div className="mb-4">
+                    <label className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] block mb-2">Offer amount (GHS)</label>
+                    <div className="flex items-center bg-[#11141a] border border-[#232830] rounded-xl px-3 focus-within:border-orange-500/50 transition-colors">
+                      <span className="text-[#6b6960] text-sm mr-1">GHS</span>
+                      <input
+                        type="number"
+                        value={offerAmount}
+                        onChange={e => setOfferAmount(e.target.value)}
+                        placeholder={String(liveCurrentPrice)}
+                        className="flex-1 bg-transparent font-mono text-sm text-[#f4f1ea] py-3 outline-none"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="font-mono text-[10px] tracking-widest uppercase text-[#6b6960] block mb-2">Message (optional)</label>
+                    <textarea
+                      value={offerMessage}
+                      onChange={e => setOfferMessage(e.target.value)}
+                      placeholder="e.g. I can pay immediately..."
+                      rows={2}
+                      className="w-full bg-[#11141a] border border-[#232830] rounded-xl px-3 py-2.5 text-sm text-[#f4f1ea] outline-none focus:border-orange-500/50 resize-none transition-colors placeholder:text-[#6b6960]"
+                    />
+                  </div>
+
+                  {offerError && <p className="text-xs text-red-400 mb-3">{offerError}</p>}
+
+                  <button
+                    onClick={handleSubmitOffer}
+                    disabled={isSubmittingOffer || !offerAmount}
+                    className="w-full rounded-xl bg-orange-500 text-white py-3 text-sm font-bold hover:bg-orange-600 transition-colors disabled:opacity-50"
+                  >
+                    {isSubmittingOffer ? 'Sending…' : 'Send Offer'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </PrivateAuctionGuard>
   )
 }

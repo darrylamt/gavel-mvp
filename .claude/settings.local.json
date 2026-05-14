@@ -47,7 +47,10 @@
       "Read(//c/Users/Darryl Amoatey/Downloads/ui/**)",
       "Bash(ls \"C:\\\\Users\\\\Darryl Amoatey\\\\Downloads\\\\ui \\(1\\)\")",
       "Read(//c/Users/Darryl Amoatey/Downloads/ui \\(1\\)/**)",
-      "Bash(xargs sed -i \"s/\\\\—/–/g\")"
+      "Bash(xargs sed -i \"s/\\\\—/–/g\")",
+      "Bash(npx --no-install tsc --noEmit)",
+      "Bash(npx next *)",
+      "Bash(gh run *)"
     ]
   }
 }
