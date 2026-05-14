@@ -104,7 +104,7 @@ export default async function Image({ params }: Props) {
           {/* Middle: Title + desc */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{
-              fontSize: photo ? 32 : 42,
+              fontSize: photoData ? 32 : 42,
               fontWeight: 700,
               color: '#f1f5f9',
               lineHeight: 1.2,
