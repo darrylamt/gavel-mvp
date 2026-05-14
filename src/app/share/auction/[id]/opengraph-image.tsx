@@ -26,7 +26,20 @@ export default async function Image({ params }: Props) {
   const title = data?.title || 'Auction on Gavel'
   const price = data?.current_price ?? 0
   const images = normalizeAuctionImageUrls(data?.images, data?.image_url ?? null)
-  const photo = images[0] ?? null
+  const photoUrl = images[0] ?? null
+
+  // Fetch photo as base64 data URL — required by next/og Edge runtime
+  let photoData: string | null = null
+  if (photoUrl) {
+    try {
+      const res = await fetch(photoUrl)
+      const buf = await res.arrayBuffer()
+      const mime = res.headers.get('content-type') ?? 'image/jpeg'
+      photoData = `data:${mime};base64,${Buffer.from(buf).toString('base64')}`
+    } catch {
+      photoData = null
+    }
+  }
 
   // Short description — first sentence only
   const rawDesc = (data?.description ?? '').replace(/\*+/g, '').replace(/\n+/g, ' ').trim()
@@ -46,11 +59,11 @@ export default async function Image({ params }: Props) {
         }}
       >
         {/* Product photo — left side */}
-        {photo && (
+        {photoData && (
           <div style={{ width: 630, height: 630, flexShrink: 0, position: 'relative', display: 'flex' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={photo}
+              src={photoData}
               alt=""
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
@@ -68,7 +81,7 @@ export default async function Image({ params }: Props) {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: photo ? '52px 52px 52px 32px' : '52px 56px',
+          padding: photoData ? '52px 52px 52px 32px' : '52px 56px',
         }}>
           {/* Top: Logo + badge */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
