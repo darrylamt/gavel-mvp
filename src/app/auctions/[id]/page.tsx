@@ -703,7 +703,7 @@ export default function AuctionDetailPage() {
     } else {
       root.style.removeProperty('--bid-bar-offset')
     }
-    return () => root.style.removeProperty('--bid-bar-offset')
+    return () => { root.style.removeProperty('--bid-bar-offset') }
   }, [showMobileBidBar])
   const isEnding = !hasEnded && endsAtMs != null && (endsAtMs - Date.now()) < 1000 * 60 * 5
   const isUrgent = !hasEnded && endsAtMs != null && (endsAtMs - Date.now()) < 1000 * 60 * 60
