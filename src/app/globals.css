@@ -2,12 +2,6 @@
 
 @import "tailwindcss";
 
-/* Mobile bid bar — pad the whole page so the footer isn't hidden */
-@media (max-width: 1023px) {
-  html:has([style*="--bid-bar-offset"]) body {
-    padding-bottom: var(--bid-bar-offset, 0px);
-  }
-}
 
 @custom-variant dark (&:is(.dark *));
 

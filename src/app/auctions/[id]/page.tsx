@@ -693,18 +693,6 @@ export default function AuctionDetailPage() {
   }
 
   const showMobileBidBar = !hasEnded && !isScheduled && !!userId
-
-  // Push the whole page (including footer) above the fixed bid bar on mobile
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const root = document.documentElement
-    if (showMobileBidBar) {
-      root.style.setProperty('--bid-bar-offset', '80px')
-    } else {
-      root.style.removeProperty('--bid-bar-offset')
-    }
-    return () => { root.style.removeProperty('--bid-bar-offset') }
-  }, [showMobileBidBar])
   const isEnding = !hasEnded && endsAtMs != null && (endsAtMs - Date.now()) < 1000 * 60 * 5
   const isUrgent = !hasEnded && endsAtMs != null && (endsAtMs - Date.now()) < 1000 * 60 * 60
   const lotId = auction.id.slice(0, 8).toUpperCase()
