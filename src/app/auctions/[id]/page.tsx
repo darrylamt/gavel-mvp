@@ -693,6 +693,18 @@ export default function AuctionDetailPage() {
   }
 
   const showMobileBidBar = !hasEnded && !isScheduled && !!userId
+
+  // Push the whole page (including footer) above the fixed bid bar on mobile
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    if (showMobileBidBar) {
+      root.style.setProperty('--bid-bar-offset', '80px')
+    } else {
+      root.style.removeProperty('--bid-bar-offset')
+    }
+    return () => root.style.removeProperty('--bid-bar-offset')
+  }, [showMobileBidBar])
   const isEnding = !hasEnded && endsAtMs != null && (endsAtMs - Date.now()) < 1000 * 60 * 5
   const isUrgent = !hasEnded && endsAtMs != null && (endsAtMs - Date.now()) < 1000 * 60 * 60
   const lotId = auction.id.slice(0, 8).toUpperCase()
@@ -705,7 +717,10 @@ export default function AuctionDetailPage() {
 
       {/* Mobile sticky bid bar */}
       {showMobileBidBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-gray-200 dark:border-[#232830] bg-white dark:bg-[#14181f]/97 backdrop-blur-sm px-4 py-3">
+        <div
+          className="fixed bottom-0 left-0 right-0 z-50 lg:hidden border-t border-gray-200 dark:border-[#232830] bg-white dark:bg-[#14181f] shadow-[0_-4px_24px_rgba(0,0,0,0.10)] px-4 pt-3"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0.75rem))' }}
+        >
           <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-[10px] tracking-widest uppercase text-gray-400 dark:text-[#6b6960]">Current bid</span>
             <span className="text-sm font-black text-gray-900 dark:text-[#f4f1ea] tabular-nums">GHS {liveCurrentPrice.toLocaleString()}</span>
