@@ -106,9 +106,12 @@ export class HubtelProvider implements IPaymentProvider {
     }
     console.log('[Hubtel] calling API with body:', JSON.stringify(body))
 
+    // Try both known Hubtel endpoint variants
+    const HUBTEL_ENDPOINT = 'https://payproxy.hubtel.com/v110/requestpayment'
+
     let res: Response
     try {
-      res = await fetch('https://payproxy.hubtel.com/v110/requestpayment/initiate-payment', {
+      res = await fetch(HUBTEL_ENDPOINT, {
         method: 'POST',
         headers: {
           Authorization: auth,
@@ -117,9 +120,10 @@ export class HubtelProvider implements IPaymentProvider {
         body: JSON.stringify(body),
       })
     } catch (fetchErr) {
-      console.error('[Hubtel] fetch threw:', fetchErr)
+      const msg = fetchErr instanceof Error ? `${fetchErr.name}: ${fetchErr.message}` : String(fetchErr)
+      console.error('[Hubtel] fetch threw:', msg)
       await supabase.from('payment_intents').delete().eq('id', clientReference)
-      throw fetchErr
+      throw new Error(`Hubtel API unreachable: ${msg}`)
     }
 
     console.log('[Hubtel] fetch status:', res.status)

@@ -54,7 +54,8 @@ export async function POST(req: Request) {
     })
     return NextResponse.json({ authorization_url: result.authorizationUrl, reference: result.reference })
   } catch (error) {
-    console.error('Token init error:', error)
-    return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Token init error:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
