@@ -4,19 +4,24 @@ import type { IPaymentProvider, PaymentInitParams, PaymentInitResult, PaymentVer
 
 /**
  * Hubtel Online Checkout payment provider.
+ * Docs: docs/HUBTEL_API.md — Online Checkout API section
  *
  * Env vars (as named in Vercel):
- *   HUBTEL_API_ID          — Hubtel API client ID
- *   HUBTEL_API_KEY         — Hubtel API client secret
- *   HUBTEL_BASIC_AUTH      — Pre-built Basic auth value (overrides ID+KEY if present)
- *   HUBTEL_POS_SALES_ID    — Hubtel merchant account / POS sales ID
- *   HUBTEL_CALLBACK_URL    — Webhook callback URL (overrides auto-constructed one if present)
- *   HUBTEL_RETURN_URL      — Return URL after payment (optional override)
- *   HUBTEL_CANCELLATION_URL — Cancellation URL (optional override)
- *   NEXT_PUBLIC_SITE_URL   — Base site URL (fallback for callbacks)
+ *   HUBTEL_API_ID           — Hubtel API ID (used to build Basic auth)
+ *   HUBTEL_API_KEY          — Hubtel API Key (used to build Basic auth)
+ *   HUBTEL_BASIC_AUTH       — Pre-built Basic auth value (overrides ID+KEY if present)
+ *   HUBTEL_POS_SALES_ID     — Collection Account Number (merchantAccountNumber)
+ *   HUBTEL_CALLBACK_URL     — Webhook callback URL override
+ *   HUBTEL_CANCELLATION_URL — Cancellation URL override
+ *   NEXT_PUBLIC_SITE_URL    — Base site URL (fallback for callbacks)
  *
  * Optional:
- *   HUBTEL_WEBHOOK_SECRET  — Shared secret for validating Hubtel webhook POSTs
+ *   HUBTEL_WEBHOOK_SECRET   — Shared secret for validating Hubtel webhook POSTs
+ *
+ * ⚠️  IP WHITELISTING REQUIRED
+ *   Hubtel blocks requests from non-whitelisted IPs (returns 403 or timeout).
+ *   Vercel's outbound IPs must be whitelisted with your Hubtel Retail Systems Engineer.
+ *   See: https://vercel.com/docs/edge-network/regions for Vercel IP ranges.
  *
  * How metadata works:
  *   Hubtel checkout does not support arbitrary metadata, so we persist it to the
@@ -106,8 +111,8 @@ export class HubtelProvider implements IPaymentProvider {
     }
     console.log('[Hubtel] calling API with body:', JSON.stringify(body))
 
-    // Try both known Hubtel endpoint variants
-    const HUBTEL_ENDPOINT = 'https://payproxy.hubtel.com/v110/requestpayment'
+    // Online Checkout initiate endpoint (from HUBTEL_API.md)
+    const HUBTEL_ENDPOINT = 'https://payproxyapi.hubtel.com/items/initiate'
 
     let res: Response
     try {
@@ -156,12 +161,13 @@ export class HubtelProvider implements IPaymentProvider {
   }
 
   async verifyPayment(reference: string): Promise<PaymentVerifyResult> {
-    const res = await fetch(
-      `https://payproxy.hubtel.com/v110/requestpayment/transaction-status/${encodeURIComponent(reference)}`,
-      {
-        headers: { Authorization: this.authHeader },
-      }
-    )
+    // Transaction status check endpoint (from HUBTEL_API.md)
+    // Uses Collection Account Number (HUBTEL_POS_SALES_ID) + clientReference query param
+    const statusUrl = `https://api-txnstatus.hubtel.com/transactions/${encodeURIComponent(this.merchantAccountNumber)}/status?clientReference=${encodeURIComponent(reference)}`
+
+    const res = await fetch(statusUrl, {
+      headers: { Authorization: this.authHeader },
+    })
 
     const json = await res.json()
 
@@ -170,8 +176,9 @@ export class HubtelProvider implements IPaymentProvider {
     }
 
     const data = json.data ?? {}
-    const success = String(data.Status ?? data.status ?? '').toLowerCase() === 'success'
-    const amountGHS = Number(data.Amount ?? data.amount ?? 0)
+    // Status check returns "Paid", "Unpaid", or "Refunded"
+    const success = String(data.status ?? data.Status ?? '').toLowerCase() === 'paid'
+    const amountGHS = Number(data.amount ?? data.Amount ?? 0)
 
     // Retrieve metadata from payment_intents table
     const { createServiceRoleClient } = await import('@/lib/serverSupabase')
