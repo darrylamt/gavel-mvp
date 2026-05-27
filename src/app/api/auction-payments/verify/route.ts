@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 import { queueAuctionPaymentReceivedNotifications } from '@/lib/arkesel/events'
+import { getPaymentProvider } from '@/lib/payment'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,33 +20,24 @@ export async function POST(req: Request) {
     )
   }
 
-  // 1️⃣ Verify Paystack
-  const res = await fetch(
-    `https://api.paystack.co/transaction/verify/${reference}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-      },
-    }
-  )
-
-  const json = await res.json()
-
-  if (!json.status) {
-    return NextResponse.json(
-      { error: 'Verification failed' },
-      { status: 400 }
-    )
+  // 1️⃣ Verify payment via active provider
+  let verifyResult: Awaited<ReturnType<ReturnType<typeof getPaymentProvider>['verifyPayment']>>
+  try {
+    const provider = getPaymentProvider()
+    verifyResult = await provider.verifyPayment(reference)
+  } catch (err) {
+    console.error('Payment verification error:', err)
+    return NextResponse.json({ error: 'Verification failed' }, { status: 400 })
   }
 
-  if (json.data?.status !== 'success') {
+  if (!verifyResult.success) {
     return NextResponse.json(
       { error: 'Payment was not successful' },
       { status: 400 }
     )
   }
 
-  const { metadata } = json.data
+  const metadata = verifyResult.metadata
 
   if (metadata?.type !== 'auction_payment') {
     return NextResponse.json(
@@ -54,7 +46,11 @@ export async function POST(req: Request) {
     )
   }
 
-  const { auction_id, bid_id, user_id } = metadata
+  const { auction_id, bid_id, user_id } = metadata as {
+    auction_id?: string
+    bid_id?: string
+    user_id?: string
+  }
 
   if (!auction_id || !bid_id || !user_id) {
     return NextResponse.json(
@@ -111,10 +107,12 @@ export async function POST(req: Request) {
   }
 
   // 4️⃣ Log payment
+  const grossAmount = verifyResult.amountGHS
+
   const paymentPayloadBase = {
     user_id: resolution.activeCandidate.userId,
     auction_id: String(auction_id),
-    amount: json.data.amount / 100,
+    amount: grossAmount,
     status: 'success',
   }
 
@@ -148,7 +146,7 @@ export async function POST(req: Request) {
       auctionTitle: auctionMeta.title || 'Auction',
       winnerUserId: resolution.activeCandidate.userId,
       sellerUserId: auctionMeta.created_by,
-      amount: Number(json.data.amount) / 100,
+      amount: grossAmount,
     })
   }
 
@@ -156,7 +154,6 @@ export async function POST(req: Request) {
   const COMMISSION_RATE = 0.10
 
   if (auctionMeta?.created_by) {
-    const grossAmount = Number(json.data.amount) / 100
     const commissionAmount = grossAmount * COMMISSION_RATE
     const payoutAmount = grossAmount * (1 - COMMISSION_RATE)
 

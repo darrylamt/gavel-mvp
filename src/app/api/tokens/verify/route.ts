@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
+import { getPaymentProvider } from '@/lib/payment'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,26 +22,24 @@ export async function POST(req: Request) {
     )
   }
 
-  const res = await fetch(
-    `https://api.paystack.co/transaction/verify/${reference}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-      },
-    }
-  )
-
-  const json = await res.json()
-  console.log('PAYSTACK VERIFY RESPONSE:', json)
-
-  if (!json.status) {
-    return NextResponse.json(
-      { error: 'Verification failed' },
-      { status: 400 }
-    )
+  let verifyResult: Awaited<ReturnType<ReturnType<typeof getPaymentProvider>['verifyPayment']>>
+  try {
+    const provider = getPaymentProvider()
+    verifyResult = await provider.verifyPayment(reference)
+    console.log('PAYMENT VERIFY RESULT:', { success: verifyResult.success, reference: verifyResult.reference })
+  } catch (err) {
+    console.error('Token payment verify error:', err)
+    return NextResponse.json({ error: 'Verification failed' }, { status: 400 })
   }
 
-  const { metadata, reference: ref, amount: paystackAmount, currency } = json.data
+  if (!verifyResult.success) {
+    return NextResponse.json({ error: 'Payment was not successful' }, { status: 400 })
+  }
+
+  const metadata = verifyResult.metadata
+  const ref = verifyResult.reference
+  const amountGHS = verifyResult.amountGHS
+  const currency = verifyResult.currency
 
   if (metadata?.type !== 'token_purchase') {
     return NextResponse.json(
@@ -49,8 +48,8 @@ export async function POST(req: Request) {
     )
   }
 
-  const userId = metadata.user_id
-  const tokens = metadata.tokens
+  const userId = metadata.user_id as string | undefined
+  const tokens = metadata.tokens as number | undefined
 
   if (!userId || !tokens) {
     return NextResponse.json(
@@ -81,7 +80,7 @@ export async function POST(req: Request) {
     amount: tokens,
     type: 'purchase',
     reference: ref,
-    purchase_amount: paystackAmount != null ? Number(paystackAmount) / 100 : null,
+    purchase_amount: amountGHS > 0 ? amountGHS : null,
     purchase_currency: currency || 'GHS',
   })
 

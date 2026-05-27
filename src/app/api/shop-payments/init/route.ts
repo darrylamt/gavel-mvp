@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { calculateDiscountAmount, resolveDiscountCode } from '@/lib/discounts'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
+import { getPaymentProvider } from '@/lib/payment'
 
 type CheckoutItemInput = {
   product_id: string
@@ -61,10 +62,6 @@ export async function POST(req: Request) {
 
     if (!deliveryPayload.full_name || !deliveryPayload.phone || !deliveryPayload.address || !deliveryPayload.city) {
       return NextResponse.json({ error: 'Delivery details are required' }, { status: 400 })
-    }
-
-    if (!process.env.PAYSTACK_SECRET_KEY) {
-      return NextResponse.json({ error: 'Payment service not configured' }, { status: 500 })
     }
 
     if (!process.env.NEXT_PUBLIC_SITE_URL) {
@@ -232,41 +229,30 @@ export async function POST(req: Request) {
     const deliveryPriority = String(delivery_meta?.priority || 'standard')
     const grandTotal = Math.max(0, totalAmount - discountAmount + deliveryFee)
 
-    const initRes = await fetch('https://api.paystack.co/transaction/initialize', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email,
-        amount: Math.round(grandTotal * 100),
-        metadata: {
-          type: 'shop_payment',
-          user_id,
-          buyer_email: email,
-          delivery: deliveryPayload,
-          delivery_fee: deliveryFee,
-          delivery_priority: deliveryPriority,
-          delivery_region: deliveryPayload.region,
-          discount: {
-            code: discountCode,
-            percent_off: discountPercent,
-            amount: discountAmount,
-          },
-          items: paystackItems,
+    const provider = getPaymentProvider()
+    const result = await provider.initializePayment({
+      email,
+      amountGHS: grandTotal,
+      metadata: {
+        type: 'shop_payment',
+        user_id,
+        buyer_email: email,
+        delivery: deliveryPayload,
+        delivery_fee: deliveryFee,
+        delivery_priority: deliveryPriority,
+        delivery_region: deliveryPayload.region,
+        discount: {
+          code: discountCode,
+          percent_off: discountPercent,
+          amount: discountAmount,
         },
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?type=shop`,
-      }),
+        items: paystackItems,
+      },
+      callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?type=shop`,
+      description: 'Gavel shop purchase',
     })
 
-    const json = await initRes.json()
-
-    if (!json.status || !json.data?.authorization_url) {
-      return NextResponse.json({ error: json.message || 'Paystack init failed' }, { status: 500 })
-    }
-
-    return NextResponse.json(json.data)
+    return NextResponse.json({ authorization_url: result.authorizationUrl, reference: result.reference })
   } catch (error: unknown) {
     console.error('Shop payment init error:', error)
     return NextResponse.json({ error: 'Failed to initialize checkout. Please try again.' }, { status: 500 })

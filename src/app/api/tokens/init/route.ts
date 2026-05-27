@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
+import { getPaymentProvider } from '@/lib/payment'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,32 +40,19 @@ export async function POST(req: Request) {
   }
 
   try {
-    const res = await fetch('https://api.paystack.co/transaction/initialize', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
+    const provider = getPaymentProvider()
+    const result = await provider.initializePayment({
+      email,
+      amountGHS: selected.amount,
+      metadata: {
+        type: 'token_purchase',
+        tokens: selected.tokens,
+        user_id,
       },
-      body: JSON.stringify({
-        email,
-        amount: selected.amount * 100,
-        metadata: {
-          type: 'token_purchase',
-          tokens: selected.tokens,
-          user_id,
-        },
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/tokens/success`,
-      }),
+      callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/tokens/success`,
+      description: `Gavel ${selected.tokens} bid tokens`,
     })
-
-    const json = await res.json()
-
-    if (!json.status) {
-      console.error('Paystack token init failed:', json.message)
-      return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 })
-    }
-
-    return NextResponse.json(json.data)
+    return NextResponse.json({ authorization_url: result.authorizationUrl, reference: result.reference })
   } catch (error) {
     console.error('Token init error:', error)
     return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 })

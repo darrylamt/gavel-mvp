@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
+import { getPaymentProvider } from '@/lib/payment'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,14 +32,6 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: 'Missing required fields' },
       { status: 400 }
-    )
-  }
-
-  if (!process.env.PAYSTACK_SECRET_KEY) {
-    console.error('PAYSTACK_SECRET_KEY not configured')
-    return NextResponse.json(
-      { error: 'Payment service not configured' },
-      { status: 500 }
     )
   }
 
@@ -103,47 +96,26 @@ export async function POST(req: Request) {
     )
   }
 
-  // 3️⃣ Init Paystack
-  const res = await fetch(
-    'https://api.paystack.co/transaction/initialize',
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
+  // 3️⃣ Init payment via active provider
+  try {
+    const provider = getPaymentProvider()
+    const result = await provider.initializePayment({
+      email,
+      amountGHS: Number(resolution.activeCandidate.amount),
+      metadata: {
+        type: 'auction_payment',
+        auction_id,
+        bid_id: resolution.activeCandidate.bidId,
+        user_id,
+        winner_rank: resolution.activeCandidate.rank,
       },
-      body: JSON.stringify({
-        email,
-        amount: Math.round(resolution.activeCandidate.amount * 100),
-        metadata: {
-          type: 'auction_payment',
-          auction_id,
-          bid_id: resolution.activeCandidate.bidId,
-          user_id,
-          winner_rank: resolution.activeCandidate.rank,
-        },
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?type=auction`,
-      }),
-    }
-  )
-
-  const json = await res.json()
-
-  if (!json.status) {
-    console.error('Paystack init failed:', json)
-    return NextResponse.json(
-      { error: json.message || 'Paystack init failed' },
-      { status: 500 }
-    )
+      callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?type=auction`,
+      description: 'Gavel auction payment',
+    })
+    return NextResponse.json({ authorization_url: result.authorizationUrl, reference: result.reference })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Payment init failed'
+    console.error('Payment init failed:', err)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  if (!json.data?.authorization_url) {
-    console.error('No authorization_url in Paystack response:', json.data)
-    return NextResponse.json(
-      { error: 'Invalid Paystack response' },
-      { status: 500 }
-    )
-  }
-
-  return NextResponse.json(json.data)
 }
