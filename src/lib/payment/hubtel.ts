@@ -45,13 +45,39 @@ export class HubtelProvider implements IPaymentProvider {
   }
 
   async initializePayment(params: PaymentInitParams): Promise<PaymentInitResult> {
+    console.log('[Hubtel] initializePayment start, amountGHS:', params.amountGHS)
+
     // Generate a unique client reference (keep ≤50 chars for Hubtel limits)
     const clientReference =
       params.reference ?? `gvl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
 
+    console.log('[Hubtel] clientReference:', clientReference)
+
+    // Resolve auth header early so config errors surface cleanly
+    let auth: string
+    try {
+      auth = this.authHeader
+      console.log('[Hubtel] auth header resolved, length:', auth.length)
+    } catch (e) {
+      console.error('[Hubtel] authHeader error:', e)
+      throw e
+    }
+
+    let merchantId: string
+    try {
+      merchantId = this.merchantAccountNumber
+      console.log('[Hubtel] merchantAccountNumber resolved:', merchantId)
+    } catch (e) {
+      console.error('[Hubtel] merchantAccountNumber error:', e)
+      throw e
+    }
+
     // Persist metadata so the webhook handler can retrieve it
+    console.log('[Hubtel] importing supabase...')
     const { createServiceRoleClient } = await import('@/lib/serverSupabase')
     const supabase = createServiceRoleClient()
+    console.log('[Hubtel] inserting payment_intent...')
+
     const { error: intentError } = await supabase.from('payment_intents').insert({
       id: clientReference,
       provider: 'hubtel',
@@ -60,44 +86,67 @@ export class HubtelProvider implements IPaymentProvider {
       email: params.email,
     })
     if (intentError) {
-      console.error('Failed to store Hubtel payment intent:', intentError)
-      throw new Error('Failed to initialise payment session')
+      console.error('[Hubtel] payment_intent insert error:', intentError.message, intentError.code)
+      throw new Error(`Failed to initialise payment session: ${intentError.message}`)
     }
+    console.log('[Hubtel] payment_intent inserted OK')
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ''
-
     const callbackUrl = process.env.HUBTEL_CALLBACK_URL ?? `${siteUrl}/api/webhooks/hubtel`
     const cancellationUrl = process.env.HUBTEL_CANCELLATION_URL ?? `${siteUrl}/payment/cancelled`
 
-    const res = await fetch('https://payproxy.hubtel.com/v110/requestpayment/initiate-payment', {
-      method: 'POST',
-      headers: {
-        Authorization: this.authHeader,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        totalAmount: params.amountGHS,
-        description: params.description ?? 'Gavel payment',
-        callbackUrl,
-        returnUrl: params.callbackUrl,
-        merchantAccountNumber: this.merchantAccountNumber,
-        cancellationUrl,
-        clientReference,
-      }),
-    })
+    const body = {
+      totalAmount: params.amountGHS,
+      description: params.description ?? 'Gavel payment',
+      callbackUrl,
+      returnUrl: params.callbackUrl,
+      merchantAccountNumber: merchantId,
+      cancellationUrl,
+      clientReference,
+    }
+    console.log('[Hubtel] calling API with body:', JSON.stringify(body))
 
-    const json = await res.json()
-    console.log('[Hubtel init] response:', JSON.stringify(json))
-
-    // Hubtel success code is "0000"
-    if (json.responseCode !== '0000' || !json.data?.checkoutUrl) {
-      // Clean up the intent we just inserted
+    let res: Response
+    try {
+      res = await fetch('https://payproxy.hubtel.com/v110/requestpayment/initiate-payment', {
+        method: 'POST',
+        headers: {
+          Authorization: auth,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+    } catch (fetchErr) {
+      console.error('[Hubtel] fetch threw:', fetchErr)
       await supabase.from('payment_intents').delete().eq('id', clientReference)
-      throw new Error(json.message ?? `Hubtel init failed (code: ${json.responseCode ?? 'unknown'})`)
+      throw fetchErr
     }
 
+    console.log('[Hubtel] fetch status:', res.status)
+    const rawText = await res.text()
+    console.log('[Hubtel] raw response:', rawText)
+
+    let json: Record<string, unknown>
+    try {
+      json = JSON.parse(rawText)
+    } catch {
+      await supabase.from('payment_intents').delete().eq('id', clientReference)
+      throw new Error(`Hubtel returned non-JSON (status ${res.status}): ${rawText.slice(0, 200)}`)
+    }
+
+    // Hubtel success code is "0000"
+    if (json.responseCode !== '0000' || !(json.data as Record<string, unknown>)?.checkoutUrl) {
+      await supabase.from('payment_intents').delete().eq('id', clientReference)
+      throw new Error(
+        String(json.message ?? `Hubtel init failed (code: ${json.responseCode ?? 'unknown'})`)
+      )
+    }
+
+    const checkoutUrl = String((json.data as Record<string, unknown>).checkoutUrl)
+    console.log('[Hubtel] checkoutUrl:', checkoutUrl)
+
     return {
-      authorizationUrl: json.data.checkoutUrl,
+      authorizationUrl: checkoutUrl,
       reference: clientReference,
     }
   }
