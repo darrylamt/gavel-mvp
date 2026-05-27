@@ -161,9 +161,8 @@ export class HubtelProvider implements IPaymentProvider {
   }
 
   async verifyPayment(reference: string): Promise<PaymentVerifyResult> {
-    // Transaction status check endpoint (from HUBTEL_API.md)
-    // Uses Collection Account Number (HUBTEL_POS_SALES_ID) + clientReference query param
-    const statusUrl = `https://api-txnstatus.hubtel.com/transactions/${encodeURIComponent(this.merchantAccountNumber)}/status?clientReference=${encodeURIComponent(reference)}`
+    // Public transaction status check endpoint (no IP whitelisting required)
+    const statusUrl = `https://rmsc.hubtel.com/v1/merchantaccount/merchants/${encodeURIComponent(this.merchantAccountNumber)}/transactions/status?clientReference=${encodeURIComponent(reference)}`
 
     const res = await fetch(statusUrl, {
       headers: { Authorization: this.authHeader },
