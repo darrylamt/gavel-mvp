@@ -174,15 +174,18 @@ export class HubtelProvider implements IPaymentProvider {
     })
 
     const json = await res.json()
+    console.log('[Hubtel] verifyPayment raw response:', JSON.stringify(json))
 
-    if (json.responseCode !== '0000') {
-      throw new Error(json.message ?? 'Hubtel verification failed')
+    // Hubtel returns PascalCase or camelCase depending on endpoint — handle both
+    const responseCode = json.ResponseCode ?? json.responseCode
+    if (responseCode !== '0000') {
+      throw new Error(String(json.Message ?? json.message ?? `Hubtel verification failed (code: ${responseCode})`))
     }
 
-    const data = json.data ?? {}
+    const data = json.Data ?? json.data ?? {}
     // Status check returns "Paid", "Unpaid", or "Refunded"
-    const success = String(data.status ?? data.Status ?? '').toLowerCase() === 'paid'
-    const amountGHS = Number(data.amount ?? data.Amount ?? 0)
+    const success = String(data.Status ?? data.status ?? '').toLowerCase() === 'paid'
+    const amountGHS = Number(data.Amount ?? data.amount ?? 0)
 
     // Retrieve metadata from payment_intents table
     const { createServiceRoleClient } = await import('@/lib/serverSupabase')
