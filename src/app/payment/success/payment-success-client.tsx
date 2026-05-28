@@ -8,7 +8,8 @@ import { CheckCircle2, ShoppingBag, Gavel, Package, ArrowRight, Loader2 } from '
 export default function PaymentSuccessClient() {
   const params = useSearchParams()
   const router = useRouter()
-  const reference = params.get('reference')
+  // Paystack sends ?reference=xxx, Hubtel sends ?clientReference=xxx (or we embed ?reference=xxx ourselves)
+  const reference = params.get('reference') ?? params.get('clientReference')
   const paymentType = params.get('type')
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(

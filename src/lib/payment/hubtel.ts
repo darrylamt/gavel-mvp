@@ -100,11 +100,16 @@ export class HubtelProvider implements IPaymentProvider {
     const callbackUrl = process.env.HUBTEL_CALLBACK_URL ?? `${siteUrl}/api/webhooks/hubtel`
     const cancellationUrl = process.env.HUBTEL_CANCELLATION_URL ?? `${siteUrl}/payment/cancelled`
 
+    // Embed our clientReference into the returnUrl so the success page
+    // can retrieve it even if Hubtel replaces/appends its own params.
+    const separator = params.callbackUrl.includes('?') ? '&' : '?'
+    const returnUrl = `${params.callbackUrl}${separator}reference=${encodeURIComponent(clientReference)}`
+
     const body = {
       totalAmount: params.amountGHS,
       description: params.description ?? 'Gavel payment',
       callbackUrl,
-      returnUrl: params.callbackUrl,
+      returnUrl,
       merchantAccountNumber: merchantId,
       cancellationUrl,
       clientReference,

@@ -8,7 +8,8 @@ import { supabase } from '@/lib/supabaseClient'
 export default function TokenSuccessClient() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const reference = searchParams.get('reference')
+  // Paystack sends ?reference=xxx, Hubtel sends ?clientReference=xxx (or we embed ?reference=xxx ourselves)
+  const reference = searchParams.get('reference') ?? searchParams.get('clientReference')
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
     reference ? 'loading' : 'error'
