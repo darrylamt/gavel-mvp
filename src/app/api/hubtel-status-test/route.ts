@@ -28,9 +28,8 @@ export async function GET(req: Request) {
 
   const auth = basicAuth.startsWith('Basic ') ? basicAuth : `Basic ${basicAuth}`
 
-  // Use a dummy reference — we expect a "not found" response, which still
-  // proves the endpoint is reachable and shows the response shape.
-  const testRef = 'gavel-test-probe-001'
+  // Use provided ref or fall back to dummy reference
+  const testRef = searchParams.get('ref') ?? 'gavel-test-probe-001'
   const url = `https://rmsc.hubtel.com/v1/merchantaccount/merchants/${encodeURIComponent(posId)}/transactions/status?clientReference=${encodeURIComponent(testRef)}`
 
   let rawText = ''
