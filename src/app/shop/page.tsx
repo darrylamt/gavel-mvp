@@ -52,6 +52,7 @@ export default async function ShopPage({
     .from('shop_products')
     .select('id, title, description, price, seller_base_price, commission_rate, stock, category, image_url, image_urls')
     .eq('status', 'active')
+    .eq('archived', false) // never surface archived (retired) products
     .order('created_at', { ascending: false })
 
   const products = (data ?? []) as ShopProduct[]

@@ -34,6 +34,7 @@ export default async function SellerShopsPage() {
       .from('shop_products')
       .select('shop_id, image_url, category')
       .eq('status', 'active')
+      .eq('archived', false) // never surface archived (retired) products
       .not('shop_id', 'is', null),
   ])
 

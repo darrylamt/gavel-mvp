@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import PieChartCard from '@/components/base/PieChartCard'
 import SellerProfileNotification from '@/components/seller/SellerProfileNotification'
 import { Gavel, Package, Clock, CheckCircle2, AlertTriangle, TrendingUp } from 'lucide-react'
+import { SHOP_ENABLED } from '@/lib/config'
 
 type SellerAuction = {
   id: string
@@ -125,11 +126,31 @@ export default function SellerDashboardPage() {
     <>
       <SellerProfileNotification />
 
+      {/* Auctions-only transition notice (Step 7) — shown while the shop is retired.
+          Remove automatically when SHOP_ENABLED=true. */}
+      {!SHOP_ENABLED && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <Gavel className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+            <div>
+              <p className="text-sm font-bold text-amber-900">Gavel is now an auctions-only platform</p>
+              <p className="mt-1 text-sm leading-relaxed text-amber-800">
+                Your existing product listings have been archived. To sell, create an auction — it&apos;s the
+                best way to get the highest price for your items. Any pending orders will still be fulfilled
+                as normal.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Header card */}
       <section className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
         <h2 className="text-xl font-bold text-gray-900">Seller Dashboard</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Use My Auctions for auction listings and My Products for buy-now inventory.
+          {SHOP_ENABLED
+            ? 'Use My Auctions for auction listings and My Products for buy-now inventory.'
+            : 'Create and manage your auction listings here.'}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
@@ -139,13 +160,16 @@ export default function SellerDashboardPage() {
             <Gavel className="h-4 w-4" />
             My Auctions
           </Link>
-          <Link
-            href="/seller/products"
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <Package className="h-4 w-4" />
-            My Products
-          </Link>
+          {/* My Products entry point removed while the shop is retired */}
+          {SHOP_ENABLED && (
+            <Link
+              href="/seller/products"
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Package className="h-4 w-4" />
+              My Products
+            </Link>
+          )}
         </div>
       </section>
 

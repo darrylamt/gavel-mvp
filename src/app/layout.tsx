@@ -20,10 +20,10 @@ const googleAnalyticsId = 'G-DCB2M8019Q'
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Gavel Ghana - Online Auctions',
+    default: "Gavel — Ghana's Online Auction Platform",
     template: '%s | Gavel Ghana',
   },
-  description: 'Bid on trusted online auctions in Ghana using Gavel.',
+  description: "Bid, win, and save on live online auctions across Ghana. Gavel is Ghana's online auction platform.",
   verification: {
     google: 'SDSysJpjhUK_A-YPkPKeDsV6lcNiTaXQYKmafA4_vKA',
   },
@@ -34,13 +34,13 @@ export const metadata: Metadata = {
     type: 'website',
     url: siteUrl,
     siteName: 'Gavel Ghana',
-    title: 'Gavel Ghana - Online Auctions',
-    description: 'Bid on trusted online auctions in Ghana using Gavel.',
+    title: "Gavel — Ghana's Online Auction Platform",
+    description: "Bid, win, and save on live online auctions across Ghana. Gavel is Ghana's online auction platform.",
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Gavel Ghana - Online Auctions',
-    description: 'Bid on trusted online auctions in Ghana using Gavel.',
+    title: "Gavel — Ghana's Online Auction Platform",
+    description: "Bid, win, and save on live online auctions across Ghana. Gavel is Ghana's online auction platform.",
   },
   icons: {
     icon: gavelTabIcon.src,

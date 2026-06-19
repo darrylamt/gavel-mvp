@@ -16,18 +16,22 @@ import {
   MoreHorizontal,
   X,
 } from 'lucide-react'
+import { SHOP_ENABLED } from '@/lib/config'
 
 type Props = {
   children: React.ReactNode
 }
 
+// Fixed-price shop tabs (My Products, Edit Shop) are hidden while the shop is
+// retired — sellers can only create auctions. "Orders" stays so sellers can
+// still fulfil any existing shop orders.
 const tabs = [
   { href: '/seller', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/seller/auctions', label: 'My Auctions', icon: Gavel },
-  { href: '/seller/products', label: 'My Products', icon: Package },
+  ...(SHOP_ENABLED ? [{ href: '/seller/products', label: 'My Products', icon: Package }] : []),
   { href: '/seller/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/seller/earnings', label: 'Earnings', icon: Wallet },
-  { href: '/seller/shop', label: 'Edit Shop', icon: Store },
+  ...(SHOP_ENABLED ? [{ href: '/seller/shop', label: 'Edit Shop', icon: Store }] : []),
   { href: '/seller/settings/payouts', label: 'Payout Settings', icon: CreditCard },
 ]
 

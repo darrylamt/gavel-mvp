@@ -4,6 +4,7 @@ import 'server-only'
 import { calculateDiscountAmount, resolveDiscountCode } from '@/lib/discounts'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 import { getPaymentProvider } from '@/lib/payment'
+import { SHOP_ENABLED } from '@/lib/config'
 
 type CheckoutItemInput = {
   product_id: string
@@ -32,6 +33,15 @@ const supabase = createClient(
 )
 
 export async function POST(req: Request) {
+  // Fixed-price shop retired: block NEW purchases. Existing orders are unaffected
+  // (they complete via the verify route). Reversible via SHOP_ENABLED.
+  if (!SHOP_ENABLED) {
+    return NextResponse.json(
+      { error: 'The fixed-price shop is no longer available. Browse auctions instead.' },
+      { status: 410 }
+    )
+  }
+
   // Rate limit: 10 checkout initiations per minute per IP
   const ip = getClientIp(req)
   const rl = rateLimit('shop-payments-init', ip, 10, 60_000)

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Search, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import SemanticSearch from '@/components/search/SemanticSearch'
+import { SHOP_ENABLED } from '@/lib/config'
 
 type SearchResult = {
   id: string
@@ -130,16 +131,19 @@ function SearchResults() {
                 >
                   Auctions ({auctionCount})
                 </button>
-                <button
-                  onClick={() => setActiveTab('products')}
-                  className={`whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
-                    activeTab === 'products'
-                      ? 'border-blue-500 text-blue-700'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Buy Now ({productCount})
-                </button>
+                {/* Buy Now (fixed-price) tab — hidden while the shop is retired */}
+                {SHOP_ENABLED && (
+                  <button
+                    onClick={() => setActiveTab('products')}
+                    className={`whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
+                      activeTab === 'products'
+                        ? 'border-blue-500 text-blue-700'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Buy Now ({productCount})
+                  </button>
+                )}
               </div>
             </div>
 
@@ -156,12 +160,14 @@ function SearchResults() {
                   >
                     Browse Auctions
                   </Link>
-                  <Link
-                    href="/shop"
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
-                  >
-                    Browse Shop
-                  </Link>
+                  {SHOP_ENABLED && (
+                    <Link
+                      href="/shop"
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
+                    >
+                      Browse Shop
+                    </Link>
+                  )}
                 </div>
               </div>
             ) : (

@@ -6,6 +6,7 @@ import { useAuthUser } from '@/hooks/useAuthUser'
 import { Search, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import styles from './SearchHero.module.css'
+import { SHOP_ENABLED } from '@/lib/config'
 
 type SearchResult = {
   id: string
@@ -24,15 +25,23 @@ const PLACEHOLDER_SUGGESTIONS = [
   'Try: cheap electronics...',
 ]
 
-const QUICK_CATEGORIES = [
-  { label: '📱 Electronics', href: '/shop?category=Electronics' },
-  { label: '👗 Fashion', href: '/shop?category=Fashion' },
-  { label: '✨ Cosmetics', href: '/shop?category=Cosmetics' },
-  { label: '🏠 Furniture', href: '/shop?category=Furniture' },
-  { label: '🚗 Vehicles', href: '/auctions?category=Vehicles' },
-  { label: '💍 Jewelry', href: '/shop?category=Jewelry' },
-  { label: '📚 Books', href: '/shop?category=Books' },
-]
+// Shop categories map to fixed-price products. While the shop is retired
+// (SHOP_ENABLED=false) we show auction-oriented quick links instead.
+const QUICK_CATEGORIES = SHOP_ENABLED
+  ? [
+      { label: '📱 Electronics', href: '/shop?category=Electronics' },
+      { label: '👗 Fashion', href: '/shop?category=Fashion' },
+      { label: '✨ Cosmetics', href: '/shop?category=Cosmetics' },
+      { label: '🏠 Furniture', href: '/shop?category=Furniture' },
+      { label: '🚗 Vehicles', href: '/auctions?category=Vehicles' },
+      { label: '💍 Jewelry', href: '/shop?category=Jewelry' },
+      { label: '📚 Books', href: '/shop?category=Books' },
+    ]
+  : [
+      { label: '🔨 Browse Auctions', href: '/auctions' },
+      { label: '🏆 Recent Winners', href: '/auctions/winners' },
+      { label: '🪙 Buy Tokens', href: '/tokens' },
+    ]
 
 export default function SearchHero() {
   const router = useRouter()
@@ -129,11 +138,11 @@ export default function SearchHero() {
         )}
 
         <h1 className={styles.heading}>
-          Ghana&apos;s Marketplace –&nbsp;
-          <span className={styles.highlight}>Bid, Buy &amp; Win.</span>
+          Ghana&apos;s Online Auction Platform –&nbsp;
+          <span className={styles.highlight}>Bid. Win. Save.</span>
         </h1>
         <p className={styles.subheading}>
-          Live auctions and instant purchases. Just describe what you need – our AI will find it.
+          Live auctions across Ghana. Just describe what you need – our AI will find it.
         </p>
 
         <div ref={containerRef} className={styles.searchWrap}>

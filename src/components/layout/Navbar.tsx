@@ -14,6 +14,7 @@ import { useStarredProducts } from '@/hooks/useStarredProducts'
 import { useCart } from '@/hooks/useCart'
 import navLogo from '@/assets/branding/nav-logo.png'
 import NotificationsDropdown from '@/components/layout/NotificationsDropdown'
+import { SHOP_ENABLED } from '@/lib/config'
 
 type ProfileData = {
   username: string | null
@@ -35,7 +36,8 @@ export default function Navbar() {
   const { starredProductCount } = useStarredProducts()
   const { itemCount } = useCart()
   const lockedScrollYRef = useRef(0)
-  const totalStarredCount = starredCount + starredProductCount
+  // Shop retired: product stars only matter when the shop is enabled.
+  const totalStarredCount = starredCount + (SHOP_ENABLED ? starredProductCount : 0)
   const canBecomeSeller = !!user && profileRole !== 'seller' && profileRole !== 'admin'
 
   const getMetadataFullName = () => {
@@ -170,14 +172,17 @@ export default function Navbar() {
                 </div>
               </div>
 
-              <Link href="/shop" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                Shop
-              </Link>
-
-
-              <Link href="/shop/sellers" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                Sellers
-              </Link>
+              {/* Fixed-price shop links — hidden while the shop is retired (SHOP_ENABLED=false) */}
+              {SHOP_ENABLED && (
+                <>
+                  <Link href="/shop" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                    Shop
+                  </Link>
+                  <Link href="/shop/sellers" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                    Sellers
+                  </Link>
+                </>
+              )}
 
               <Link href="/tokens" className="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors">
                 Tokens
@@ -220,19 +225,21 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* Cart */}
-              <Link
-                href="/cart"
-                className="relative flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                aria-label="Cart"
-              >
-                <ShoppingCart className="h-[1.1rem] w-[1.1rem]" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-orange-500 flex items-center justify-center text-[9px] font-bold text-white px-1 leading-none">
-                    {itemCount}
-                  </span>
-                )}
-              </Link>
+              {/* Cart — only when the fixed-price shop is enabled */}
+              {SHOP_ENABLED && (
+                <Link
+                  href="/cart"
+                  className="relative flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                  aria-label="Cart"
+                >
+                  <ShoppingCart className="h-[1.1rem] w-[1.1rem]" />
+                  {itemCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-orange-500 flex items-center justify-center text-[9px] font-bold text-white px-1 leading-none">
+                      {itemCount}
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {/* Notifications */}
               <NotificationsDropdown />
@@ -366,9 +373,13 @@ export default function Navbar() {
             </p>
             {[
               { href: '/auctions', label: 'Auctions' },
-              { href: '/shop', label: 'Buy Now' },
-
-              { href: '/shop/sellers', label: 'Shops' },
+              // Fixed-price shop entries — only while SHOP_ENABLED
+              ...(SHOP_ENABLED
+                ? [
+                    { href: '/shop', label: 'Buy Now' },
+                    { href: '/shop/sellers', label: 'Shops' },
+                  ]
+                : []),
               { href: '/auctions/winners', label: 'Recent Winners' },
               { href: '/tokens', label: 'Tokens' },
               { href: '/contact', label: 'Contact' },
@@ -394,7 +405,7 @@ export default function Navbar() {
                   { href: '/referrals', label: 'Referrals & Earnings' },
                   { href: '/leaderboard', label: 'Leaderboard' },
                   { href: '/starred', label: 'Starred Items' },
-                  { href: '/cart', label: 'Cart' },
+                  ...(SHOP_ENABLED ? [{ href: '/cart', label: 'Cart' }] : []),
                   ...(profileRole === 'seller' ? [{ href: '/seller', label: 'Seller Dashboard' }] : []),
                   ...(isAdmin ? [{ href: '/admin', label: 'Admin Panel' }] : []),
                 ].map(({ href, label }) => (

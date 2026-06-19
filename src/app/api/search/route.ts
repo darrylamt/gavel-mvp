@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { generateEmbedding } from '@/lib/embeddings'
 import { createClient } from '@supabase/supabase-js'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
+import { SHOP_ENABLED } from '@/lib/config'
 
 type SearchResult = {
   id: string
@@ -71,13 +72,17 @@ export async function POST(req: Request) {
         .or(`title.ilike.%${cleanQuery}%,description.ilike.%${cleanQuery}%`)
         .limit(10)
 
-      // Search products
-      const { data: productData } = await supabase
-        .from('shop_products')
-        .select('id, title, description, price, image_url, image_urls, category')
-        .eq('status', 'active')
-        .or(`title.ilike.%${cleanQuery}%,description.ilike.%${cleanQuery}%,category.ilike.%${cleanQuery}%`)
-        .limit(10)
+      // Search products — only when the fixed-price shop is enabled, and never
+      // archived products.
+      const { data: productData } = SHOP_ENABLED
+        ? await supabase
+            .from('shop_products')
+            .select('id, title, description, price, image_url, image_urls, category')
+            .eq('status', 'active')
+            .eq('archived', false)
+            .or(`title.ilike.%${cleanQuery}%,description.ilike.%${cleanQuery}%,category.ilike.%${cleanQuery}%`)
+            .limit(10)
+        : { data: [] }
 
       results = [
         ...(auctionData || []).map(item => ({
@@ -103,9 +108,13 @@ export async function POST(req: Request) {
       ]
     }
 
+    // Shop retired: strip any product hits the semantic index may have returned,
+    // so search only ever surfaces auctions while SHOP_ENABLED is false.
+    const visibleResults = SHOP_ENABLED ? results : results.filter((r) => r.type !== 'product')
+
     return NextResponse.json({
-      results: results.slice(0, 20),
-      noResults: results.length === 0,
+      results: visibleResults.slice(0, 20),
+      noResults: visibleResults.length === 0,
       query: cleanQuery,
     })
   } catch (error) {

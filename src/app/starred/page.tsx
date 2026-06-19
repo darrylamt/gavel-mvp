@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import StarredContentClient from '@/components/starred/StarredContentClient'
 import { getAuctionEngagementCounts } from '@/lib/serverAuctionEngagement'
+import { SHOP_ENABLED } from '@/lib/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,11 +48,15 @@ export default async function StarredAuctionsPage() {
       .select('id, title, description, starting_price, current_price, ends_at, starts_at, status, image_url, images, reserve_price, min_increment, max_increment, is_private')
       .or('is_private.is.false,is_private.is.null')
       .order('created_at', { ascending: false }),
-    supabase
-      .from('shop_products')
-      .select('id, title, description, price, seller_base_price, commission_rate, stock, category, image_url')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false }),
+    // Shop retired: don't surface starred fixed-price products (reversible).
+    SHOP_ENABLED
+      ? supabase
+          .from('shop_products')
+          .select('id, title, description, price, seller_base_price, commission_rate, stock, category, image_url')
+          .eq('status', 'active')
+          .eq('archived', false)
+          .order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] as ShopProduct[] }),
   ])
 
   const typedAuctions: Auction[] = (auctions ?? []) as Auction[]

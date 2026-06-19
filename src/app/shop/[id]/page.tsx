@@ -148,6 +148,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
     .select('id, title, description, price, seller_base_price, commission_rate, stock, image_url, image_urls, status, created_by, category, shop_id')
     .eq('id', id)
     .eq('status', 'active')
+    .eq('archived', false) // never surface archived (retired) products
     .maybeSingle()
 
   if (!product) {
@@ -169,6 +170,7 @@ export default async function ShopProductDetailPage({ params }: Props) {
     .from('shop_products')
     .select('id, title, description, price, seller_base_price, commission_rate, stock, image_url, category')
     .eq('status', 'active')
+    .eq('archived', false) // never surface archived (retired) products
     .neq('id', product.id)
     .order('created_at', { ascending: false })
     .limit(4)

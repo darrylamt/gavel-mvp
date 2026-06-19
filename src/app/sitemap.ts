@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { buildAuctionPath } from '@/lib/seo'
+import { SHOP_ENABLED } from '@/lib/config'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gavelgh.com'
 
@@ -9,8 +10,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/`, changeFrequency: 'daily', priority: 1 },
     { url: `${siteUrl}/auctions`, changeFrequency: 'hourly', priority: 0.9 },
     { url: `${siteUrl}/auctions/winners`, changeFrequency: 'daily', priority: 0.6 },
-    { url: `${siteUrl}/shop`, changeFrequency: 'hourly', priority: 0.9 },
-    { url: `${siteUrl}/shop/sellers`, changeFrequency: 'daily', priority: 0.7 },
+    // Shop URLs only when the fixed-price shop is enabled
+    ...(SHOP_ENABLED
+      ? ([
+          { url: `${siteUrl}/shop`, changeFrequency: 'hourly', priority: 0.9 },
+          { url: `${siteUrl}/shop/sellers`, changeFrequency: 'daily', priority: 0.7 },
+        ] as MetadataRoute.Sitemap)
+      : []),
     { url: `${siteUrl}/tokens`, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${siteUrl}/contact`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${siteUrl}/faq`, changeFrequency: 'monthly', priority: 0.5 },
@@ -40,10 +46,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
+  // Shop is retired — don't index any fixed-price product or storefront URLs.
+  if (!SHOP_ENABLED) {
+    return [...staticUrls, ...auctionUrls]
+  }
+
   const { data: products } = await supabase
     .from('shop_products')
     .select('id')
     .eq('status', 'active')
+    .eq('archived', false)
     .gt('stock', 0)
     .order('created_at', { ascending: false })
     .limit(1000)

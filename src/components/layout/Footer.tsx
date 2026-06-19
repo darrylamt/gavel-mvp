@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Facebook, Instagram, Twitter } from 'lucide-react'
 import navLogo from '@/assets/branding/nav-logo.png'
+import { SHOP_ENABLED } from '@/lib/config'
 
 export default function Footer() {
   return (
@@ -41,7 +42,7 @@ export default function Footer() {
               <Image src={navLogo} alt="Gavel" className="h-9 w-auto brightness-0 invert" />
             </Link>
             <p className="mt-5 text-sm leading-relaxed text-gray-400 max-w-xs">
-              Ghana&apos;s modern auction and marketplace platform – powered by live bidding, tokens, and seamless payments.
+              Ghana&apos;s online auction platform – powered by live bidding, tokens, and seamless payments.
             </p>
             <div className="mt-6 flex items-center gap-2">
               <a
@@ -75,7 +76,8 @@ export default function Footer() {
               {[
                 { href: '/', label: 'About' },
                 { href: '/auctions', label: 'Auctions' },
-                { href: '/shop', label: 'Shop' },
+                // Shop link only while the fixed-price shop is enabled
+                ...(SHOP_ENABLED ? [{ href: '/shop', label: 'Shop' }] : []),
                 { href: '/tokens', label: 'Tokens' },
                 { href: '/referrals', label: 'Referrals' },
                 { href: '/leaderboard', label: 'Leaderboard' },

@@ -13,6 +13,7 @@ import ShopProductCard from '@/components/shop/ShopProductCard'
 import SearchHero from '@/components/home/SearchHero'
 import { getCategoryTheme } from '@/lib/categoryThemes'
 import { Flame, Clock, Home, Car, ChevronRight } from 'lucide-react'
+import { SHOP_ENABLED } from '@/lib/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,12 +76,17 @@ const heroCategories = [
 ]
 
 export default async function HomePage() {
-  const { data: products } = await supabase
-    .from('shop_products')
-    .select('id, title, description, price, seller_base_price, commission_rate, stock, category, image_url, image_urls')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(8)
+  // Fixed-price shop is retired (SHOP_ENABLED=false) — skip product fetches
+  // entirely. When the shop is re-enabled, only surface non-archived products.
+  const { data: products } = SHOP_ENABLED
+    ? await supabase
+        .from('shop_products')
+        .select('id, title, description, price, seller_base_price, commission_rate, stock, category, image_url, image_urls')
+        .eq('status', 'active')
+        .eq('archived', false)
+        .order('created_at', { ascending: false })
+        .limit(8)
+    : { data: null }
 
   const now = new Date()
   const nowIso = now.toISOString()
@@ -178,10 +184,10 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Featured Auctions */}
+      {/* Live Auctions */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Auctions</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Live Auctions</h2>
           <Link href="/auctions" className="text-sm font-semibold text-gray-600 hover:text-gray-900 underline underline-offset-2">
             View all
           </Link>
@@ -258,8 +264,8 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Featured Products */}
-      {products && products.length > 0 && (
+      {/* Featured Products — fixed-price shop section, hidden while SHOP_ENABLED=false */}
+      {SHOP_ENABLED && products && products.length > 0 && (
         <section className="mb-12">
           <div className="mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Products</h2>
@@ -290,7 +296,9 @@ export default async function HomePage() {
       )}
 
 
-      {/* Popular Categories */}
+      {/* Popular Categories — shop-only browsing (categories map to fixed-price
+          products, not auctions), hidden while SHOP_ENABLED=false */}
+      {SHOP_ENABLED && (
       <section className="mb-4">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h2 className="text-xl font-bold text-gray-900">Shop by Category</h2>
@@ -326,6 +334,7 @@ export default async function HomePage() {
           })}
         </div>
       </section>
+      )}
 
     </main>
   )
