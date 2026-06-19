@@ -6,7 +6,7 @@ import AdminShell from '@/components/admin/AdminShell'
 import MiniBarChart from '@/components/admin/MiniBarChart'
 import { DashboardPayload } from '@/components/admin/AdminTypes'
 import PieChartCard from '@/components/base/PieChartCard'
-import { Users, Gavel, TrendingUp, Store, X, Search, SlidersHorizontal, GitBranch } from 'lucide-react'
+import { Users, Gavel, TrendingUp, Store, X, Search, SlidersHorizontal, GitBranch, AlertTriangle } from 'lucide-react'
 import { formatGhs } from '@/lib/formatGhs'
 
 type ReferralSummary = {
@@ -43,7 +43,7 @@ type AdminReferralData = {
 }
 
 export default function AdminPage() {
-  const [data, setData] = useState<DashboardPayload>({ users: [], auctions: [], sellers: [], purchases: [] })
+  const [data, setData] = useState<DashboardPayload>({ users: [], auctions: [], sellers: [], purchases: [], stuckAuctions: [] })
   const [loading, setLoading] = useState(true)
   const [userSearch, setUserSearch] = useState('')
   const [userRoleFilter, setUserRoleFilter] = useState('all')
@@ -183,6 +183,43 @@ export default function AdminPage() {
 
   return (
     <AdminShell>
+      {/* Settlement safeguard: ended auctions with qualifying bids but no winner.
+          Should always be empty — a non-empty list means settlement failed. */}
+      {data.stuckAuctions.length > 0 && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-red-800">
+                {data.stuckAuctions.length} ended auction{data.stuckAuctions.length !== 1 ? 's' : ''} with bids but no winner assigned
+              </p>
+              <p className="mt-0.5 text-xs text-red-700">
+                These auctions met (or had no) reserve and should have a winner. Run{' '}
+                <code className="rounded bg-red-100 px-1 py-0.5 font-mono">POST /api/admin/recover-ended-auctions</code>{' '}
+                to repair them.
+              </p>
+              <ul className="mt-2 space-y-1">
+                {data.stuckAuctions.map((a) => (
+                  <li key={a.id} className="flex flex-wrap items-center gap-2 text-xs text-red-700">
+                    <span className="font-medium text-red-900">{a.title}</span>
+                    <span className="text-red-500">·</span>
+                    <span>top bid {formatGhs(a.topBid)}</span>
+                    <span className="text-red-500">·</span>
+                    <span>{a.bidCount} bid{a.bidCount !== 1 ? 's' : ''}</span>
+                    {a.endsAt && (
+                      <>
+                        <span className="text-red-500">·</span>
+                        <span>ended {new Date(a.endsAt).toLocaleDateString()}</span>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Total Users" value={String(data.users.length)} icon={<Users className="h-5 w-5" />} color="orange" />

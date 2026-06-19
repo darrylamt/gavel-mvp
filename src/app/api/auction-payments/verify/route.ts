@@ -136,16 +136,19 @@ export async function POST(req: Request) {
 
   const { data: auctionMeta } = await supabase
     .from('auctions')
-    .select('id, title, created_by')
+    // The seller is `seller_id`; there is no `created_by` column on auctions.
+    // Selecting a non-existent column made this query error → auctionMeta null
+    // → payment-received notifications AND the seller payout record were skipped.
+    .select('id, title, seller_id')
     .eq('id', String(auction_id))
-    .maybeSingle<{ id: string; title: string | null; created_by: string | null }>()
+    .maybeSingle<{ id: string; title: string | null; seller_id: string | null }>()
 
   if (auctionMeta) {
     await queueAuctionPaymentReceivedNotifications({
       auctionId: auctionMeta.id,
       auctionTitle: auctionMeta.title || 'Auction',
       winnerUserId: resolution.activeCandidate.userId,
-      sellerUserId: auctionMeta.created_by,
+      sellerUserId: auctionMeta.seller_id,
       amount: grossAmount,
     })
   }
@@ -153,7 +156,7 @@ export async function POST(req: Request) {
   // 5️⃣ Create payout record with escrow (hold for 5 days or until buyer confirms delivery)
   const COMMISSION_RATE = 0.10
 
-  if (auctionMeta?.created_by) {
+  if (auctionMeta?.seller_id) {
     const commissionAmount = grossAmount * COMMISSION_RATE
     const payoutAmount = grossAmount * (1 - COMMISSION_RATE)
 
@@ -161,7 +164,7 @@ export async function POST(req: Request) {
     const { data: defaultPayoutAccount } = await supabase
       .from('seller_payout_accounts')
       .select('recipient_code')
-      .eq('seller_id', auctionMeta.created_by)
+      .eq('seller_id', auctionMeta.seller_id)
       .eq('is_default', true)
       .maybeSingle()
 
@@ -171,7 +174,7 @@ export async function POST(req: Request) {
       const { data: fallbackPayoutAccount } = await supabase
         .from('seller_payout_accounts')
         .select('recipient_code')
-        .eq('seller_id', auctionMeta.created_by)
+        .eq('seller_id', auctionMeta.seller_id)
         .not('recipient_code', 'is', null)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -186,7 +189,7 @@ export async function POST(req: Request) {
 
       const { error: payoutError } = await supabase.from('payouts').insert({
         auction_id: String(auction_id),
-        seller_id: auctionMeta.created_by,
+        seller_id: auctionMeta.seller_id,
         buyer_id: resolution.activeCandidate.userId,
         gross_amount: grossAmount,
         commission_amount: commissionAmount,
@@ -200,7 +203,7 @@ export async function POST(req: Request) {
         console.error('Failed to create payout record:', payoutError)
       }
     } else {
-      console.warn('No payout account with recipient code found for seller:', auctionMeta.created_by)
+      console.warn('No payout account with recipient code found for seller:', auctionMeta.seller_id)
     }
   }
 

@@ -1,6 +1,7 @@
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 
-const ONE_HOUR_MS = 60 * 60 * 1000
+// Winners get a 48h payment window (see PAYMENT_WINDOW_MS in auctionPaymentCandidate).
+const PAYMENT_WINDOW_MS = 48 * 60 * 60 * 1000
 
 /** Helper to create a past timestamp */
 const past = (msAgo = 10000) => new Date(Date.now() - msAgo).toISOString()
@@ -125,7 +126,7 @@ describe('resolveAuctionPaymentCandidate', () => {
     expect(result.activeCandidate?.userId).toBe('user1')
   })
 
-  it('paymentDueAt is approximately 1 hour from now', async () => {
+  it('paymentDueAt is approximately 48 hours from now', async () => {
     const before = Date.now()
     const supabase = buildSupabaseMock(
       {
@@ -141,8 +142,8 @@ describe('resolveAuctionPaymentCandidate', () => {
 
     expect(result.paymentDueAt).not.toBeNull()
     const dueMs = new Date(result.paymentDueAt!).getTime()
-    expect(dueMs).toBeGreaterThanOrEqual(before + ONE_HOUR_MS)
-    expect(dueMs).toBeLessThanOrEqual(after + ONE_HOUR_MS + 100)
+    expect(dueMs).toBeGreaterThanOrEqual(before + PAYMENT_WINDOW_MS)
+    expect(dueMs).toBeLessThanOrEqual(after + PAYMENT_WINDOW_MS + 100)
   })
 
   it('returns no_eligible_bids when payment window has expired', async () => {

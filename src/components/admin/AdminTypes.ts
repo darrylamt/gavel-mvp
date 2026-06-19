@@ -41,9 +41,24 @@ export type DashboardPurchase = {
   sellerPayoutAccountNumber: string | null
 }
 
+/**
+ * Auctions that ended with qualifying bids (reserve met or no reserve) but were
+ * never assigned a winner. This should normally be empty; a non-empty list means
+ * the settlement flow failed for those auctions and they need attention.
+ */
+export type StuckAuction = {
+  id: string
+  title: string
+  topBid: number
+  bidCount: number
+  reservePrice: number | null
+  endsAt: string | null
+}
+
 export type DashboardPayload = {
   users: DashboardUser[]
   auctions: DashboardAuction[]
   sellers: DashboardSeller[]
   purchases: DashboardPurchase[]
+  stuckAuctions: StuckAuction[]
 }

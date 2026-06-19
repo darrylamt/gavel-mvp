@@ -199,21 +199,24 @@ export async function POST(req: Request) {
     // Auction payment notifications + payout escrow
     const { data: auctionMeta } = await supabase
       .from('auctions')
-      .select('id, title, created_by')
+      // The seller is `seller_id`; there is no `created_by` column on auctions.
+      // Selecting a non-existent column made this query error → auctionMeta null
+      // → notifications AND the seller payout record were silently skipped.
+      .select('id, title, seller_id')
       .eq('id', auction_id)
-      .maybeSingle<{ id: string; title: string | null; created_by: string | null }>()
+      .maybeSingle<{ id: string; title: string | null; seller_id: string | null }>()
 
     if (auctionMeta) {
       await queueAuctionPaymentReceivedNotifications({
         auctionId: auctionMeta.id,
         auctionTitle: auctionMeta.title ?? 'Auction',
         winnerUserId: user_id,
-        sellerUserId: auctionMeta.created_by,
+        sellerUserId: auctionMeta.seller_id,
         amount: grossAmountGHS,
       })
 
       // Create payout record in escrow (5-day hold)
-      if (auctionMeta.created_by) {
+      if (auctionMeta.seller_id) {
         const COMMISSION_RATE = 0.1
         const commissionAmount = grossAmountGHS * COMMISSION_RATE
         const payoutAmount = grossAmountGHS * (1 - COMMISSION_RATE)
@@ -221,7 +224,7 @@ export async function POST(req: Request) {
         const { data: defaultPayoutAccount } = await supabase
           .from('seller_payout_accounts')
           .select('recipient_code')
-          .eq('seller_id', auctionMeta.created_by)
+          .eq('seller_id', auctionMeta.seller_id)
           .eq('is_default', true)
           .maybeSingle()
 
@@ -231,7 +234,7 @@ export async function POST(req: Request) {
           const { data: fallback } = await supabase
             .from('seller_payout_accounts')
             .select('recipient_code')
-            .eq('seller_id', auctionMeta.created_by)
+            .eq('seller_id', auctionMeta.seller_id)
             .not('recipient_code', 'is', null)
             .order('created_at', { ascending: false })
             .limit(1)
@@ -244,7 +247,7 @@ export async function POST(req: Request) {
           scheduledRelease.setDate(scheduledRelease.getDate() + 5)
           await supabase.from('payouts').insert({
             auction_id,
-            seller_id: auctionMeta.created_by,
+            seller_id: auctionMeta.seller_id,
             buyer_id: user_id,
             gross_amount: grossAmountGHS,
             commission_amount: commissionAmount,

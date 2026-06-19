@@ -130,7 +130,7 @@ export default function WinnerPanel({
         {/* Note about tokens */}
         <p className="text-xs text-gray-400 leading-relaxed">
           Tokens used for winning bids are consumed and not refunded.
-          You have 1 hour from auction end to complete payment.
+          You have 48 hours from auction end to complete payment.
         </p>
 
         {/* Pay button */}

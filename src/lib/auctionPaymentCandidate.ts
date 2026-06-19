@@ -1,7 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import 'server-only'
 
-const ONE_HOUR_MS = 60 * 60 * 1000
+// Winners get 48 hours from auction close to complete payment. Previously this
+// was 1 hour, which was far too short for a real marketplace: winners who were
+// not online the moment the auction ended routinely lost their win before they
+// could pay, after which `clearCandidate` wiped the candidate and the auction
+// was left ended with no winner. Keep this in sync with the WinnerPanel copy
+// and the recovery route's payment-due window.
+const PAYMENT_WINDOW_MS = 48 * 60 * 60 * 1000
 
 type AuctionSettlementRow = {
   id: string
@@ -135,6 +141,7 @@ async function persistActiveCandidate(
   supabase: SupabaseClient,
   auctionId: string,
   candidateBidId: string,
+  candidateUserId: string,
   paymentDueAt: string
 ) {
   const { error } = await supabase
@@ -142,7 +149,11 @@ async function persistActiveCandidate(
     .update({
       status: 'ended',
       winning_bid_id: candidateBidId,
-      winner_id: null,
+      // Stamp the provisional winner at close time (not only on payment). This
+      // keeps `winner_id` consistent with `winning_bid_id` so payment-reminder
+      // cron, the admin "stuck auction" banner, and the pay page can all rely on
+      // it. The payment webhooks re-affirm this value and flip `paid` to true.
+      winner_id: candidateUserId,
       auction_payment_due_at: paymentDueAt,
     })
     .eq('id', auctionId)
@@ -276,10 +287,10 @@ export async function resolveAuctionPaymentCandidate(
     : -1
 
   if (winnerIndex < 0) {
-    const paymentDueAt = new Date(nowMs + ONE_HOUR_MS).toISOString()
+    const paymentDueAt = new Date(nowMs + PAYMENT_WINDOW_MS).toISOString()
     const candidate = buildCandidate(0)
 
-    await persistActiveCandidate(supabase, auctionId, candidate.bidId, paymentDueAt)
+    await persistActiveCandidate(supabase, auctionId, candidate.bidId, candidate.userId, paymentDueAt)
 
     return {
       auction,
@@ -292,9 +303,9 @@ export async function resolveAuctionPaymentCandidate(
   const currentCandidate = buildCandidate(winnerIndex)
 
   if (!auction.auction_payment_due_at) {
-    const paymentDueAt = new Date(nowMs + ONE_HOUR_MS).toISOString()
+    const paymentDueAt = new Date(nowMs + PAYMENT_WINDOW_MS).toISOString()
 
-    await persistActiveCandidate(supabase, auctionId, currentCandidate.bidId, paymentDueAt)
+    await persistActiveCandidate(supabase, auctionId, currentCandidate.bidId, currentCandidate.userId, paymentDueAt)
 
     return {
       auction,

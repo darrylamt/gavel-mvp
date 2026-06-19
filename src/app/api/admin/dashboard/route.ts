@@ -198,10 +198,70 @@ export async function GET(req: Request) {
     }
   }
 
+  // ── Safeguard: detect auctions that ended with qualifying bids but were never
+  // assigned a winner. This is the exact signature of the settlement bug. It
+  // should normally be empty; if not, settlement failed and the dashboard banner
+  // surfaces it immediately. We allow a 1-hour grace period for the settle cron.
+  const stuckAuctions: Array<{
+    id: string
+    title: string
+    topBid: number
+    bidCount: number
+    reservePrice: number | null
+    endsAt: string | null
+  }> = []
+
+  const graceCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const { data: unsettled } = await service
+    .from('auctions')
+    .select('id, title, reserve_price, ends_at')
+    .eq('status', 'ended')
+    .eq('paid', false)
+    .is('winner_id', null)
+    .is('winning_bid_id', null)
+    .lt('ends_at', graceCutoff)
+    .order('ends_at', { ascending: false })
+    .limit(50)
+
+  if (unsettled && unsettled.length > 0) {
+    const ids = unsettled.map((a) => a.id)
+    const { data: bidRows } = await service
+      .from('bids')
+      .select('auction_id, amount')
+      .in('auction_id', ids)
+
+    const maxByAuction = new Map<string, number>()
+    const countByAuction = new Map<string, number>()
+    for (const bid of bidRows ?? []) {
+      const aid = String(bid.auction_id)
+      const amt = Number(bid.amount)
+      countByAuction.set(aid, (countByAuction.get(aid) ?? 0) + 1)
+      maxByAuction.set(aid, Math.max(maxByAuction.get(aid) ?? 0, Number.isFinite(amt) ? amt : 0))
+    }
+
+    for (const auction of unsettled) {
+      const bidCount = countByAuction.get(auction.id) ?? 0
+      if (bidCount === 0) continue // no bids → legitimately no winner
+      const topBid = maxByAuction.get(auction.id) ?? 0
+      const reserve = auction.reserve_price == null ? 0 : Number(auction.reserve_price)
+      // Reserve not met → legitimately no winner; only flag when a winner SHOULD exist.
+      if (topBid < reserve) continue
+      stuckAuctions.push({
+        id: auction.id,
+        title: auction.title,
+        topBid,
+        bidCount,
+        reservePrice: auction.reserve_price,
+        endsAt: auction.ends_at,
+      })
+    }
+  }
+
   return NextResponse.json({
     users: users ?? [],
     auctions: auctions ?? [],
     sellers,
     purchases,
+    stuckAuctions,
   })
 }

@@ -311,7 +311,13 @@ export default function AuctionDetailPage() {
   useEffect(() => {
     if (!auction?.id) return
     if (!hasEnded) return
-    if (auction.status === 'ended') return
+    // Best-effort, on-page settlement fallback. Fire only when the auction is
+    // genuinely unsettled: ended, not paid, and with no winning candidate yet.
+    // This used to be gated on `status !== 'ended'`, which meant that once the
+    // cron (or any path) flipped status to 'ended' WITHOUT assigning a winner,
+    // this fallback could never run and the auction stayed winner-less forever.
+    if (auction.paid) return
+    if (auction.winning_bid_id) return
     if (hasRequestedSettlement) return
 
     setHasRequestedSettlement(true)
@@ -349,7 +355,7 @@ export default function AuctionDetailPage() {
     }
 
     settleAuction()
-  }, [auction?.id, auction?.status, hasEnded, hasRequestedSettlement, loadAuction, loadBids])
+  }, [auction?.id, auction?.paid, auction?.winning_bid_id, hasEnded, hasRequestedSettlement, loadAuction, loadBids])
 
   useEffect(() => {
     const startsAt = auction?.starts_at
