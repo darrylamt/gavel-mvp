@@ -23,6 +23,17 @@ type SellerApplicationRow = {
   rejection_reason: string | null
 }
 
+/** Mirrors the allowed_mime_types on the `seller-documents` storage bucket. */
+const ALLOWED_DOCUMENT_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'application/pdf',
+]
+
 function parseBearerToken(req: Request) {
   const authHeader = req.headers.get('authorization') || ''
   return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
@@ -74,6 +85,15 @@ export async function POST(req: Request) {
 
   const service = createClient(supabaseUrl, serviceRoleKey)
 
+  // Identity documents land in storage before the row is inserted. If anything
+  // after that fails, the files must be removed — an orphaned Ghana Card has no
+  // row pointing at it, so it would never be reviewed, found, or cleaned up.
+  const uploadedPaths: string[] = []
+  const discardUploads = async () => {
+    if (uploadedPaths.length === 0) return
+    await service.storage.from('seller-documents').remove(uploadedPaths)
+  }
+
   try {
     const formData = await req.formData()
 
@@ -105,6 +125,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Back of Ghana Card image is too large (max 4 MB). Please use a lower-resolution photo.' }, { status: 400 })
     }
 
+    // Must mirror the seller-documents bucket's allowed_mime_types. Without this
+    // check the upload fails inside storage and the applicant sees a raw
+    // Postgres/storage error instead of something actionable.
+    const unsupported = [
+      { file: idDocument, label: 'Ghana Card image' },
+      { file: selfieWithCard, label: 'Back of Ghana Card' },
+    ].find(({ file }) => !ALLOWED_DOCUMENT_MIME_TYPES.includes((file.type || '').toLowerCase()))
+
+    if (unsupported) {
+      return NextResponse.json(
+        { error: `${unsupported.label} must be a JPG, PNG, WebP, HEIC or PDF file.` },
+        { status: 400 }
+      )
+    }
+
     const extension = idDocument.name.includes('.')
       ? idDocument.name.split('.').pop()?.toLowerCase()
       : 'bin'
@@ -132,6 +167,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: uploadId.error.message }, { status: 500 })
     }
 
+    uploadedPaths.push(idPath)
+
     const uploadSelfie = await service.storage
       .from('seller-documents')
       .upload(selfiePath, selfieBuffer, {
@@ -140,8 +177,11 @@ export async function POST(req: Request) {
       })
 
     if (uploadSelfie.error) {
+      await discardUploads()
       return NextResponse.json({ error: uploadSelfie.error.message }, { status: 500 })
     }
+
+    uploadedPaths.push(selfiePath)
 
     const { data, error } = await service
       .from('seller_applications')
@@ -160,6 +200,7 @@ export async function POST(req: Request) {
       .single<SellerApplicationRow>()
 
     if (error) {
+      await discardUploads()
       const message = error.code === '23505'
         ? 'You already have an application under review.'
         : error.message
@@ -170,6 +211,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ application: data }, { status: 201 })
   } catch (error: unknown) {
+    await discardUploads()
     const message = error instanceof Error ? error.message : 'Failed to submit application'
     return NextResponse.json({ error: message }, { status: 500 })
   }

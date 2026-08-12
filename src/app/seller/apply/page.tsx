@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import SellerTermsAndConditions from '@/components/seller/SellerTermsAndConditions'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
@@ -19,6 +20,14 @@ type SellerApplication = {
   reviewed_at: string | null
   rejection_reason: string | null
 }
+
+/**
+ * Mirrors the allowed_mime_types on the `seller-documents` bucket and the
+ * server-side check in /api/seller-applications. A broader `image/*` here would
+ * let the picker offer formats (gif, avif, bmp) that storage then rejects.
+ */
+const ACCEPTED_DOCUMENT_TYPES =
+  'image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf'
 
 export default function SellerApplyPage() {
   const router = useRouter()
@@ -231,7 +240,7 @@ export default function SellerApplyPage() {
             {existing.status === 'pending' && (
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
                 <p className="text-sm font-semibold text-blue-800">Get notified when we review your application</p>
-                <p className="mt-0.5 text-xs text-blue-600">We'll send an SMS update when your application is approved or rejected.</p>
+                <p className="mt-0.5 text-xs text-blue-600">We&apos;ll send an SMS update when your application is approved or rejected.</p>
                 <div className="mt-3 flex gap-2">
                   <input
                     type="tel"
@@ -252,13 +261,24 @@ export default function SellerApplyPage() {
               </div>
             )}
 
-            {/* Apply again buttons */}
-            {(existing.status === 'approved' || existing.status === 'rejected') && (
+            {/* Approved sellers already have their shop. The platform is one shop
+                per seller (shops.owner_id is UNIQUE), so a second application can
+                never produce a second shop — send them to the dashboard instead. */}
+            {existing.status === 'approved' && (
+              <Link
+                href="/seller"
+                className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Go to Seller Dashboard
+              </Link>
+            )}
+
+            {existing.status === 'rejected' && (
               <button
                 onClick={() => { setShowNewForm(true); setError(null); setSuccess(null) }}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
-                {existing.status === 'approved' ? '+ Apply for Another Shop' : 'Reapply'}
+                Reapply
               </button>
             )}
           </div>
@@ -301,12 +321,12 @@ export default function SellerApplyPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Upload Ghana Card image</label>
-              <input type="file" accept="image/*,application/pdf" onChange={handleGhanaCardChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" required />
+              <input type="file" accept={ACCEPTED_DOCUMENT_TYPES} onChange={handleGhanaCardChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" required />
               <p className="mt-1 text-xs text-gray-500">Max 4 MB. Needed to verify your legal identity for seller approval.</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Upload back of Ghana Card</label>
-              <input type="file" accept="image/*" onChange={handleBackOfIdChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" required />
+              <input type="file" accept={ACCEPTED_DOCUMENT_TYPES} onChange={handleBackOfIdChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" required />
               <p className="mt-1 text-xs text-gray-500">Max 4 MB. Needed to verify your identity and reduce fraud.</p>
             </div>
             <div>
