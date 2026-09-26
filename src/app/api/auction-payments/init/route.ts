@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 import { getPaymentProvider } from '@/lib/payment'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,12 +18,28 @@ function normalizeAuctionId(raw: unknown) {
 }
 
 export async function POST(req: Request) {
-  const payload = await req.json()
-  const auction_id = normalizeAuctionId(payload.auction_id)
-  const user_id = payload.user_id
-  const email = payload.email
+  const rl = rateLimit('auction-payments-init', getClientIp(req), 10, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
 
-  if (!auction_id || !user_id || !email) {
+  // Identity comes from the verified access token, never the request body.
+  // The email is forwarded to the payment provider as the payer address, so a
+  // body-supplied one would let a caller put someone else's address on a payment.
+  // Any user_id/email still sent in the body (older clients) is ignored.
+  const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? ''
+  if (!token) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const { data: authData, error: authError } = await supabase.auth.getUser(token)
+  if (authError || !authData.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const payload = await req.json().catch(() => ({}))
+  const auction_id = normalizeAuctionId(payload.auction_id)
+  const user_id = authData.user.id
+  const email = authData.user.email
+
+  if (!auction_id || !email) {
     return NextResponse.json(
       { error: 'Missing required fields' },
       { status: 400 }

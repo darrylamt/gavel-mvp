@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { compareAccessCodes } from '@/lib/privateAuctionUtils'
+import { getAccessCode } from '@/lib/auctionAccessCodes'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 export async function POST(request: Request) {
+  // Codes are guessable only by trial; cap attempts per IP.
+  const rl = rateLimit('validate-access', getClientIp(request), 10, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
     return NextResponse.json({ error: 'Server configuration missing' }, { status: 500 })
   }
 
@@ -27,12 +33,12 @@ export async function POST(request: Request) {
       )
     }
 
-    // Use service role to verify auction exists and get access code
-    const service = createClient(supabaseUrl, serviceRoleKey || supabaseAnonKey)
+    // Service role: access codes are in a table only the server can read.
+    const service = createClient(supabaseUrl, serviceRoleKey)
     
     const { data: auction, error: auctionError } = await service
       .from('auctions')
-      .select('id, is_private, access_code, title')
+      .select('id, is_private, title')
       .eq('id', auctionId)
       .maybeSingle()
 
@@ -52,7 +58,8 @@ export async function POST(request: Request) {
     }
 
     // Verify access code
-    if (!auction.access_code || !compareAccessCodes(accessCode, auction.access_code)) {
+    const storedCode = await getAccessCode(service, auction.id)
+    if (!storedCode || !compareAccessCodes(accessCode, storedCode)) {
       return NextResponse.json(
         { error: 'Invalid access code' },
         { status: 401 }

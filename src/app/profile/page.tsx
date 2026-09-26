@@ -171,12 +171,15 @@ export default function ProfilePage() {
   }, [loading, onboardingHandled, router, searchParams])
 
   const payNow = async (auctionId: string) => {
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user || !auth.user.email) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
     const res = await fetch('/api/auction-payments/init', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ auction_id: auctionId, user_id: auth.user.id, email: auth.user.email }),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ auction_id: auctionId }),
     })
     const data = await res.json()
     if (!res.ok) { alert(data.error || 'Payment failed'); return }

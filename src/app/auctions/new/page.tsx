@@ -257,7 +257,6 @@ export default function NewAuction() {
         seller_id: authData.user.id,
         status: startTime > now ? 'scheduled' : 'active',
         is_private: isPrivate,
-        access_code: isPrivate ? accessCode : null,
         anonymous_bidding_enabled: isPrivate ? anonymousBiddingEnabled : true,
         requires_cargo: requiresCargo,
         buy_now_price: buyNowPrice ? Number(buyNowPrice) : null,
@@ -277,6 +276,20 @@ export default function NewAuction() {
 
       const auction = data[0]
       console.log('Auction created:', auction.id)
+
+      /* Save the access code server-side (it no longer lives on the public auctions row) */
+      if (isPrivate) {
+        const codeHeaders = await getSessionHeaders()
+        const codeRes = await fetch(`/api/auctions/${auction.id}/access-code`, {
+          method: 'PUT',
+          headers: { ...codeHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_code: accessCode }),
+        })
+        if (!codeRes.ok) {
+          const codeErr = await codeRes.json().catch(() => ({}))
+          throw new Error(codeErr.error || 'Failed to save the private access code')
+        }
+      }
 
       /* Mark linked product as in_auction so it's hidden from the shop */
       if (linkedProductId) {

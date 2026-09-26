@@ -271,60 +271,48 @@ export async function POST(req: Request) {
     )
   }
 
-  /* ---------------- INSERT BID ---------------- */
+  /* ---------------- PLACE BID (atomic) ---------------- */
+  // The checks above are fast early rejections. place_bid() locks the auction
+  // row and re-checks everything, then deducts the token, inserts the bid,
+  // raises the price, applies anti-sniping and logs the ledger row in ONE
+  // transaction — so concurrent bids can't lower the price or skip the token.
 
-  const { error: bidError } = await supabase
-    .from('bids')
-    .insert({
-      auction_id,
-      user_id,
-      amount: bidAmount,
-    })
+  const { data: placed, error: placeError } = await supabase.rpc('place_bid', {
+    p_auction_id: auction_id,
+    p_user_id: user_id,
+    p_amount: bidAmount,
+    p_token_cost: BID_TOKEN_COST,
+  })
 
-  if (bidError) {
-    console.error('Bid insert error:', bidError)
+  if (placeError) {
+    console.error('place_bid error:', placeError)
     return NextResponse.json(
       { error: 'Failed to place bid. Please try again.' },
       { status: 500 }
     )
   }
 
-  /* ---------------- UPDATE AUCTION ---------------- */
+  const result = placed as
+    | { ok: true; previous_top_bidder: string | null; ends_at: string }
+    | { ok: false; code: string; message: string }
 
-  const endsAtMs = auction.ends_at ? new Date(auction.ends_at).getTime() : null
-  const remainingMs = endsAtMs != null ? endsAtMs - now : null
-  const shouldExtendBy30s = remainingMs != null && remainingMs > 0 && remainingMs <= 60_000
-
-  const nextAuctionUpdate: { current_price: number; ends_at?: string } = {
-    current_price: bidAmount,
+  if (!result.ok) {
+    const statusByCode: Record<string, number> = {
+      not_found: 404,
+      no_profile: 404,
+      not_started: 403,
+      ended: 403,
+      own_auction: 403,
+      insufficient_tokens: 402,
+    }
+    return NextResponse.json(
+      { error: result.message },
+      { status: statusByCode[result.code] ?? 400 }
+    )
   }
 
-  if (shouldExtendBy30s && endsAtMs != null) {
-    nextAuctionUpdate.ends_at = new Date(endsAtMs + 30_000).toISOString()
-  }
-
-  await supabase
-    .from('auctions')
-    .update(nextAuctionUpdate)
-    .eq('id', auction_id)
-
-  /* ---------------- DEDUCT TOKEN ---------------- */
-
-  await supabase
-    .from('profiles')
-    .update({
-      token_balance: profile.token_balance - BID_TOKEN_COST,
-    })
-    .eq('id', user_id)
-
-  /* ---------------- LOG TRANSACTION ---------------- */
-
-  await supabase.from('token_transactions').insert({
-    user_id,
-    amount: -BID_TOKEN_COST,
-    type: 'bid',
-    reference: `bid:${auction_id}`,
-  })
+  // Authoritative: read under the lock, so it's the true previous leader.
+  const previousTopBidderId = result.previous_top_bidder ?? previousTopBid?.user_id ?? null
 
   /* ---------------- EMAIL NOTIFICATIONS ---------------- */
 
@@ -337,17 +325,17 @@ export async function POST(req: Request) {
       auctionTitle: String(auction.title || 'Auction'),
       bidderUserId: String(user_id),
       bidderAmount: bidAmount,
-      previousTopBidderUserId: previousTopBid?.user_id ?? null,
+      previousTopBidderUserId: previousTopBidderId,
       sellerUserId: (auction as { seller_id?: string | null }).seller_id ?? null,
     }),
     (async () => {
       // Send outbid email to previous top bidder
-      if (previousTopBid?.user_id) {
-        const { data: { user: previousBidderAuth } } = await supabase.auth.admin.getUserById(previousTopBid.user_id)
+      if (previousTopBidderId && previousTopBidderId !== user_id) {
+        const { data: { user: previousBidderAuth } } = await supabase.auth.admin.getUserById(previousTopBidderId)
         const { data: previousBidderProfile } = await supabase
           .from('profiles')
           .select('username')
-          .eq('id', previousTopBid.user_id)
+          .eq('id', previousTopBidderId)
           .single()
 
         if (previousBidderAuth?.email) {

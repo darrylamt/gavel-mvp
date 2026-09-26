@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { dawuroboRequest, type DawuroboEstimateResponse } from '@/lib/dawurobo'
 import { getCoordinatesForLocation } from '@/lib/ghanaLocations'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 export type DeliveryOption = {
   priority: 'economy' | 'standard' | 'cargo'
@@ -35,6 +36,10 @@ const supabase = createClient(
  * }
  */
 export async function POST(req: Request) {
+  // Public, so rate-limited per IP to protect the shared Dawurobo quota.
+  const rl = rateLimit('delivery-estimate-checkout', getClientIp(req), 20, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   try {
     const {
       items,

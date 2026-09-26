@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getAccessCode, setAccessCode } from '@/lib/auctionAccessCodes'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 
@@ -56,7 +57,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const { data, error } = await seller.service
     .from('auctions')
-    .select('id, title, description, starting_price, current_price, reserve_price, min_increment, max_increment, starts_at, ends_at, status, seller_expected_amount, is_private, access_code, anonymous_bidding_enabled')
+    .select('id, title, description, starting_price, current_price, reserve_price, min_increment, max_increment, starts_at, ends_at, status, seller_expected_amount, is_private, anonymous_bidding_enabled')
     .eq('id', id)
     .eq('seller_id', seller.userId)
     .maybeSingle()
@@ -65,7 +66,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ auction: data })
+  const access_code = data.is_private ? await getAccessCode(seller.service, id) : null
+  return NextResponse.json({ auction: { ...data, access_code } })
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -163,7 +165,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       ends_at: endsAtIso,
       status: new Date(startsAtIso).getTime() > Date.now() ? 'scheduled' : 'active',
       is_private: isPrivate,
-      access_code: isPrivate ? accessCode : null,
       anonymous_bidding_enabled: isPrivate ? anonymousBiddingEnabled : true,
     })
     .eq('id', id)
@@ -171,6 +172,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  try {
+    await setAccessCode(seller.service, id, isPrivate ? accessCode : null)
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to save access code' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

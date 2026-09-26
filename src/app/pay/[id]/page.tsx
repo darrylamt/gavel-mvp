@@ -39,14 +39,14 @@ export default function PayPage() {
         return
       }
 
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/paystack/init', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          auction_id: id,
-          user_id: auth.user.id,
-          email: auth.user.email,
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ auction_id: id }),
       })
 
       const data = await res.json()

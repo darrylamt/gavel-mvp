@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { compareAccessCodes } from '@/lib/privateAuctionUtils'
+import { getAccessCodes } from '@/lib/auctionAccessCodes'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 export async function POST(request: Request) {
+  // Each guess is tested against every private auction, so cap attempts per IP.
+  const rl = rateLimit('access-code-lookup', getClientIp(request), 10, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (!supabaseUrl || !anonKey) {
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
     return NextResponse.json({ error: 'Server configuration missing' }, { status: 500 })
   }
 
@@ -18,12 +24,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Access code is required' }, { status: 400 })
     }
 
-    // Use service role to find auction by access code
-    const service = createClient(supabaseUrl, serviceRoleKey || anonKey)
+    // Service role: access codes are in a table only the server can read.
+    const service = createClient(supabaseUrl, serviceRoleKey)
 
     const { data: auctions, error: queryError } = await service
       .from('auctions')
-      .select('id, title, is_private, access_code')
+      .select('id, title, is_private')
       .eq('is_private', true)
 
     if (queryError) {
@@ -35,9 +41,11 @@ export async function POST(request: Request) {
     }
 
     // Find matching auction by comparing codes
+    const codes = await getAccessCodes(service, auctions.map((a) => a.id as string))
     let foundAuction = null
     for (const auction of auctions) {
-      if (auction.access_code && compareAccessCodes(body.code, auction.access_code)) {
+      const storedCode = codes.get(auction.id as string)
+      if (storedCode && compareAccessCodes(body.code, storedCode)) {
         foundAuction = auction
         break
       }

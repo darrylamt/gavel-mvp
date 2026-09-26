@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getAccessCode, setAccessCode } from '@/lib/auctionAccessCodes'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 
@@ -53,7 +54,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const { data, error } = await admin.service
     .from('auctions')
-    .select('id, title, description, starting_price, current_price, reserve_price, min_increment, max_increment, starts_at, ends_at, status, sale_source, seller_name, seller_phone, seller_expected_amount, is_private, access_code, anonymous_bidding_enabled')
+    .select('id, title, description, starting_price, current_price, reserve_price, min_increment, max_increment, starts_at, ends_at, status, sale_source, seller_name, seller_phone, seller_expected_amount, is_private, anonymous_bidding_enabled')
     .eq('id', id)
     .maybeSingle()
 
@@ -61,7 +62,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({ error: 'Auction not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ auction: data })
+  const access_code = data.is_private ? await getAccessCode(admin.service, id) : null
+  return NextResponse.json({ auction: { ...data, access_code } })
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -117,13 +119,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       seller_phone,
       seller_expected_amount,
       is_private: Boolean(is_private),
-      access_code: Boolean(is_private) ? (typeof access_code === 'string' ? access_code.trim() : null) : null,
       anonymous_bidding_enabled: Boolean(is_private) ? anonymous_bidding_enabled !== false : true,
     })
     .eq('id', id)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  try {
+    await setAccessCode(
+      admin.service,
+      id,
+      Boolean(is_private) && typeof access_code === 'string' ? access_code : null
+    )
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to save access code' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

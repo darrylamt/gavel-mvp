@@ -1,6 +1,7 @@
 import 'server-only'
 import crypto from 'crypto'
 import type { IPaymentProvider, PaymentInitParams, PaymentInitResult, PaymentVerifyResult } from './types'
+import { parseHubtelStatus } from './hubtelStatus'
 
 /**
  * Hubtel Online Checkout payment provider.
@@ -71,7 +72,6 @@ export class HubtelProvider implements IPaymentProvider {
     let merchantId: string
     try {
       merchantId = this.merchantAccountNumber
-      console.log('[Hubtel] merchantAccountNumber resolved:', merchantId)
     } catch (e) {
       console.error('[Hubtel] merchantAccountNumber error:', e)
       throw e
@@ -97,7 +97,17 @@ export class HubtelProvider implements IPaymentProvider {
     console.log('[Hubtel] payment_intent inserted OK')
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ''
-    const callbackUrl = process.env.HUBTEL_CALLBACK_URL ?? `${siteUrl}/api/webhooks/hubtel`
+    const callbackBase = process.env.HUBTEL_CALLBACK_URL ?? `${siteUrl}/api/webhooks/hubtel`
+    // Hubtel does not sign its callbacks, so we sign the callback URL itself.
+    // It goes server-to-server to Hubtel and is never shown to the buyer; the
+    // webhook recomputes the signature from the ClientReference in the payload.
+    const callbackSig = this.callbackSignature(clientReference)
+    if (!callbackSig) {
+      console.error('[Hubtel] HUBTEL_WEBHOOK_SECRET not set — this payment\'s webhook will be rejected; it can still complete via the return-page verify path')
+    }
+    const callbackUrl = callbackSig
+      ? `${callbackBase}${callbackBase.includes('?') ? '&' : '?'}sig=${callbackSig}`
+      : callbackBase
     const cancellationUrl = process.env.HUBTEL_CANCELLATION_URL ?? `${siteUrl}/payment/cancelled`
 
     // Embed our clientReference into the returnUrl so the success page
@@ -114,7 +124,6 @@ export class HubtelProvider implements IPaymentProvider {
       cancellationUrl,
       clientReference,
     }
-    console.log('[Hubtel] calling API with body:', JSON.stringify(body))
 
     // Online Checkout initiate endpoint (from HUBTEL_API.md)
     const HUBTEL_ENDPOINT = 'https://payproxyapi.hubtel.com/items/initiate'
@@ -138,7 +147,7 @@ export class HubtelProvider implements IPaymentProvider {
 
     console.log('[Hubtel] fetch status:', res.status)
     const rawText = await res.text()
-    console.log('[Hubtel] raw response:', rawText)
+    if (!res.ok) console.error('[Hubtel] initiate failed, status:', res.status)
 
     let json: Record<string, unknown>
     try {
@@ -173,19 +182,11 @@ export class HubtelProvider implements IPaymentProvider {
       headers: { Authorization: this.authHeader },
     })
 
-    const json = await res.json()
-    console.log('[Hubtel] verifyPayment raw response:', JSON.stringify(json))
+    const json = await res.json().catch(() => null)
+    console.log('[Hubtel] verifyPayment responseCode:', json?.ResponseCode ?? json?.responseCode, 'http:', res.status)
 
-    // Hubtel returns PascalCase or camelCase depending on endpoint — handle both
-    const responseCode = json.ResponseCode ?? json.responseCode
-    if (responseCode !== '0000') {
-      throw new Error(String(json.Message ?? json.message ?? `Hubtel verification failed (code: ${responseCode})`))
-    }
-
-    const data = json.Data ?? json.data ?? {}
-    // Status check returns "Paid", "Unpaid", or "Refunded"
-    const success = String(data.Status ?? data.status ?? '').toLowerCase() === 'paid'
-    const amountGHS = Number(data.Amount ?? data.amount ?? 0)
+    // Throws HubtelStatusError for non-0000 codes (e.g. 4720 = no matching record).
+    const { success, amountGHS, clientReference } = parseHubtelStatus(json)
 
     // Retrieve metadata from payment_intents table
     const { createServiceRoleClient } = await import('@/lib/serverSupabase')
@@ -199,21 +200,48 @@ export class HubtelProvider implements IPaymentProvider {
     return {
       success,
       amountGHS,
-      reference: data.ClientReference ?? data.clientReference ?? reference,
+      reference: clientReference ?? reference,
       metadata: (intent?.metadata as Record<string, unknown>) ?? {},
       currency: 'GHS',
     }
   }
 
   /**
-   * Hubtel webhook signature verification.
-   * If HUBTEL_WEBHOOK_SECRET is not set, requests are allowed through (dev-friendly).
+   * HMAC of a clientReference, embedded in the callbackUrl we give Hubtel.
+   * Returns null when HUBTEL_WEBHOOK_SECRET is not configured.
+   */
+  callbackSignature(clientReference: string): string | null {
+    const secret = process.env.HUBTEL_WEBHOOK_SECRET
+    if (!secret) return null
+    return crypto.createHmac('sha256', secret).update(`hubtel-callback:${clientReference}`).digest('hex')
+  }
+
+  /**
+   * Verifies the `sig` query parameter on an incoming Hubtel callback against
+   * the payload's ClientReference. Fails closed: no secret, no signature, or a
+   * mismatch all return false. A signature is bound to one reference, so a
+   * callback URL for one payment cannot be replayed to confirm another.
+   */
+  verifyCallbackSignature(clientReference: string, sig: string | null): boolean {
+    const expected = this.callbackSignature(clientReference)
+    if (!expected || !sig || !/^[0-9a-f]{64}$/i.test(sig)) return false
+    return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(sig, 'hex'))
+  }
+
+  /**
+   * Header-based webhook signature verification. Kept for the IPaymentProvider
+   * interface; Hubtel's Online Checkout does not send a signature header, so
+   * the Hubtel webhook authenticates with verifyCallbackSignature() instead.
+   *
+   * Fails closed: if HUBTEL_WEBHOOK_SECRET is not set, every request is rejected.
+   * This webhook credits tokens and marks auctions paid, so a missing secret must
+   * never look the same as a valid signature. Set the variable to accept webhooks.
    */
   verifyWebhookSignature(rawBody: string, headers: Headers): boolean {
     const secret = process.env.HUBTEL_WEBHOOK_SECRET
     if (!secret) {
-      console.warn('[Hubtel] HUBTEL_WEBHOOK_SECRET not set — skipping signature verification')
-      return true
+      console.error('[Hubtel] HUBTEL_WEBHOOK_SECRET not set — rejecting webhook')
+      return false
     }
 
     const signature = headers.get('x-hubtel-signature') ?? ''

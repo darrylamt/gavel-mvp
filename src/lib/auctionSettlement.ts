@@ -51,16 +51,21 @@ export async function refundLosingBidders(
 ): Promise<{ refundsIssued: boolean; refundedUsers: number }> {
   const refundKey = `refund:auction:${auctionId}`
 
-  const { data: existingRefunds } = await supabase
+  // Per-user, not per-auction: previously any existing refund row stopped the
+  // whole run, so a settlement that failed partway never refunded the rest.
+  const { data: existingRefunds, error: existingError } = await supabase
     .from('token_transactions')
-    .select('id')
+    .select('user_id')
     .eq('type', 'refund')
     .eq('reference', refundKey)
-    .limit(1)
 
-  if (existingRefunds && existingRefunds.length > 0) {
+  if (existingError) {
+    // Can't tell who is already refunded — refunding blind risks paying twice.
+    console.error('[refundLosingBidders] could not read existing refunds:', existingError.message)
     return { refundsIssued: false, refundedUsers: 0 }
   }
+
+  const alreadyRefunded = new Set((existingRefunds ?? []).map((r) => r.user_id as string))
 
   const { data: allBids } = await supabase
     .from('bids')
@@ -80,33 +85,51 @@ export async function refundLosingBidders(
   let refundedUsers = 0
   for (const [userId, bidCount] of bidCountByUser.entries()) {
     if (userId === winnerUserId) continue // winner's tokens are consumed, not refunded
+    if (alreadyRefunded.has(userId)) continue
 
     const refundAmount = bidCount * BID_TOKEN_COST
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('token_balance')
-      .eq('id', userId)
-      .single()
-
-    if (!profile) continue
-
-    await supabase
-      .from('profiles')
-      .update({ token_balance: (profile.token_balance ?? 0) + refundAmount })
-      .eq('id', userId)
-
-    await supabase.from('token_transactions').insert({
+    // Ledger row first. The unique index on (user_id, reference) for refunds
+    // (20260926_refund_idempotency.sql) makes this the idempotency guard per
+    // user: a second settlement run — concurrent or after a partial failure —
+    // gets a unique violation here and skips the credit instead of paying twice.
+    const { error: ledgerError } = await supabase.from('token_transactions').insert({
       user_id: userId,
       amount: refundAmount,
       type: 'refund',
       reference: refundKey,
     })
 
+    if (ledgerError) {
+      if (ledgerError.code !== '23505') {
+        console.error('[refundLosingBidders] ledger insert failed:', userId, ledgerError.message)
+      }
+      continue
+    }
+
+    // Atomic credit (token_balance = token_balance + n). The old read-then-write
+    // could lose a bid deduction or this refund if both landed at once.
+    const { error: creditError } = await supabase.rpc('increment_tokens', {
+      uid: userId,
+      amount: refundAmount,
+    })
+
+    if (creditError) {
+      // Remove the ledger row so a later settlement run retries this user.
+      console.error('[refundLosingBidders] credit failed:', userId, creditError.message)
+      await supabase
+        .from('token_transactions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('type', 'refund')
+        .eq('reference', refundKey)
+      continue
+    }
+
     refundedUsers++
   }
 
-  return { refundsIssued: true, refundedUsers }
+  return { refundsIssued: refundedUsers > 0, refundedUsers }
 }
 
 /** Re-list the linked shop product when an auction closes without a winner. */

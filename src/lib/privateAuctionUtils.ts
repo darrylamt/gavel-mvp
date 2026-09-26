@@ -10,14 +10,23 @@
 export function generateAccessCode(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789' // Excluded 0, O, I, L to avoid confusion
   let code = ''
-  
-  for (let i = 0; i < 12; i++) {
+
+  // Cryptographic randomness (browser and Node both expose globalThis.crypto).
+  // Math.random() is predictable and must not generate access secrets.
+  // Rejection sampling keeps the distribution uniform over all 31 characters.
+  const limit = 256 - (256 % chars.length)
+  const buf = new Uint8Array(1)
+  let i = 0
+  while (i < 12) {
+    globalThis.crypto.getRandomValues(buf)
+    if (buf[0] >= limit) continue
     if (i > 0 && i % 4 === 0) {
       code += '-'
     }
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
+    code += chars.charAt(buf[0] % chars.length)
+    i++
   }
-  
+
   return code
 }
 

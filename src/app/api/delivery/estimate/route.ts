@@ -2,13 +2,18 @@ import { NextResponse } from 'next/server'
 import 'server-only'
 import { dawuroboRequest, type DawuroboEstimateResponse } from '@/lib/dawurobo'
 import { getCoordinatesForLocation } from '@/lib/ghanaLocations'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 /**
  * POST /api/delivery/estimate
  * Body: { pickup_address, dropoff_address, dropoff_city, dropoff_region? }
  * Returns Dawurobo delivery estimate (price + duration).
+ * Public, so rate-limited per IP to protect the shared Dawurobo quota.
  */
 export async function POST(req: Request) {
+  const rl = rateLimit('delivery-estimate', getClientIp(req), 20, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   try {
     const { pickup_address, dropoff_address, dropoff_city, dropoff_region } = (await req.json()) as {
       pickup_address?: string

@@ -18,6 +18,16 @@ const sections = [
       'Auction activity such as bids, watch history, timestamps, and outcomes',
       'Token and payment records including references, status, and transaction logs',
       'Technical and security data such as IP-related logs, browser metadata, and usage events',
+      'Seller verification data: business name and type, phone, address, Ghana Card number, and images of your Ghana Card',
+      'Delivery details where you request delivery: recipient name, phone number, address, and delivery instructions',
+    ],
+  },
+  {
+    id: 'identity-verification',
+    title: 'Seller Identity Verification (Ghana Card)',
+    content: [
+      'To sell on Gavel you must verify your identity. We collect your Ghana Card number and images of your Ghana Card to confirm who you are, prevent fraud, and meet our obligations when handling payments on behalf of sellers.',
+      'Ghana Card images are stored in private storage that is not publicly accessible. They are viewed only by authorised Gavel administrators reviewing your application, through links that expire after a few minutes. We do not use this data for marketing and do not sell it.',
     ],
   },
   {
@@ -42,8 +52,25 @@ const sections = [
     id: 'sharing',
     title: 'Data Sharing',
     content: [
-      'We may share limited personal data with trusted service providers that support payment processing, hosting, authentication, analytics, and security monitoring.',
+      'We share personal data only with service providers who process it on our behalf, and only what each needs:',
       'We may disclose information when required by law, court order, or to investigate fraud, abuse, or security incidents.',
+    ],
+    bullets: [
+      'Hubtel and Paystack — payment processing (name, email, phone, payment amounts and references)',
+      'Supabase — database, file storage, and account authentication',
+      'Vercel — website hosting, performance monitoring, and analytics',
+      'Google Analytics — website usage analytics',
+      'Dawurobo — delivery (recipient name, phone, address, and delivery instructions)',
+      'Arkesel — SMS notifications (phone number and message content)',
+      'Resend — email notifications (email address and message content)',
+      'OpenAI and Anthropic — AI-assisted listing descriptions, search, and catalogue import (listing content only)',
+    ],
+  },
+  {
+    id: 'international-transfers',
+    title: 'International Data Transfers',
+    content: [
+      'Some of our service providers store or process data outside Ghana. Our main database is hosted in the European Union (Ireland), and some providers operate in the United States. Where data leaves Ghana, we rely on providers that apply recognised security safeguards, and we transfer only what is needed to run the service.',
     ],
   },
   {
@@ -76,7 +103,8 @@ const sections = [
     id: 'rights',
     title: 'Your Rights',
     content: [
-      'Subject to applicable law, you may request access, correction, or deletion of personal data. Some records may still be retained where required for legal, fraud-prevention, or security reasons.',
+      'Under the Data Protection Act, 2012 (Act 843), you may request access to, correction of, or deletion of your personal data, and you may object to certain processing. Some records may still be retained where required for legal, fraud-prevention, or security reasons.',
+      'If you are not satisfied with how we handle your data, you may complain to the Data Protection Commission of Ghana.',
     ],
   },
   {

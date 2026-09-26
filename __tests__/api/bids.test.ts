@@ -35,6 +35,8 @@ let previousTopBidOverride: unknown = null
 let auctionError: unknown = null
 let profileError: unknown = null
 let bidInsertError: unknown = null
+let rpcResult: { data: unknown; error: unknown } = { data: { ok: true, previous_top_bidder: null, ends_at: '' }, error: null }
+const mockRpc = jest.fn(async () => rpcResult)
 
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn().mockImplementation((_url: string, key: string) => {
@@ -63,6 +65,8 @@ jest.mock('@supabase/supabase-js', () => ({
 
     let callCount = 0
     return {
+      rpc: mockRpc,
+      auth: { admin: { getUserById: jest.fn().mockResolvedValue({ data: { user: null } }) } },
       from: jest.fn((table: string) => {
         if (table === 'auctions') {
           return {
@@ -94,6 +98,14 @@ jest.mock('@supabase/supabase-js', () => ({
       }),
     }
   }),
+}))
+
+// The real limiter is in-process and allows 10 bids/min per IP; this suite
+// makes more requests than that, so it would 429 the later tests.
+jest.mock('@/lib/rateLimit', () => ({
+  rateLimit: jest.fn(() => ({ allowed: true })),
+  getClientIp: jest.fn(() => '127.0.0.1'),
+  rateLimitResponse: jest.fn(),
 }))
 
 // Mock notification/email side effects
@@ -130,6 +142,8 @@ describe('POST /api/bids', () => {
     auctionError = null
     profileError = null
     bidInsertError = null
+    rpcResult = { data: { ok: true, previous_top_bidder: null, ends_at: '' }, error: null }
+    mockRpc.mockClear()
   })
 
   it('returns 401 when no Authorization header', async () => {
@@ -199,5 +213,39 @@ describe('POST /api/bids', () => {
     const { POST } = await import('@/app/api/bids/route')
     const res = await POST(makeRequest({ auction_id: 'auction-1' })) // missing amount
     expect(res.status).toBe(400)
+  })
+
+  it('places the bid through the atomic place_bid function', async () => {
+    const { POST } = await import('@/app/api/bids/route')
+    const res = await POST(makeRequest({ auction_id: 'auction-1', amount: 120 }))
+    expect(res.status).toBe(200)
+    expect(mockRpc).toHaveBeenCalledWith('place_bid', {
+      p_auction_id: 'auction-1',
+      p_user_id: 'user-1',
+      p_amount: 120,
+      p_token_cost: 1,
+    })
+  })
+
+  it('returns 400 when a concurrent bid wins the race under the lock', async () => {
+    rpcResult = { data: { ok: false, code: 'too_low', message: 'Bid must be higher than current price' }, error: null }
+    const { POST } = await import('@/app/api/bids/route')
+    const res = await POST(makeRequest({ auction_id: 'auction-1', amount: 120 }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/higher than current price/i)
+  })
+
+  it('returns 403 when a seller bids on their own auction', async () => {
+    rpcResult = { data: { ok: false, code: 'own_auction', message: 'You cannot bid on your own auction' }, error: null }
+    const { POST } = await import('@/app/api/bids/route')
+    const res = await POST(makeRequest({ auction_id: 'auction-1', amount: 120 }))
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 500 when place_bid fails', async () => {
+    rpcResult = { data: null, error: { message: 'db down' } }
+    const { POST } = await import('@/app/api/bids/route')
+    const res = await POST(makeRequest({ auction_id: 'auction-1', amount: 120 }))
+    expect(res.status).toBe(500)
   })
 })

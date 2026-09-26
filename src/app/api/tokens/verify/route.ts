@@ -12,7 +12,6 @@ export async function POST(req: Request) {
   console.log('VERIFY ROUTE HIT')
 
   const body = await req.json()
-  console.log('VERIFY BODY:', body)
 
   const { reference } = body
   if (!reference) {

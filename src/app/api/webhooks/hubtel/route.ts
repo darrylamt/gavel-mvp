@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import 'server-only'
 import { HubtelProvider } from '@/lib/payment/hubtel'
+import { HubtelStatusError } from '@/lib/payment/hubtelStatus'
 import { resolveAuctionPaymentCandidate } from '@/lib/auctionPaymentCandidate'
 import {
   queueAuctionPaymentReceivedNotifications,
@@ -43,12 +44,7 @@ export async function POST(req: Request) {
   }
 
   const rawBody = await req.text()
-
-  // Verify webhook authenticity
   const provider = new HubtelProvider()
-  if (!provider.verifyWebhookSignature(rawBody, req.headers)) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-  }
 
   let event: Record<string, unknown>
   try {
@@ -69,7 +65,6 @@ export async function POST(req: Request) {
 
   const data = (event.Data ?? event.data ?? {}) as Record<string, unknown>
   const clientReference = String(data.ClientReference ?? data.clientReference ?? '')
-  const amountGHS = Number(data.Amount ?? data.amount ?? 0)
 
   // Only process successful payments
   if (responseCode !== '0000' || status !== 'success') {
@@ -81,6 +76,15 @@ export async function POST(req: Request) {
   if (!clientReference) {
     console.error('[Hubtel webhook] Missing ClientReference')
     return NextResponse.json({ received: true })
+  }
+
+  // Authenticate. Hubtel doesn't sign callbacks, so the callbackUrl we gave it
+  // at initiate time carries an HMAC of this payment's ClientReference. Only a
+  // caller holding that exact URL can confirm this reference. Fails closed.
+  const sig = new URL(req.url).searchParams.get('sig')
+  if (!provider.verifyCallbackSignature(clientReference, sig)) {
+    console.warn('[Hubtel webhook] Rejected unsigned or mis-signed callback:', clientReference)
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey)
@@ -96,6 +100,44 @@ export async function POST(req: Request) {
     console.error('[Hubtel webhook] No payment intent found for reference:', clientReference)
     return NextResponse.json({ received: true })
   }
+
+  // Confirm with Hubtel's public status API (the endpoint Hubtel provided
+  // because Vercel's IPs can't be whitelisted). Whatever Hubtel answers wins:
+  //   - paid           -> credit, using Hubtel's amount
+  //   - not paid       -> credit nothing
+  //   - no record yet  -> 503 so Hubtel retries the callback later
+  // Only a network failure (no answer at all) falls back to the signed callback.
+  let paidGHS = Number(data.Amount ?? data.amount ?? 0)
+  try {
+    const confirmed = await provider.verifyPayment(clientReference)
+    if (!confirmed.success) {
+      console.warn('[Hubtel webhook] Status API does not report this reference as paid:', clientReference)
+      return NextResponse.json({ received: true })
+    }
+    if (confirmed.amountGHS > 0) paidGHS = confirmed.amountGHS
+  } catch (err) {
+    if (err instanceof HubtelStatusError) {
+      console.warn('[Hubtel webhook] Status API has no confirmation yet — asking Hubtel to retry:', {
+        clientReference,
+        code: err.responseCode,
+      })
+      return NextResponse.json({ error: 'Payment not yet confirmed' }, { status: 503 })
+    }
+    console.warn('[Hubtel webhook] Status API unreachable, relying on signed callback:', clientReference,
+      err instanceof Error ? err.message : err)
+  }
+
+  const expectedGHS = Number(intent.amount_ghs)
+  if (!(paidGHS > 0) || (expectedGHS > 0 && paidGHS + 0.01 < expectedGHS)) {
+    console.error('[Hubtel webhook] Paid amount below expected:', {
+      clientReference,
+      paid: paidGHS,
+      expected: expectedGHS,
+    })
+    return NextResponse.json({ received: true })
+  }
+
+  const amountGHS = paidGHS
 
   const metadata = (intent.metadata ?? {}) as Record<string, unknown>
   const paymentType = String(metadata.type ?? '')

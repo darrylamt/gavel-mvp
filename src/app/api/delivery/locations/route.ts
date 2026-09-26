@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server'
 import 'server-only'
 import { dawuroboRequest, type DawuroboLocation } from '@/lib/dawurobo'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit'
 
 /**
  * GET /api/delivery/locations
  * Proxies Dawurobo GET /locations – keeps the API key server-side.
+ * Public (used before login), so rate-limited per IP: the Dawurobo read quota
+ * is per API key and shared with every other delivery call.
  */
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
-  const baseUrl = process.env.DAWUROBO_BASE_URL || '(not set)'
-  const appId = process.env.DAWUROBO_APP_ID || '(not set)'
-  const apiKey = process.env.DAWUROBO_API_KEY || ''
-  console.log('[delivery/locations] DAWUROBO_BASE_URL:', baseUrl)
-  console.log('[delivery/locations] DAWUROBO_APP_ID:', appId)
-  console.log('[delivery/locations] DAWUROBO_API_KEY:', apiKey ? apiKey.slice(0, 10) + '…' : '(not set)')
+export async function GET(req: Request) {
+  const rl = rateLimit('delivery-locations', getClientIp(req), 30, 60_000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
 
   try {
     const raw = await dawuroboRequest<DawuroboLocation[] | { data: DawuroboLocation[] }>('GET', '/locations')
